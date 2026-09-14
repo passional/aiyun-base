@@ -1,5 +1,5 @@
 ---
-name: "fastapiadmin-dev"
+name: "aiyun-base"
 description: "FastapiAdmin full-stack dev guide: repo map, run/verify commands, backend module & frontend web conventions. Invoke before writing code, creating modules/pages, debugging, or running builds/tests in this repo."
 ---
 

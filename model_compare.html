@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双渠道模型性能对比 — 测试报告 2026-08-19</title>
+<style>
+  :root {
+    --ch1: #6366f1;        /* aihubmix */
+    --ch2: #0ea5e9;        /* apiworld */
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --danger: #ef4444;
+    --ok: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header h1 { font-size: 24px; font-weight: 700; }
+  header .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
+  .badges { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #e2e8f0; color: #334155; }
+  .badge.ok { background: #d1fae5; color: #047857; }
+  .badge.warn { background: #fef3c7; color: #92400e; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 20px 0 8px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .kpi .n { font-size: 26px; font-weight: 700; }
+  .kpi .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi .n.g1 { color: var(--ch1); } .kpi .n.g2 { color: var(--ch2); }
+  .kpi .n.good { color: var(--ok); } .kpi .n.bad { color: var(--danger); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin-top: 18px; }
+  .card h2 { font-size: 17px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .card .desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+  .legend { display: flex; gap: 16px; font-size: 13px; margin-bottom: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .chart { margin-top: 6px; }
+  .grow { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: center; padding: 7px 0;
+          border-bottom: 1px dashed var(--line); }
+  .grow:last-child { border-bottom: none; }
+  .glabel { font-size: 13px; font-weight: 600; color: #334155; text-align: right; }
+  .gseries { display: flex; flex-direction: column; gap: 4px; }
+  .srow { display: grid; grid-template-columns: 74px 1fr 90px; gap: 8px; align-items: center; }
+  .sname { font-size: 12px; color: var(--muted); text-align: right; }
+  .track { background: #f1f5f9; border-radius: 5px; height: 16px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 5px; min-width: 2px; transition: width .5s ease; }
+  .sval { font-size: 12px; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { background: #f1f5f9; font-weight: 600; color: #475569; position: sticky; }
+  tbody tr:hover { background: #f8fafc; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mod { font-weight: 600; }
+  .ch1 { color: var(--ch1); } .ch2 { color: var(--ch2); }
+  .anom { background: #fef2f2 !important; }
+  .anom td:first-child::before { content: "⚠ "; color: var(--danger); }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; }
+  .tag.good { background: #d1fae5; color: #047857; }
+  .tag.warn { background: #fef3c7; color: #92400e; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px;
+          font-size: 13px; color: #78350f; margin-top: 10px; }
+  .note li { margin-left: 18px; margin-top: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } .grow { grid-template-columns: 96px 1fr; } }
+  footer { color: var(--muted); font-size: 12px; margin-top: 26px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>双渠道模型性能对比报告</h1>
+  <div class="sub">测试时间 2026-08-19 · 渠道1 aihubmix (api.inferera.com) · 渠道2 apiworld (apiworld.ai，3 组上游：京东云 / UCloud / Runapi)</div>
+  <div class="badges">
+    <span class="badge ok">客户端实测 36/36 成功（基准9 + apiworld 3 组上游各9）</span>
+    <span class="badge ok">后台日志 2 渠道共 53 条</span>
+    <span class="badge warn">异常/冷启动 3 条</span>
+  </div>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<!-- ============ 1. 客户端实测 ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:var(--ch1)"></span>客户端实测 · 首Token时延 (TTFT)</h2>
+  <div class="desc">每组合 3 次请求取均值。流式请求，从发出到收到第一个内容 chunk。</div>
+  <div class="legend">
+    <span><i style="background:var(--ch1)"></i>aihubmix</span>
+    <span><i style="background:var(--ch2)"></i>apiworld</span>
+  </div>
+  <div class="chart" id="chart-ttft"></div>
+</div>
+
+<div class="card">
+  <h2><span class="dot" style="background:var(--ch2)"></span>客户端实测 · 总完成时间</h2>
+  <div class="desc">从发出请求到流式返回结束（[DONE]）。</div>
+  <div class="legend">
+    <span><i style="background:var(--ch1)"></i>aihubmix</span>
+    <span><i style="background:var(--ch2)"></i>apiworld</span>
+  </div>
+  <div class="chart" id="chart-total"></div>
+</div>
+
+<div class="card">
+  <h2><span class="dot" style="background:#94a3b8"></span>客户端实测 · 原始数据（基准 + apiworld 第一批，18 次）</h2>
+  <div class="desc">含首测与复测。标注 ⚠ 的是明显冷启动/排队异常值。</div>
+  <div style="overflow-x:auto">
+  <table id="tbl-client"></table>
+  </div>
+</div>
+
+<!-- ============ 1.5 apiworld 上游对比 ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:#ef4444"></span>apiworld 上游渠道对比（客户端实测 · 每上游 3 次均值）</h2>
+  <div class="desc">同一 apiworld key 下，gpt-5.6-sol 走 GPT 类上游、Claude 系走 Claude 类上游。附 aihubmix 基准。TTFT 越低越好。</div>
+  <div class="legend">
+    <span><i style="background:#6366f1"></i>aihubmix 基准</span>
+    <span><i style="background:#0ea5e9"></i>apiworld 上游</span>
+    <span><i style="background:#ef4444"></i>Runapi（异常慢）</span>
+  </div>
+  <div class="chart" id="chart-upstream"></div>
+  <div style="overflow-x:auto">
+  <table id="tbl-upstream"></table>
+  </div>
+</div>
+
+<!-- ============ 2. 后台数据 ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:#94a3b8"></span>渠道后台日志汇总</h2>
+  <div class="desc">后台侧「首Token / 总耗时 / 速率」均值（自动剔除 &gt;30s 异常，括号内为含异常均值）。<b>注意：apiworld 列为全部上游混合（Runapi 会拉高均值），分上游明细见下方「各上游后台汇总」卡片。</b></div>
+  <div style="overflow-x:auto">
+  <table id="tbl-backend-agg"></table>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2><span class="dot" style="background:var(--ch1)"></span>渠道1 后台 · aihubmix (inferera)</h2>
+    <div class="desc">20 条消耗日志 · Azure 上游 · 含 End-to-end latency / Trace ID</div>
+    <div style="overflow-x:auto">
+    <table id="tbl-backend-ch1"></table>
+    </div>
+  </div>
+  <div class="card">
+    <h2><span class="dot" style="background:var(--ch2)"></span>渠道2 后台 · apiworld</h2>
+    <div class="desc">33 条消耗日志 · 6 组上游（#70京东云Claude / #71UCloudGPT / #72UCloudClaude / #73京东云GPT / #74RunapiClaude / #75RunapiGPT）· 用户 apitest</div>
+    <div style="overflow-x:auto">
+    <table id="tbl-backend-ch2"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2.5 apiworld 各上游后台数据 ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:var(--ch2)"></span>apiworld 各上游 · 后台数据汇总</h2>
+  <div class="desc">按上游渠道 × 模型统计后台「首Token / 耗时 / 速率」均值（剔除 &gt;30s 异常）。与上方客户端实测可直接对比。</div>
+  <div class="chart" id="chart-up-backend"></div>
+  <div style="overflow-x:auto">
+  <table id="tbl-up-backend"></table>
+  </div>
+</div>
+
+<!-- ============ 3. 客户端 vs 后台（按上游） ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:#8b5cf6"></span>客户端 vs 后台 交叉对比</h2>
+  <div class="desc">客户端 TTFT 均值 vs 后台「首Token/首字」均值。后台侧无数据记为 —。</div>
+  <div class="chart" id="chart-compare"></div>
+  <div style="overflow-x:auto">
+  <table id="tbl-compare"></table>
+  </div>
+</div>
+
+<!-- ============ 4. 结论/异常 ============ -->
+<div class="card">
+  <h2><span class="dot" style="background:var(--danger)"></span>异常记录与注意事项</h2>
+  <ul class="note">
+    <li><b>apiworld 上游结论（客户端 TTFT，越低越好）</b>：<br>
+        · Claude 系：<b>UCloud Claude_offical</b>（opus 3.42s / fable 5.58s）≈ 京东云 Claude_B类（3.94s / 8.15s）&lt;&lt; <b>Runapi Claude官方（13.05s / 18.44s）</b>；<br>
+        · gpt-5.6-sol：<b>UCloud GPT_offical（3.32s）</b> 最快，其后 京东云 GPT_B类（4.42s）≈ aihubmix（4.68s）&lt; Runapi GPT官转（4.96s）。</li>
+    <li><b>Runapi 渠道最差，建议避开</b>：客户端 Claude 首Token 13–18s，后台日志同样确认（opus 11.4s / fable 16.4s，后台单次波动 1.9–22.2s）；gpt 走 Runapi 客户端也最慢。可正常返回，但体验接近不可用。</li>
+    <li><b>后台侧各上游确认</b>：UCloud Claude_offical 后台首Token opus 1.67s / fable 3.37s，为 Claude 上游最优；gpt 各上游后台首Token 1.80–2.53s 差异不大，客户端差异（3.32–4.96s）更多来自网络与时序。</li>
+    <li>异常/冷启动 3 条（均为 claude-fable-5）：aihubmix 后台 10:39:28 <b>73.6s</b>；apiworld 后台 10:36:43 <b>32.2s</b>；apiworld 客户端首测 <b>33.8s</b>（复测回落至 5.7–12.2s）。</li>
+    <li>claude-fable-5 全渠道最慢（含 aihubmix 6.76s），fable 前置处理耗时明显，建议按需选用。</li>
+    <li>「渠道后台日志汇总」中 apiworld 列为<b>全部上游混合</b>统计（Runapi 拉高均值），分上游明细见「apiworld 各上游·后台数据汇总」卡片。</li>
+    <li>TTFT 计的是「收到第一个 SSE chunk」的时间，Claude 系可能先返回 reasoning/元数据 chunk 再返回正文，故为首字节时延的近似值。</li>
+    <li>模型 ID（gpt-5.6-sol / claude-opus-5 / claude-fable-5）为中转站自定义命名，两渠道 /v1/models 列表均可查。</li>
+  </ul>
+</div>
+
+<footer>数据来源：本地客户端实测（test_models.py）+ 两渠道后台消耗日志 · 页面纯本地渲染，无外部依赖</footer>
+</div>
+
+<script>
+"use strict";
+/* ================= 数据 ================= */
+const MODELS = ["gpt-5.6-sol", "claude-opus-5", "claude-fable-5"];
+const CH = {
+  aihubmix: { label: "aihubmix", color: "#6366f1" },
+  apiworld: { label: "apiworld",  color: "#0ea5e9" },
+};
+// 客户端实测：每组合 3 次
+const CLIENT = {
+  aihubmix: {
+    "gpt-5.6-sol":    { ttft: [4.35, 4.75, 4.95], total: [6.66, 6.23, 6.77] },
+    "claude-opus-5":  { ttft: [2.51, 3.48, 2.42], total: [3.48, 4.11, 3.07] },
+    "claude-fable-5": { ttft: [4.83, 6.59, 8.86], total: [5.94, 7.82, 10.33] },
+  },
+  apiworld: {
+    "gpt-5.6-sol":    { ttft: [3.36, 3.25, 3.35], total: [3.37, 3.50, 3.54] },
+    "claude-opus-5":  { ttft: [4.24, 3.86, 3.71], total: [6.00, 5.52, 5.78] },
+    "claude-fable-5": { ttft: [6.75, 9.49, 8.22], total: [8.32, 11.00, 9.79] },
+  },
+};
+// 客户端首测（含冷启动异常，仅用于说明）
+const CLIENT_FIRST_RUN = {
+  "aihubmix": { "gpt-5.6-sol": [4.54, 5.80], "claude-opus-5": [3.09, 3.80], "claude-fable-5": [4.96, 6.35] },
+  "apiworld": { "gpt-5.6-sol": [4.28, 4.54], "claude-opus-5": [5.35, 7.21], "claude-fable-5": [33.82, 35.31] },
+};
+// apiworld 上游渠道客户端实测（每上游 3 次均值）
+const UPSTREAM = {
+  "gpt-5.6-sol": [
+    { u:"aihubmix(基准)",        ttft:4.68, total:6.55, runs:[4.35,4.75,4.95], color:"#6366f1" },
+    { u:"UCloud GPT_offical",   ttft:3.32, total:3.47, runs:[3.36,3.25,3.35], color:"#0ea5e9" },
+    { u:"京东云 GPT_B类",        ttft:4.42, total:4.84, runs:[5.00,4.41,3.85], color:"#0ea5e9" },
+    { u:"Runapi GPT官转",        ttft:4.96, total:5.50, runs:[4.83,3.95,6.11], color:"#ef4444" },
+  ],
+  "claude-opus-5": [
+    { u:"aihubmix(基准)",        ttft:2.80, total:3.55, runs:[2.51,3.48,2.42], color:"#6366f1" },
+    { u:"京东云 Claude_B类",      ttft:3.94, total:5.77, runs:[4.24,3.86,3.71], color:"#0ea5e9" },
+    { u:"UCloud Claude_offical", ttft:3.42, total:4.82, runs:[4.39,2.96,2.89], color:"#0ea5e9" },
+    { u:"Runapi Claude官方",      ttft:13.05,total:14.80,runs:[23.83,3.47,11.86], color:"#ef4444" },
+  ],
+  "claude-fable-5": [
+    { u:"aihubmix(基准)",        ttft:6.76, total:8.03, runs:[4.83,6.59,8.86], color:"#6366f1" },
+    { u:"京东云 Claude_B类",      ttft:8.15, total:9.70, runs:[6.75,9.49,8.22], color:"#0ea5e9" },
+    { u:"UCloud Claude_offical", ttft:5.58, total:6.67, runs:[7.08,4.99,4.66], color:"#0ea5e9" },
+    { u:"Runapi Claude官方",      ttft:18.44,total:20.17,runs:[25.52,23.55,6.25], color:"#ef4444" },
+  ],
+};
+
+
+// 渠道2 apiworld 后台日志 — 消耗日志（apitest / #70京东云Claude + #71UCloud GPT）
+const BE_CH1 = [
+  { t:"10:41:39", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:6,  tin:26, tout:55,  cost:0.00301,  ttft:6.7,  total:9.0,  price:"$10 / $50/M" },
+  { t:"10:41:29", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:6,  tin:26, tout:64,  cost:0.00346,  ttft:7.9,  total:10.0, price:"$10 / $50/M" },
+  { t:"10:41:18", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:8,  tin:26, tout:54,  cost:0.00296,  ttft:5.1,  total:7.0,  price:"$10 / $50/M" },
+  { t:"10:41:09", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:68, tin:25, tout:272, cost:0.006926, ttft:2.1,  total:4.0,  price:"$5 / $25/M" },
+  { t:"10:41:04", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:59, tin:25, tout:234, cost:0.005976, ttft:2.3,  total:4.0,  price:"$5 / $25/M" },
+  { t:"10:40:58", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:59, tin:25, tout:235, cost:0.006,    ttft:2.6,  total:4.0,  price:"$5 / $25/M" },
+  { t:"10:40:52", up:"#71【UCloud】GPT_offical", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:25, tin:20, tout:50, cost:0.0016,  ttft:1.6,  total:2.0,  price:"$5 / $30/M" },
+  { t:"10:40:49", up:"#71【UCloud】GPT_offical", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:23, tin:20, tout:46, cost:0.00148, ttft:1.6,  total:2.0,  price:"$5 / $30/M" },
+  { t:"10:40:45", up:"#71【UCloud】GPT_offical", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:23, tin:20, tout:46, cost:0.00148, ttft:1.4,  total:2.0,  price:"$5 / $30/M" },
+  { t:"10:37:26", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:9,  tin:26, tout:55,  cost:0.00301, ttft:4.1,  total:6.0,  price:"$10 / $50/M" },
+  { t:"10:37:18", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:6,  tin:26, tout:55,  cost:0.00301, ttft:7.9,  total:9.0,  price:"$10 / $50/M" },
+  { t:"10:37:07", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:5,  tin:26, tout:55,  cost:0.00301, ttft:10.5, total:12.0, price:"$10 / $50/M" },
+  { t:"10:36:43", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:2,  tin:26, tout:54,  cost:0.00296, ttft:32.2, total:34.0, price:"$10 / $50/M", anomaly:true },
+  { t:"10:36:08", up:"#70【京东云】Claude_B类", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:47, tin:25, tout:235, cost:0.006,    ttft:2.9,  total:5.0,  price:"$5 / $25/M" },
+  { t:"10:36:00", up:"#71【UCloud】GPT_offical", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol",   tps:47, tin:20, tout:94,  cost:0.00292, ttft:2.6,  total:2.0,  price:"$5 / $30/M" },
+  { t:"11:26:14", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:14, tin:50, tout:71, cost:0.00405, ttft:3.4,  total:5.0,  price:"$10 / $50/M" },
+  { t:"11:26:06", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:3,  tin:50, tout:78, cost:0.0044,  ttft:22.0, total:24.0, price:"$10 / $50/M" },
+  { t:"11:25:40", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:3,  tin:50, tout:71, cost:0.00405, ttft:23.7, total:25.0, price:"$10 / $50/M" },
+  { t:"11:25:13", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:6,  tin:50, tout:71, cost:0.002026, ttft:10.1, total:12.0, price:"$5 / $25/M" },
+  { t:"11:25:00", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:19, tin:50, tout:76, cost:0.00215,  ttft:1.9,  total:4.0,  price:"$5 / $25/M" },
+  { t:"11:24:54", up:"#74【Runapi】Claude官方", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:4,  tin:50, tout:98, cost:0.0027,   ttft:22.2, total:23.0, price:"$5 / $25/M" },
+  { t:"11:24:29", up:"#75【Runapi】GPT官转", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:16, tin:20, tout:49, cost:0.00157, ttft:2.2, total:3.0, price:"$5 / $30/M" },
+  { t:"11:24:22", up:"#75【Runapi】GPT官转", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:16, tin:20, tout:49, cost:0.00157, ttft:2.2, total:3.0, price:"$5 / $30/M" },
+  { t:"11:24:17", up:"#75【Runapi】GPT官转", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:17, tin:20, tout:50, cost:0.0016,  ttft:3.2, total:3.0, price:"$5 / $30/M" },
+  { t:"11:21:54", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:14, tin:26, tout:55, cost:0.00301, ttft:3.1, total:4.0, price:"$10 / $50/M" },
+  { t:"11:21:48", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:14, tin:26, tout:55, cost:0.00301, ttft:3.3, total:4.0, price:"$10 / $50/M" },
+  { t:"11:21:42", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-fable-5", tps:11, tin:26, tout:55, cost:0.00301, ttft:3.7, total:5.0, price:"$10 / $50/M" },
+  { t:"11:21:34", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:37, tin:26, tout:111, cost:0.002906, ttft:1.2, total:3.0, price:"$5 / $25/M" },
+  { t:"11:21:29", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:34, tin:26, tout:68, cost:0.00183,  ttft:1.2, total:2.0, price:"$5 / $25/M" },
+  { t:"11:21:25", up:"#72【UCloud】Claude_offical", user:"apitest", acct:"official_testofficial", m:"claude-opus-5",  tps:21, tin:26, tout:83, cost:0.002206, ttft:2.6, total:4.0, price:"$5 / $25/M" },
+  { t:"11:21:19", up:"#73【京东云】GPT_B类", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:25, tin:20, tout:49, cost:0.00157, ttft:2.1, total:2.0, price:"$5 / $30/M" },
+  { t:"11:21:15", up:"#73【京东云】GPT_B类", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:26, tin:20, tout:78, cost:0.00244, ttft:2.6, total:3.0, price:"$5 / $30/M" },
+  { t:"11:21:10", up:"#73【京东云】GPT_B类", user:"apitest", acct:"official_testofficial", m:"gpt-5.6-sol", tps:17, tin:20, tout:50, cost:0.0016,  ttft:2.8, total:3.0, price:"$5 / $30/M" },
+];
+
+// 渠道1 aihubmix 后台日志 — Azure 上游（含 End-to-end latency / Trace ID）
+const BE_CH2 = [
+  { t:"10:40:42", m:"claude-fable-5",  cost:-0.003256, tin:26, tout:54,  ttft:7.61,  total:9.09,  tps:5.9,  price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902403311245281583763670" },
+  { t:"10:40:31", m:"claude-fable-5",  cost:-0.003312, tin:26, tout:55,  ttft:5.119, total:6.364, tps:8.7,  price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902402552090312495534571" },
+  { t:"10:40:24", m:"claude-fable-5",  cost:-0.003312, tin:26, tout:55,  ttft:3.642, total:4.764, tps:11.6, price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902401931064003529408981" },
+  { t:"10:40:18", m:"claude-opus-5",   cost:-0.002406, tin:26, tout:91,  ttft:1.237, total:1.905, tps:48.1, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902401623095128092138468" },
+  { t:"10:40:15", m:"claude-opus-5",   cost:-0.002406, tin:26, tout:91,  ttft:1.265, total:1.939, tps:47.5, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902401312868072121745221" },
+  { t:"10:40:10", m:"claude-opus-5",   cost:-0.002730, tin:26, tout:104, ttft:1.22,  total:2.212, tps:47.2, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902400873779668494855379" },
+  { t:"10:40:07", m:"gpt-5.6-sol",     cost:-0.001600, tin:20, tout:50,  ttft:3.685, total:5.499, tps:9.1,  price:"$5 → $30",  ip:"141.11.130.85", tid:"2026081902400193251843212794177" },
+  { t:"10:40:00", m:"gpt-5.6-sol",     cost:-0.001480, tin:20, tout:46,  ttft:2.696, total:3.900, tps:11.8, price:"$5 → $30",  ip:"141.11.130.85", tid:"2026081902395648686881967940868" },
+  { t:"10:39:53", m:"gpt-5.6-sol",     cost:-0.001600, tin:20, tout:50,  ttft:2.079, total:3.867, tps:13.0, price:"$5 → $30",  ip:"141.11.130.85", tid:"202608190239504651850591477412" },
+  { t:"10:39:28", m:"claude-fable-5",  cost:-0.003312, tin:26, tout:55,  ttft:73.595,total:75.064,tps:0.7,  price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902381392496260295170116", anomaly:true },
+  { t:"10:38:12", m:"claude-fable-5",  cost:-0.003806, tin:26, tout:64,  ttft:2.324, total:3.827, tps:16.8, price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902380858776482385763688" },
+  { t:"10:38:06", m:"claude-fable-5",  cost:-0.003256, tin:26, tout:54,  ttft:2.793, total:4.226, tps:12.8, price:"$11 → $55", ip:"141.11.130.85", tid:"202608190238022752438382892392" },
+  { t:"10:38:00", m:"claude-opus-5",   cost:-0.002656, tin:26, tout:101, ttft:1.342, total:2.060, tps:49.7, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902375875131911766336309" },
+  { t:"10:37:57", m:"claude-opus-5",   cost:-0.002606, tin:26, tout:99,  ttft:1.297, total:2.175, tps:45.7, price:"$5 → $25",  ip:"141.11.130.85", tid:"202608190237559460433484645513" },
+  { t:"10:37:53", m:"claude-opus-5",   cost:-0.003256, tin:26, tout:125, ttft:1.280, total:2.505, tps:50.1, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902375140106507991494239" },
+  { t:"10:37:50", m:"gpt-5.6-sol",     cost:-0.001600, tin:20, tout:50,  ttft:2.390, total:3.607, tps:13.9, price:"$5 → $30",  ip:"141.11.130.85", tid:"2026081902374656824059173436302" },
+  { t:"10:37:45", m:"gpt-5.6-sol",     cost:-0.001600, tin:20, tout:50,  ttft:1.964, total:3.744, tps:13.4, price:"$5 → $30",  ip:"141.11.130.85", tid:"2026081902374160537801925789277" },
+  { t:"10:37:40", m:"gpt-5.6-sol",     cost:-0.001480, tin:20, tout:46,  ttft:1.665, total:3.384, tps:13.6, price:"$5 → $30",  ip:"141.11.130.85", tid:"2026081902373698694807108532959" },
+  { t:"10:35:56", m:"claude-fable-5",  cost:-0.003312, tin:26, tout:55,  ttft:3.667, total:5.053, tps:10.9, price:"$11 → $55", ip:"141.11.130.85", tid:"2026081902355136703661446516799" },
+  { t:"10:35:50", m:"claude-opus-5",   cost:-0.002556, tin:26, tout:97,  ttft:1.499, total:2.210, tps:44.1, price:"$5 → $25",  ip:"141.11.130.85", tid:"2026081902354782243812295426494" },
+];
+const BACKEND = { aihubmix: BE_CH2, apiworld: BE_CH1 };
+
+/* ================= 工具 ================= */
+const fmt = (v, d=2) => (v == null || isNaN(v)) ? "—" : Number(v).toFixed(d);
+const avg = a => a.reduce((s,x)=>s+x,0) / a.length;
+
+function renderBars(el, groups, { fmtV } = {}) {
+  const vals = groups.flatMap(g => g.series.map(s => s.value));
+  const max = Math.max(...vals.filter(v => v != null), 0) * 1.15 || 1;
+  let h = "";
+  for (const g of groups) {
+    h += `<div class="grow"><div class="glabel">${g.label}</div><div class="gseries">`;
+    for (const s of g.series) {
+      if (s.value == null) { h += `<div class="srow"><span class="sname">${s.name}</span><div class="track"></div><span class="sval">—</span></div>`; continue; }
+      const w = Math.max(s.value/max*100, 1.5);
+      h += `<div class="srow"><span class="sname">${s.name}</span>
+              <div class="track"><div class="bar" style="width:${w}%;background:${s.color}"></div></div>
+              <span class="sval">${fmtV ? fmtV(s.value) : fmt(s.value)}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+  el.innerHTML = h;
+}
+
+function tableHtml(headers, rows) {
+  let h = "<thead><tr>" + headers.map(x=>`<th class="${x.num?'num':''}">${x.t}</th>`).join("") + "</tr></thead><tbody>";
+  for (const r of rows) {
+    h += `<tr${r._anom ? ' class="anom"' : ""}>` + headers.map(x=>`<td class="${x.num?'num':''}">${r[x.k]}</td>`).join("") + "</tr>";
+  }
+  return h + "</tbody>";
+}
+
+/* ================= KPI ================= */
+(function(){
+  let best = {};
+  for (const ch in CLIENT) for (const m in CLIENT[ch]) {
+    const ttft = avg(CLIENT[ch][m].ttft);
+    if (!best.v || ttft < best.v) best = { v: ttft, ch, m };
+  }
+  const nRun = Object.keys(CLIENT).reduce((a,ch)=>a+Object.values(CLIENT[ch]).reduce((b,m)=>b+m.ttft.length,0),0);
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><div class="n good">36</div><div class="l">客户端成功请求数</div></div>
+    <div class="kpi"><div class="n good">53</div><div class="l">后台成功日志条数</div></div>
+    <div class="kpi"><div class="n g1">${fmt(best.v)}s</div><div class="l">最速 TTFT · ${CH[best.ch].label} ${best.m}</div></div>
+    <div class="kpi"><div class="n bad">18.4s</div><div class="l">最慢 TTFT · Runapi fable-5</div></div>
+    <div class="kpi"><div class="n bad">3</div><div class="l">异常/冷启动记录</div></div>`;
+})();
+
+/* ================= 1. 客户端图表 ================= */
+(function(){
+  const ttftGroups = MODELS.map(m => ({
+    label: m,
+    series: ["aihubmix","apiworld"].map(ch => ({ name: CH[ch].label, value: avg(CLIENT[ch][m].ttft), color: CH[ch].color }))
+  }));
+  renderBars(document.getElementById("chart-ttft"), ttftGroups, { fmtV: v => fmt(v)+"s" });
+
+  const totalGroups = MODELS.map(m => ({
+    label: m,
+    series: ["aihubmix","apiworld"].map(ch => ({ name: CH[ch].label, value: avg(CLIENT[ch][m].total), color: CH[ch].color }))
+  }));
+  renderBars(document.getElementById("chart-total"), totalGroups, { fmtV: v => fmt(v)+"s" });
+})();
+
+/* apiworld 上游渠道对比渲染 */
+(function(){
+  const groups = MODELS.map(m => ({
+    label: m,
+    series: UPSTREAM[m].map(x => ({ name: x.u, value: x.ttft, color: x.color }))
+  }));
+  renderBars(document.getElementById("chart-upstream"), groups, { fmtV: v => fmt(v)+"s" });
+  const rows = [];
+  for (const m of MODELS) for (const x of UPSTREAM[m]) {
+    const ttfts = UPSTREAM[m].map(y=>y.ttft);
+    const fast = x.ttft === Math.min(...ttfts);
+    const slow = x.ttft === Math.max(...ttfts) && x.ttft > 8;
+    rows.push({
+      m:`<span class="mod">${m}</span>`, u:x.u,
+      ttft: fmt(x.ttft)+"s", total: fmt(x.total)+"s",
+      runs: x.runs.map(r=>fmt(r)).join(" / "),
+      badge: slow ? '<span class="tag warn">最慢</span>' : (fast ? '<span class="tag good">最快</span>' : ""),
+    });
+  }
+  document.getElementById("tbl-upstream").innerHTML = tableHtml([
+    {t:"模型",k:"m"},{t:"上游渠道",k:"u"},{t:"TTFT均值",k:"ttft",num:true},
+    {t:"总耗时均值",k:"total",num:true},{t:"TTFT明细(3次)",k:"runs",num:true},{t:"",k:"badge"},
+  ], rows);
+})();
+
+
+/* 客户端原始数据表 */
+(function(){
+  const rows = [];
+  for (const ch of ["aihubmix","apiworld"]) {
+    for (const m of MODELS) {
+      const d = CLIENT[ch][m];
+      for (let i=0;i<d.ttft.length;i++) {
+        rows.push({
+          ch: ch==="aihubmix" ? `<span class="ch1">aihubmix</span>` : `<span class="ch2">apiworld</span>`,
+          m: `<span class="mod">${m}</span>`, run: `#${i+1}`,
+          ttft: fmt(d.ttft[i])+"s", total: fmt(d.total[i])+"s", note: "" });
+      }
+      const f = CLIENT_FIRST_RUN[ch][m];
+      if (f && f[0] > 25) rows.push({ _anom:true, ch: ch==="aihubmix" ? `<span class="ch1">aihubmix</span>` : `<span class="ch2">apiworld</span>`,
+        m: `<span class="mod">${m}</span>`, run:"首测", ttft:fmt(f[0])+"s", total:fmt(f[1])+"s", note:"冷启动" });
+    }
+  }
+  document.getElementById("tbl-client").innerHTML = tableHtml(
+    [{t:"渠道",k:"ch"},{t:"模型",k:"m"},{t:"次数",k:"run"},{t:"首Token",k:"ttft",num:true},{t:"总耗时",k:"total",num:true},{t:"备注",k:"note"}], rows);
+})();
+
+/* ================= 2. 后台汇总 ================= */
+(function(){
+  function agg(chKey) {
+    const by = {};
+    for (const r of BACKEND[chKey]) (by[r.m] = by[r.m] || []).push(r);
+    const out = [];
+    for (const m in by) {
+      const rs = by[m];
+      const ok = rs.filter(r => !r.anomaly);
+      out.push({
+        m, n: rs.length, nAnom: rs.length - ok.length,
+        ttft: avg(ok.map(r=>r.ttft)), ttftAll: avg(rs.map(r=>r.ttft)),
+        total: avg(ok.map(r=>r.total)), totalAll: avg(rs.map(r=>r.total)),
+        tps: avg(ok.map(r=>r.tps)), tpsAll: avg(rs.map(r=>r.tps)),
+      });
+    }
+    return out;
+  }
+  const a1 = agg("aihubmix"), a2 = agg("apiworld");
+  const allModels = [...new Set([...a1, ...a2].map(x=>x.m))];
+  const rows = allModels.map(m => {
+    const r1 = a1.find(x => x.m === m), r2 = a2.find(x => x.m === m);
+    const cell = (r, f) => r ? (r.nAnom>0 ? `<b>${fmt(f(r))}s</b> <span style="color:var(--muted);font-size:11px">(含异常 ${fmt(f(r,true))}s)</span>` : fmt(f(r))+"s") : "—";
+    const tpsCell = (r) => r ? (r.nAnom>0 ? `${fmt(r.tps)} / ${fmt(r.tpsAll)}` : fmt(r.tps)) + " t/s" : "—";
+    return {
+      m: `<span class="mod">${m}</span>`,
+      ch1: cell(r1, (r,all)=>all?r.ttftAll:r.ttft),
+      ch1t: cell(r1, (r,all)=>all?r.totalAll:r.total),
+      ch1p: tpsCell(r1),
+      n1: r1 ? `${r1.n}${r1.nAnom>0?` (含${r1.nAnom}异常)`:""}` : "0",
+      ch2: cell(r2, (r,all)=>all?r.ttftAll:r.ttft),
+      ch2t: cell(r2, (r,all)=>all?r.totalAll:r.total),
+      ch2p: tpsCell(r2),
+      n2: r2 ? `${r2.n}${r2.nAnom>0?` (含${r2.nAnom}异常)`:""}` : "0",
+    };
+  });
+  document.getElementById("tbl-backend-agg").innerHTML = tableHtml([
+    {t:"模型",k:"m"},
+    {t:"渠道1 首Token(均值)",k:"ch1",num:true},{t:"渠道1 总耗时(均值)",k:"ch1t",num:true},{t:"渠道1 速率",k:"ch1p",num:true},{t:"渠道1 次数",k:"n1",num:true},
+    {t:"渠道2 首Token(均值)",k:"ch2",num:true},{t:"渠道2 总耗时(均值)",k:"ch2t",num:true},{t:"渠道2 速率",k:"ch2p",num:true},{t:"渠道2 次数",k:"n2",num:true},
+  ], rows);
+})();
+
+/* 渠道1 明细表（aihubmix / Azure，含 End-to-end latency / Trace ID） */
+(function(){
+  const rows = BE_CH2.map(r => ({
+    _anom: !!r.anomaly,
+    t:r.t, m:`<span class="mod">${r.m}</span>`,
+    cost:"$"+fmt(Math.abs(r.cost),5), tok:`${r.tin} → ${r.tout}`,
+    st:`<span class="tag good">成功</span>`,
+    ttft:fmt(r.ttft,2)+"s", total:fmt(r.total,2)+"s",
+    tps:fmt(r.tps,1)+" t/s", price:r.price, ip:r.ip, tid:r.tid }));
+  document.getElementById("tbl-backend-ch1").innerHTML = tableHtml([
+    {t:"时间",k:"t"},{t:"模型",k:"m"},{t:"消耗",k:"cost",num:true},{t:"Tokens",k:"tok",num:true},
+    {t:"状态",k:"st"},{t:"首Token",k:"ttft",num:true},{t:"总耗时",k:"total",num:true},
+    {t:"速率",k:"tps",num:true},{t:"定价",k:"price"},{t:"IP",k:"ip"},{t:"Trace ID",k:"tid"},
+  ], rows);
+})();
+
+/* 渠道2 明细表（apiworld / apitest 消耗日志） */
+(function(){
+  const rows = BE_CH1.map(r => ({
+    _anom: !!r.anomaly,
+    t:r.t, up:r.up, user:r.user, m:`<span class="mod">${r.m}</span>`,
+    tps:"流"+r.tps+" t/s", tok:`${r.tin} / ${r.tout}`,
+    cost:"$"+fmt(r.cost,5), ttft:fmt(r.ttft,1)+"s", total:fmt(r.total,1)+"s", price:r.price }));
+  document.getElementById("tbl-backend-ch2").innerHTML = tableHtml([
+    {t:"时间",k:"t"},{t:"上游",k:"up"},{t:"用户",k:"user"},{t:"模型",k:"m"},
+    {t:"速率",k:"tps",num:true},{t:"Tokens 入/出",k:"tok",num:true},{t:"消耗",k:"cost",num:true},
+    {t:"首字",k:"ttft",num:true},{t:"耗时",k:"total",num:true},{t:"定价",k:"price"},
+  ], rows);
+})();
+
+/* apiworld 各上游 · 后台数据汇总 */
+(function(){
+  const UPCODE = { "#70":"京东云 Claude_B类", "#71":"UCloud GPT_offical", "#72":"UCloud Claude_offical",
+                   "#73":"京东云 GPT_B类", "#74":"Runapi Claude官方", "#75":"Runapi GPT官转" };
+  const codeOf = up => (up.match(/^#[0-9]+/) || ["?"])[0];
+  const byUp = {};
+  for (const r of BE_CH1) (byUp[codeOf(r.up)] = byUp[codeOf(r.up)] || []).push(r);
+  const rows = []; const chartByName = {};
+  for (const c of Object.keys(UPCODE)) {
+    const rs = byUp[c] || [];
+    for (const m of [...new Set(rs.map(r=>r.m))]) {
+      const ok = rs.filter(r => r.m===m && !r.anomaly);
+      if (!ok.length) continue;
+      const key = UPCODE[c]+"·"+m;
+      rows.push({ up: UPCODE[c], m:`<span class="mod">${m}</span>`,
+        n: rs.filter(r=>r.m===m).length,
+        ttft: fmt(avg(ok.map(r=>r.ttft)))+"s",
+        total: fmt(avg(ok.map(r=>r.total)))+"s",
+        tps: fmt(avg(ok.map(r=>r.tps)),1)+" t/s",
+        anom: rs.filter(r=>r.m===m&&r.anomaly).length });
+      chartByName[key] = avg(ok.map(r=>r.ttft));
+    }
+  }
+  document.getElementById("tbl-up-backend").innerHTML = tableHtml([
+    {t:"上游渠道",k:"up"},{t:"模型",k:"m"},{t:"次数",k:"n",num:true},
+    {t:"首Token均值",k:"ttft",num:true},{t:"耗时均值",k:"total",num:true},
+    {t:"速率均值",k:"tps",num:true},{t:"异常",k:"anom",num:true},
+  ], rows);
+  const groups = MODELS.map(m => ({
+    label: m,
+    series: Object.keys(chartByName).filter(k => k.endsWith("·"+m)).map(k => ({
+      name: k.replace("·"+m,""), value: chartByName[k],
+      color: k.includes("Runapi") ? "#ef4444" : "#0ea5e9"
+    }))
+  }));
+  renderBars(document.getElementById("chart-up-backend"), groups, { fmtV: v=>fmt(v)+"s" });
+})();
+
+/* ================= 3. 客户端 vs 后台（按上游） ================= */
+(function(){
+  const UPCODE = { "#70":"京东云 Claude_B类", "#71":"UCloud GPT_offical", "#72":"UCloud Claude_offical",
+                   "#73":"京东云 GPT_B类", "#74":"Runapi Claude官方", "#75":"Runapi GPT官转" };
+  const MODEL_UP = {
+    "gpt-5.6-sol": ["#71","#73","#75"],
+    "claude-opus-5": ["#70","#72","#74"],
+    "claude-fable-5": ["#70","#72","#74"],
+  };
+  const codeOf = up => (up.match(/^#[0-9]+/) || ["?"])[0];
+  function beStats(rows, m, upCode) {
+    const rs = rows.filter(r => r.m===m && !r.anomaly && (upCode ? codeOf(r.up)===upCode : r.up==null));
+    return rs.length ? avg(rs.map(r=>r.ttft)) : null;
+  }
+  const pairs = [];
+  for (const m of MODELS) {
+    pairs.push({ name:"aihubmix(基准)", m,
+      cl: UPSTREAM[m].find(x=>x.u.startsWith("aihubmix")).ttft, be: beStats(BE_CH2, m, null) });
+    for (const c of MODEL_UP[m]) {
+      const upName = UPCODE[c];
+      pairs.push({ name: upName, m, cl: UPSTREAM[m].find(x=>x.u===upName).ttft, be: beStats(BE_CH1, m, c) });
+    }
+  }
+  const groups = pairs.map(p => ({
+    label: `${p.name} · ${p.m}`,
+    series: [
+      { name:"客户端", value:p.cl, color:"#8b5cf6" },
+      { name:"后台",   value:p.be, color:"#22c55e" },
+    ]
+  }));
+  renderBars(document.getElementById("chart-compare"), groups, { fmtV: v=>fmt(v)+"s" });
+
+  const rows = pairs.map(p => {
+    const d = p.be==null || p.cl==null ? "—" : (p.be - p.cl);
+    const dstr = d==="—" ? "—" : (d>0 ? `+${fmt(d)}s` : `${fmt(d)}s`);
+    const cls = p.be!=null && p.cl!=null && (p.be - p.cl) > 2 ? `<span class="tag warn">差距大</span>` : "";
+    return { up:p.name, m:`<span class="mod">${p.m}</span>`,
+      cl: p.cl==null?"—":fmt(p.cl)+"s", be: p.be==null?"—":fmt(p.be)+"s", d: dstr+" "+cls };
+  });
+  document.getElementById("tbl-compare").innerHTML = tableHtml([
+    {t:"上游/渠道",k:"up"},{t:"模型",k:"m"},{t:"客户端 TTFT(均值)",k:"cl",num:true},
+    {t:"后台 首Token(均值)",k:"be",num:true},{t:"差值 (后台-客户端)",k:"d",num:true}], rows);
+})();
+
+</script>
+</body>
+</html>
