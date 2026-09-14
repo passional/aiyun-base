@@ -75,3 +75,6 @@ AGENTS.md
 .agent
 .workbuddy
 .pi/
+docker/mysql/
+docker/redis/
+uv.lock

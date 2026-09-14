@@ -64,8 +64,8 @@ dev = [
 default-groups = ["dev"]     # 本地 uv sync 含 dev；生产 pip -r requirements.txt 不含 pytest/ruff/fakeredis
 
 [[tool.uv.index]]
-name = "tuna"
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple"
 
 [tool.ruff]
 line-length = 200
