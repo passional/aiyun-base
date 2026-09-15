@@ -3,6 +3,9 @@
 from fastapi import APIRouter
 
 from app.modules.ai.chat.controller import ChatRouter
+from app.modules.channel_eval.platform.controller import PlatformRouter as ChannelEvalPlatformRouter
+from app.modules.channel_eval.report.controller import ReportRouter as ChannelEvalReportRouter
+from app.modules.channel_eval.run.controller import RunRouter as ChannelEvalRunRouter
 from app.modules.common.file.controller import FileRouter
 from app.modules.generator.gencode.controller import GenRouter
 from app.modules.monitor.cache.controller import CacheRouter
@@ -61,6 +64,11 @@ DOMAIN_CONTROLLERS: dict[str, list[APIRouter]] = {
     "/ai": [ChatRouter],
     "/generator": [GenRouter],
     "/common": [FileRouter],
+    "/channel_eval": [
+        ChannelEvalPlatformRouter,
+        ChannelEvalRunRouter,
+        ChannelEvalReportRouter,
+    ],
 }
 
 api_v1 = APIRouter()

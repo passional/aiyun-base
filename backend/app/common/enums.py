@@ -50,6 +50,7 @@ class RedisInitKeyConfig(Enum):
     APSCHEDULER_LOCK_KEY = {"key": "scheduler_job_lock", "remark": "定时任务初始化锁"}
     AI_MODEL_CONFIG = {"key": "ai_model_config", "remark": "用户AI模型配置"}
     WX_MINI_ACCESS_TOKEN = {"key": "wx_mini_access_token", "remark": "微信小程序 access_token 缓存"}
+    CHANNEL_EVAL_RUN_PROGRESS = {"key": "channel_eval_run_progress", "remark": "渠道评估运行进度"}
 
     @property
     def key(self) -> str:

@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     from app.core.database import async_engine
     from app.core.redis_crud import redis_connect
     from app.modules.ai.chat.crud import init_agno_tables
+    from app.modules.channel_eval.run.engine import recover_interrupted_runs
     from app.modules.system.dict.service import DictDataService
     from app.modules.system.params.service import ParamsService
     from app.scripts.initialize import InitializeData
@@ -33,6 +34,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     logger.info("✅ AI 会话表 初始化完成")
     await redis_connect(app, status=True)
     logger.info("✅ Redis 连接初始化完成")
+    recovered = await recover_interrupted_runs()
+    if recovered:
+        logger.info("✅ 渠道评估：已将 {} 个进程重启前执行中的运行置为 failed", recovered)
     await ParamsService.init_cache(redis=app.state.redis)
     logger.info("✅ Redis系统参数 初始化完成")
     await DictDataService.init_cache(redis=app.state.redis)
@@ -80,9 +84,11 @@ def register_exceptions(app: FastAPI) -> None:
 
 def register_routers(app: FastAPI) -> None:
     from app.api.v1.routers import api_v1
+
     app.include_router(api_v1)
 
     from app.core.discover import dynamic_router
+
     dynamic_router.init_app(app)
 
 

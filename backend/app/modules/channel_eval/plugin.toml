@@ -1,0 +1,8 @@
+# 见 docs/PLUGIN_ARCHITECTURE.md
+
+name = "channel_eval"
+title = "评估中心"
+version = "1.0.0"
+description = "渠道评估：平台管理、测试运行、对比报告。"
+optional = true
+tags = ["channel_eval", "eval", "report"]

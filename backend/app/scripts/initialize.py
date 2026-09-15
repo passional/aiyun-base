@@ -196,18 +196,39 @@ class InitializeData:
                 logger.error(f"❌️ 初始化 {table_name} 表数据失败")
                 raise
 
+        # 存量库菜单幂等合并：种子新增的「评估中心」菜单在已有数据的库上补齐（设计迁移计划：
+        # 已有环境重启即得菜单；新库由上方常规种子导入，此处跳过）
+        await self.__ensure_seed_menu_merged(db, route_name="ChannelEval", title="评估中心")
+
         if skipped:
             logger.info(f"⏭️  {len(skipped)} 张表已有数据，跳过初始化：{', '.join(skipped)}")
+
+    async def __ensure_seed_menu_merged(self, db: AsyncSession, *, route_name: str, title: str) -> None:
+        """按 route_name 幂等补齐种子新增的顶级菜单（含子树）到存量库。
+
+        常规种子导入对已有数据的表整体跳过，存量库无法获得新增菜单；
+        此处仅当该顶级菜单缺失时插入种子子树，重复执行不产生重复菜单。
+        """
+        from sqlalchemy import select
+
+        exists = await db.execute(select(MenuModel.id).where(MenuModel.route_name == route_name).limit(1))
+        if exists.first() is not None:
+            return
+        data = self.__load_json("sys_menu")
+        entry = next((m for m in data if m.get("route_name") == route_name), None)
+        if not entry:
+            logger.warning(f"⚠️ 种子 JSON 中未找到 {title}（{route_name}）菜单")
+            return
+        obj = self.__create_objects_with_children([entry], MenuModel)[0]
+        db.add(obj)
+        await db.flush()
+        logger.info(f"✅ 已向存量库补齐「{title}」菜单种子（幂等合并）")
 
     @staticmethod
     async def __create_dict_data_objs(db: AsyncSession, data: list[dict]) -> list[DictDataModel]:
         """字典数据种子：dict_type_id 通过查询库内字典类型解析。"""
         type_names = {item.get("dict_type") for item in data if item.get("dict_type")}
-        result = await db.execute(
-            select(DictTypeModel.dict_type, DictTypeModel.id).where(
-                DictTypeModel.dict_type.in_(type_names)
-            )
-        )
+        result = await db.execute(select(DictTypeModel.dict_type, DictTypeModel.id).where(DictTypeModel.dict_type.in_(type_names)))
         # Row[Tuple[str, int]] 静态类型上不是双元素 (key, value) 元组，dict(rows) 会被类型检查器拒绝；
         # 用下标显式拆出 (dict_type, id) 再构造，运行行为不变且类型清晰
         id_map: dict[str, int] = {row[0]: row[1] for row in result.all()}

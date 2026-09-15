@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>渠道评估对比报告 - {{ view.report.name }}</title>
+<style>
+  :root {
+    --text: #1f2328; --muted: #6a737d; --border: #d9dde3; --bg: #f6f8fa;
+    --accent: #3b82f6; --baseline: #f59e0b; --danger: #dc2626; --ok: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 24px; font: 14px/1.65 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--text); background: #fff; }
+  .container { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  .muted { color: var(--muted); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--border); margin-left: 6px; vertical-align: 1px; }
+  .tag.baseline { color: var(--baseline); border-color: var(--baseline); }
+  .tag.success { color: var(--ok); border-color: var(--ok); }
+  .tag.failed, .tag.cancelled { color: var(--danger); border-color: var(--danger); }
+  .card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; background: var(--bg); }
+  .kpis { display: flex; flex-wrap: wrap; gap: 12px; }
+  .kpi { flex: 1 1 140px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .kpi .num { font-size: 22px; font-weight: 600; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.baseline-row td { background: #fffbeb; }
+  .bar-wrap { background: #eef1f5; border-radius: 4px; height: 14px; position: relative; min-width: 120px; }
+  .bar { height: 100%; border-radius: 4px; background: var(--accent); }
+  .bar.baseline { background: var(--baseline); }
+  .legend { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 4px 0 12px; }
+  ul.plain { padding-left: 18px; margin: 6px 0; }
+  .conclusions li { margin: 4px 0; }
+  .note-box { white-space: pre-wrap; background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+  footer { margin-top: 40px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  {# ── 报告头 ── #}
+  <h1>渠道评估对比报告</h1>
+  <div class="muted">{{ view.report.name }} · 生成时间 {{ view.generated_at }}</div>
+
+  <div class="card">
+    <b>所选测试运行：</b>
+    {% if view.runs %}
+      {% for run in view.runs %}
+        {% if not run.is_baseline %}
+          #{{ run.id }} {{ run.platform_name }}（{{ run.status }}）{% if not loop.last %}、{% endif %}
+        {% endif %}
+      {% endfor %}
+    {% else %}—{% endif %}
+    <br>
+    <b>基准运行：</b>
+    {% if view.baseline_run %}
+      #{{ view.baseline_run.id }} {{ view.baseline_run.platform_name }}（{{ view.baseline_run.status }}）
+    {% else %}未选择{% endif %}
+  </div>
+
+  {# ── 关键指标概览 ── #}
+  <h2>关键指标概览</h2>
+  {% set all_combos = view.models | map(attribute='combos') | sum(start=[]) %}
+  {% set combo_total = all_combos | length %}
+  {% set sample_total = all_combos | map(attribute='executed') | sum %}
+  <div class="kpis">
+    <div class="kpi"><div class="num">{{ view.models | length }}</div><div class="label">对比模型数</div></div>
+    <div class="kpi"><div class="num">{{ combo_total }}</div><div class="label">对比组合数</div></div>
+    <div class="kpi"><div class="num">{{ sample_total }}</div><div class="label">样本总数（非热身）</div></div>
+    <div class="kpi"><div class="num">{{ view.anomalies | length }}</div><div class="label">异常/失败条目</div></div>
+    <div class="kpi"><div class="num">{{ view.conclusions | length }}</div><div class="label">自动结论条数</div></div>
+  </div>
+
+  {# ── 跨渠道对比（按模型分组） ── #}
+  <h2>跨渠道对比（按模型分组）</h2>
+  {% if not view.models %}
+    <p class="muted">无数据</p>
+  {% endif %}
+  {% for group in view.models %}
+    <h3>模型：{{ group.model }}{% if not group.has_baseline %} <span class="tag">无基准数据</span>{% endif %}</h3>
+
+    {# 客户端首 Token 时延对比图（纯 CSS 条形） #}
+    {% set ttft_values = group.combos | map(attribute='ttft_avg_ms') | select('ne', none) | list %}
+    {% if group.baseline and group.baseline.ttft_avg_ms is not none %}
+      {% set ttft_values = ttft_values + [group.baseline.ttft_avg_ms] %}
+    {% endif %}
+    {% set max_ttft = (ttft_values | max) if ttft_values else 0 %}
+    {% if max_ttft %}
+    <div class="card">
+      <div class="legend" style="margin:0 0 8px"><b>客户端首 Token 时延均值（ms）</b></div>
+      {% if group.baseline and group.baseline.ttft_avg_ms is not none %}
+        <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
+          <div style="width:220px; font-size:12px" class="muted">基准 · {{ group.baseline.channel_name }}</div>
+          <div class="bar-wrap"><div class="bar baseline" style="width: {{ (group.baseline.ttft_avg_ms / max_ttft * 100) | round(1) }}%"></div></div>
+          <div style="width:90px; font-size:12px">{{ group.baseline.ttft_avg_ms }} ms</div>
+        </div>
+      {% endif %}
+      {% for combo in group.combos %}
+        <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
+          <div style="width:220px; font-size:12px">#{{ combo.channel_id }} {{ combo.channel_name }}</div>
+          <div class="bar-wrap">
+            {% if combo.ttft_avg_ms is not none %}
+            <div class="bar" style="width: {{ (combo.ttft_avg_ms / max_ttft * 100) | round(1) }}%"></div>
+            {% endif %}
+          </div>
+          <div style="width:90px; font-size:12px">{% if combo.ttft_avg_ms is not none %}{{ combo.ttft_avg_ms }} ms{% else %}—{% endif %}</div>
+        </div>
+      {% endfor %}
+      <div class="legend"><span class="dot" style="background:var(--accent)"></span>待测渠道<span class="dot" style="background:var(--baseline)"></span>基准运行</div>
+    </div>
+    {% endif %}
+
+    {# 明细表 #}
+    <table>
+      <thead>
+        <tr>
+          <th>渠道</th><th>平台</th><th class="num">样本数</th><th class="num">成功率</th><th class="num">异常数</th>
+          <th class="num">客户端首Token(ms)</th><th class="num">客户端总耗时(ms)</th>
+          <th class="num">含异常总耗时(ms)</th><th class="num">速率(tokens/s)</th>
+          <th class="num">后台首字(ms)</th><th class="num">后台总耗时(ms)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if group.baseline %}
+        <tr class="baseline-row">
+          <td>#{{ group.baseline.channel_id }} {{ group.baseline.channel_name }}<span class="tag baseline">基准</span></td>
+          <td>{{ group.baseline.platform_name }}</td>
+          <td class="num">{{ group.baseline.success }}/{{ group.baseline.planned }}</td>
+          <td class="num">{% if group.baseline.success_rate is not none %}{{ (group.baseline.success_rate * 100) | round(1) }}%{% else %}—{% endif %}</td>
+          <td class="num">{{ group.baseline.anomaly }}</td>
+          <td class="num">{{ group.baseline.ttft_avg_ms if group.baseline.ttft_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ group.baseline.total_avg_ms if group.baseline.total_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ group.baseline.total_with_anomaly_avg_ms if group.baseline.total_with_anomaly_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ group.baseline.tps_avg if group.baseline.tps_avg is not none else '—' }}</td>
+          <td class="num">{{ group.baseline.be_frt_avg_ms if group.baseline.be_frt_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ group.baseline.be_use_time_avg_ms if group.baseline.be_use_time_avg_ms is not none else '—' }}</td>
+        </tr>
+        {% endif %}
+        {% for combo in group.combos %}
+        <tr>
+          <td>#{{ combo.channel_id }} {{ combo.channel_name }}{% if combo.is_baseline %}<span class="tag baseline">基准</span>{% endif %}</td>
+          <td>{{ combo.platform_name }}</td>
+          <td class="num">{{ combo.success }}/{{ combo.planned }}</td>
+          <td class="num">{% if combo.success_rate is not none %}{{ (combo.success_rate * 100) | round(1) }}%{% else %}—{% endif %}</td>
+          <td class="num">{{ combo.anomaly }}</td>
+          <td class="num">{{ combo.ttft_avg_ms if combo.ttft_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.total_avg_ms if combo.total_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.total_with_anomaly_avg_ms if combo.total_with_anomaly_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.tps_avg if combo.tps_avg is not none else '—' }}</td>
+          <td class="num">{{ combo.be_frt_avg_ms if combo.be_frt_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.be_use_time_avg_ms if combo.be_use_time_avg_ms is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% if not group.baseline %}
+        <tr><td colspan="11" class="muted">无基准数据</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+  {# ── 客户端实测与后台日志交叉对比 ── #}
+  <h2>客户端实测与后台日志交叉对比</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>模型</th><th>渠道</th><th>平台</th>
+        <th class="num">客户端首Token(ms)</th><th class="num">后台首字(ms)</th><th class="num">差值(ms)</th>
+        <th class="num">客户端总耗时(ms)</th><th class="num">后台总耗时(ms)</th><th class="num">差值(ms)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in view.models %}
+        {% for combo in group.combos %}
+        <tr>
+          <td>{{ group.model }}</td>
+          <td>#{{ combo.channel_id }} {{ combo.channel_name }}{% if combo.is_baseline %}<span class="tag baseline">基准</span>{% endif %}</td>
+          <td>{{ combo.platform_name }}</td>
+          <td class="num">{{ combo.ttft_avg_ms if combo.ttft_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.be_frt_avg_ms if combo.be_frt_avg_ms is not none else '—' }}</td>
+          <td class="num">{% if combo.cross_ttft_diff_ms is not none %}{{ '%+d' % combo.cross_ttft_diff_ms | round | int }}{% else %}—{% endif %}</td>
+          <td class="num">{{ combo.total_avg_ms if combo.total_avg_ms is not none else '—' }}</td>
+          <td class="num">{{ combo.be_use_time_avg_ms if combo.be_use_time_avg_ms is not none else '—' }}</td>
+          <td class="num">{% if combo.cross_total_diff_ms is not none %}{{ '%+d' % combo.cross_total_diff_ms | round | int }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="9" class="muted">无数据</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# ── 异常清单 ── #}
+  <h2>异常清单</h2>
+  <table>
+    <thead>
+      <tr><th>类型</th><th>运行</th><th>渠道</th><th>模型</th><th class="num">序号</th><th class="num">首Token(ms)</th><th class="num">总耗时(ms)</th><th>状态</th><th>后台配对</th><th>错误信息</th></tr>
+    </thead>
+    <tbody>
+      {% for item in view.anomalies %}
+      <tr>
+        <td>{% if item.kind == 'anomaly' %}<span class="tag failed">延迟超阈值</span>{% else %}<span class="tag failed">请求失败</span>{% endif %}</td>
+        <td>#{{ item.run_id }} {{ item.platform_name }}</td>
+        <td>#{{ item.channel_id }} {{ item.channel_name }}</td>
+        <td>{{ item.model }}</td>
+        <td class="num">{{ item.seq }}</td>
+        <td class="num">{{ item.ttft_ms if item.ttft_ms is not none else '—' }}</td>
+        <td class="num">{{ item.total_ms if item.total_ms is not none else '—' }}</td>
+        <td>{{ item.status }}</td>
+        <td>{% if item.be_matched %}已配对{% else %}后台无记录{% endif %}</td>
+        <td class="muted">{{ item.error or '—' }}</td>
+      </tr>
+      {% else %}
+        <tr><td colspan="10" class="muted">无异常样本</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# ── 自动结论与管理员备注 ── #}
+  <h2>自动结论与管理员备注</h2>
+  <ul class="plain conclusions">
+    {% for conclusion in view.conclusions %}
+      <li>{{ conclusion.content }}</li>
+    {% else %}
+      <li class="muted">无阈值性事实陈述</li>
+    {% endfor %}
+  </ul>
+  {% if view.report.note %}
+    <h3>管理员备注</h3>
+    <div class="note-box">{{ view.report.note }}</div>
+  {% endif %}
+
+  {# ── 指标口径说明 ── #}
+  <h2>指标口径说明</h2>
+  <ul class="plain muted">
+    <li>客户端实测：评估系统以真实流式请求（stream + include_usage）向平台发起测得；首 Token 时延 = 发出请求到收到第一个内容分片；总耗时 = 至流式结束；速率 = 输出 tokens ÷（总耗时 − 首 Token 时延）。</li>
+    <li>后台日志：平台侧 new-api 记录的每请求数据（other.frt 首字毫秒 / use_time 秒），运行结束后按请求标识 1:1 配对写回；未配对样本标注「后台无记录」，不凭空填值。</li>
+    <li>聚合口径：任何均值基于剔除热身与异常（延迟超过异常阈值，默认 30 秒）后的成功样本；并列给出含异常参考均值；失败样本只计入成功率。</li>
+    <li>成功率 = 成功样本数 ÷ 计划请求次数（热身不计入统计）。</li>
+    <li>基准对比：基准数据取管理员选定的基准渠道运行快照；基准未覆盖的模型显示「无基准数据」。</li>
+    <li>自动结论仅陈述阈值性事实（客户端指标高于基准 2 秒及以上、出现异常样本、成功率非 100%），不含评价性措辞。</li>
+    <li>本文件为导出时刻的数据快照，之后运行数据或基准选择的变化不影响本文件内容。</li>
+  </ul>
+
+  <footer>
+    渠道评估对比报告 · 由 FastapiAdmin 渠道评估模块生成 · 自包含 HTML（离线可打开，无外部依赖）
+  </footer>
+</div>
+
+<script type="application/json" id="report-data">
+{{ view | tojson }}
+</script>
+</body>
+</html>
