@@ -25,7 +25,9 @@ const __APP_INFO__ = {
 export default ({ mode }: { mode: string }) => {
   const root = process.cwd();
   const env = loadEnv(mode, root);
-  const isProduction = mode === "prod";
+  // Vite 构建时 mode 默认值为 "production"（pnpm build / pnpm build:prod 都是），
+  // 早先误写成 "prod" 导致生产构建拿不到压缩与 DevTools 剔除，此处已修正。
+  const isProduction = mode === "production";
 
   return defineConfig({
     define: {
