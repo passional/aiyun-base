@@ -11,11 +11,11 @@
 
 ```
                     内网用户浏览器
-                          │  https://<服务器IP>:8443
+                          │  https://<服务器IP>:8433
                           ▼
               ┌───────────────────────┐
               │ Windows 宿主（如有）    │   ← IIS 占用 80/443，需做端口转发
-              │ 见 2.5 节              │      把 8443 转发进虚拟机
+              │ 见 2.5 节              │      把 8433 转发进虚拟机
               └───────────┬───────────┘
                           ▼
               ┌───────────────────────┐
@@ -37,7 +37,7 @@
 
 | 服务 | 容器内端口 | 宿主机端口 | 说明 |
 |------|-----------|-----------|------|
-| nginx | 443（TLS） | `${BIND_IP}:${HTTPS_PORT}`（默认 `0.0.0.0:8443`） | **唯一对外暴露的端口**。设 `BIND_IP` 可限制到内网 IP，见第 2 节 |
+| nginx | 443（TLS） | `${BIND_IP}:${HTTPS_PORT}`（默认 `0.0.0.0:8433`） | **唯一对外暴露的端口**。设 `BIND_IP` 可限制到内网 IP，见第 2 节 |
 | backend | 8001 | `127.0.0.1:${BACKEND_PORT}` | 仅回环。外部请求统一走 nginx（限流 / 安全头） |
 | mysql | 3306 | `127.0.0.1:${MYSQL_PORT}` | 仅回环，供服务器上调试用 |
 | redis | 6379 | `127.0.0.1:${REDIS_PORT}` | 仅回环 |
@@ -46,17 +46,17 @@
 > 若需要从内网其他机器直连后端调试，把 `docker-compose.yaml` 中 backend 的
 > 端口映射改回 `"${BACKEND_PORT:-8001}:8001"` 后重新 `./deploy.sh`。
 
-> **为什么用 8443 而不是 443**：宿主机上已有 IIS 占用 80/443（见 2.5 节）。
+> **为什么用 8433 而不是 443**：宿主机上已有 IIS 占用 80/443（见 2.5 节）。
 > 容器内 nginx **始终监听标准端口 443**，`HTTPS_PORT` 只决定宿主机侧的映射端口。
 
 ### 访问地址
 
 | 用途 | 地址 |
 |------|------|
-| 系统首页 | `https://<服务器IP>:8443/web`（访问 `https://<服务器IP>:8443/` 会 302 跳转过去） |
-| Swagger 接口文档 | `https://<服务器IP>:8443/api/v1/docs` |
-| ReDoc 接口文档 | `https://<服务器IP>:8443/api/v1/redoc` |
-| 健康检查 | `https://<服务器IP>:8443/api/v1/monitor/health/check` |
+| 系统首页 | `https://<服务器IP>:8433/web`（访问 `https://<服务器IP>:8433/` 会 302 跳转过去） |
+| Swagger 接口文档 | `https://<服务器IP>:8433/api/v1/docs` |
+| ReDoc 接口文档 | `https://<服务器IP>:8433/api/v1/redoc` |
+| 健康检查 | `https://<服务器IP>:8433/api/v1/monitor/health/check` |
 | 默认账号 | `admin` / `123456`（**首次登录后请立即修改**） |
 
 > **首次访问会有证书告警**：因为是自签证书，浏览器会提示「您的连接不是私密连接」。
@@ -80,8 +80,8 @@ docker compose version
 # 3. 磁盘空间（镜像 + 数据库，建议预留 20GB 以上）
 df -h /opt
 
-# 4. HTTPS_PORT 不能被占用（默认 8443）
-sudo ss -lntp | grep ':8443 '
+# 4. HTTPS_PORT 不能被占用（默认 8433）
+sudo ss -lntp | grep ':8433 '
 ```
 
 ### 2.1 Compose 必须是 v2，不能用 docker-compose v1
@@ -144,7 +144,7 @@ Docker 发布端口是在 iptables 的 `nat` 表做 DNAT，包到达 `filter` �
 
 | 命令 | 对 Docker 发布的端口 |
 |------|---------------------|
-| `ufw allow 8443/tcp` | 不生效（空操作） |
+| `ufw allow 8433/tcp` | 不生效（空操作） |
 | `ufw deny 8001` | 不生效，拦不住 |
 
 **不要指望 ufw 拦住 Docker 端口。** 要拦必须用 `DOCKER-USER` 链（见下）。
@@ -157,7 +157,7 @@ Docker 发布端口是在 iptables 的 `nat` 表做 DNAT，包到达 `filter` �
 
 #### 严格做到「只能内网访问」
 
-`ufw allow 8443` 的语义是「对任何能路由到本机的地址放行」，**不等于**「只对内网」。
+`ufw allow 8433` 的语义是「对任何能路由到本机的地址放行」，**不等于**「只对内网」。
 服务器若有 VPN、跳板机或第二张网卡，范围就超出预期。
 
 **做法 A（推荐）：把 nginx 也绑到内网 IP**
@@ -175,7 +175,7 @@ BIND_IP=192.168.10.15     # 换成服务器内网 IP
 
 ```bash
 # 假设内网网段是 192.168.10.0/24
-sudo iptables -I DOCKER-USER -p tcp --dport 8443 ! -s 192.168.10.0/24 -j DROP
+sudo iptables -I DOCKER-USER -p tcp --dport 8433 ! -s 192.168.10.0/24 -j DROP
 
 # 重启后保留需额外安装
 sudo apt install iptables-persistent && sudo netfilter-persistent save
@@ -194,14 +194,14 @@ sudo ufw enable
 #### 验证
 
 ```bash
-# 1. 确认只有 nginx 监听在网络接口上（期望只看到 :8443）
+# 1. 确认只有 nginx 监听在网络接口上（期望只看到 :8433）
 sudo ss -lntp | grep -v '127.0.0.1\|\[::1\]'
 
 # 2. 确认 backend / MySQL / Redis 都只在回环（期望全部是 127.0.0.1）
 sudo ss -lntp | grep -E ':(8001|3306|6379)'
 
 # 3. 从内网另一台机器验证可达性（自签证书，必须加 -k）
-curl -kI https://<服务器IP>:8443/web/     # 期望 200 或 302
+curl -kI https://<服务器IP>:8433/web/     # 期望 200 或 302
 ```
 
 ### 2.5 如果服务器是虚拟机（宿主上有 IIS）
@@ -224,11 +224,11 @@ ip route | grep default
 **在 Windows 宿主上以管理员身份执行**（`cmd` 或 PowerShell）：
 
 ```cmd
-:: 1. 把宿主的 8443 转发到虚拟机的 8443
-netsh interface portproxy add v4tov4 listenport=8443 listenaddress=192.168.10.15 connectport=8443 connectaddress=192.168.115.129
+:: 1. 把宿主的 8433 转发到虚拟机的 8433
+netsh interface portproxy add v4tov4 listenport=8433 listenaddress=192.168.10.15 connectport=8433 connectaddress=192.168.115.129
 
 :: 2. 放行防火墙（不加这条，转发规则依然不通）
-netsh advfirewall firewall add rule name="aiyun-base-8443" dir=in action=allow protocol=TCP localport=8443
+netsh advfirewall firewall add rule name="aiyun-base-8433" dir=in action=allow protocol=TCP localport=8433
 
 :: 3. 查看已有规则
 netsh interface portproxy show all
@@ -239,13 +239,13 @@ netsh interface portproxy show all
 - `connectaddress` 填**虚拟机**的地址（用 `ip route get 1.1.1.1` 在虚拟机里查）
 - 虚拟机必须用**固定 IP**。VMware 的 NAT DHCP 会换地址，换了之后转发就失效
 - `portproxy` 是 TCP 层转发，WebSocket 可以正常穿透，不需要额外配置
-- 删除规则：`netsh interface portproxy delete v4tov4 listenport=8443 listenaddress=192.168.10.15`
+- 删除规则：`netsh interface portproxy delete v4tov4 listenport=8433 listenaddress=192.168.10.15`
 
 **验证**：在 Windows 宿主上先确认转发本身通
 
 ```cmd
-curl -k https://192.168.115.129:8443/web/     :: 直连虚拟机
-curl -k https://192.168.10.15:8443/web/       :: 走转发
+curl -k https://192.168.115.129:8433/web/     :: 直连虚拟机
+curl -k https://192.168.10.15:8433/web/       :: 走转发
 ```
 
 两条都应返回 200/302。第二条不通就检查防火墙规则。
@@ -259,7 +259,7 @@ curl -k https://192.168.10.15:8443/web/       :: 走转发
 `frontend/web/.env.production` 里有一个**必须改**的值：
 
 ```env
-VITE_APP_WS_ENDPOINT = wss://192.168.10.15:8443
+VITE_APP_WS_ENDPOINT = wss://192.168.10.15:8433
 ```
 
 这个地址用于 WebSocket 连接，AI 对话、文件传输进度、渠道评估进度都依赖它。
@@ -268,8 +268,8 @@ VITE_APP_WS_ENDPOINT = wss://192.168.10.15:8443
 
 | 部署方式 | 协议 | 示例 |
 |---------|------|------|
-| HTTPS（8443，本方案） | **`wss://`** | `wss://192.168.10.15:8443` |
-| 纯 HTTP | `ws://` | `ws://192.168.10.15:8443` |
+| HTTPS（8433，本方案） | **`wss://`** | `wss://192.168.10.15:8433` |
+| 纯 HTTP | `ws://` | `ws://192.168.10.15:8433` |
 
 **协议必须和部署方式一致，且端口号不能省**（不是 443 就必须写出来）。
 写错的典型表现是：页面能打开，但 AI 对话发不出消息、进度条一直不动。
@@ -439,14 +439,14 @@ REDIS_PASSWORD=<强密码>
 
 MYSQL_DATABASE=fastapiadmin
 MYSQL_USER=fastapiadmin
-HTTPS_PORT=8443
+HTTPS_PORT=8433
 BACKEND_PORT=8001
 DEPLOY_ENV=prod
 LOGGER_LEVEL=INFO
 ```
 
 > 如果服务器是虚拟机、且宿主上还有别的服务占端口，`HTTPS_PORT` 可以改成
-> 宿主上任意空闲端口（例如 8443 被占时改用 9443）。改完记得同步更新
+> 宿主上任意空闲端口（例如 8433 被占时改用 9443）。改完记得同步更新
 > `frontend/web/.env.production` 的 `VITE_APP_WS_ENDPOINT` 并重新构建前端。
 
 ### 5.2 配置 `backend/env/.env.prod`
@@ -510,7 +510,7 @@ openssl x509 -in docker/nginx/ssl/server.pem -noout -text | grep -A1 "Subject Al
 cd docker && docker compose restart nginx
 ```
 
-生成了新的证书后重跑 `curl -k https://127.0.0.1:8443/web/` 验证。
+生成了新的证书后重跑 `curl -k https://127.0.0.1:8433/web/` 验证。
 
 > **不要用 `-ext subjectAltName`**：那是 OpenSSL 3.x 才有的选项，CentOS 7 自带的
 > 1.0.2 会直接报 `unknown option -ext`。上面用的 `-text | grep` 在新旧版本上都能跑。
@@ -532,13 +532,13 @@ cd /opt/aiyun-base/docker && docker compose ps
 cd /opt/aiyun-base && ./deploy.sh verify
 
 # 3. 前端静态页（-k 跳过自签证书校验）
-curl -kI https://127.0.0.1:8443/web/
+curl -kI https://127.0.0.1:8433/web/
 
 # 4. 后端 API —— 这条才是整条链路（nginx → backend → MySQL/Redis）的验证
-curl -k https://127.0.0.1:8443/api/v1/monitor/health/check
+curl -k https://127.0.0.1:8433/api/v1/monitor/health/check
 
 # 5. 确认证书内容正确
-echo | openssl s_client -connect 127.0.0.1:8443 2>/dev/null |
+echo | openssl s_client -connect 127.0.0.1:8433 2>/dev/null |
   openssl x509 -noout -text | grep -A1 "Subject Alternative Name"
 ```
 
@@ -548,7 +548,7 @@ echo | openssl s_client -connect 127.0.0.1:8443 2>/dev/null |
 > 这个报错跟后端健康状况无关，只说明「不该绕过 nginx 直连」。走后端一律经
 > nginx，也就是上面第 4 条。
 
-然后在**内网的其他机器**上用浏览器打开 `https://<服务器IP>:8443/`，
+然后在**内网的其他机器**上用浏览器打开 `https://<服务器IP>:8433/`，
 会先弹出证书告警（点「高级」→「继续前往」），然后跳到登录页，
 用 `admin` / `123456` 登录。
 
@@ -634,7 +634,7 @@ gunzip -c ~/backup-db-2026-01-01.sql.gz | \
 | 访问 IP 返回 **400 Invalid host header** | `backend/env/.env.prod` 的 `ALLOWED_HOSTS` 没设成 `["*"]`（注意必须是 JSON 数组格式），改完执行 `./deploy.sh` 重建镜像 |
 | 浏览器提示「连接不是私密连接」 | **正常现象**，自签证书必然如此。点「高级」→「继续前往」。见第 10 节 |
 | 浏览器报 `NET::ERR_CERT_COMMON_NAME_INVALID` | 证书里的 IP 和实际访问的 IP 不一致。按第 5.4 节重新生成证书 |
-| 从内网机器打不开，但服务器本机 `curl -k https://127.0.0.1:8443` 正常 | 虚拟机 NAT 网络没做端口转发。见第 2.5 节 |
+| 从内网机器打不开，但服务器本机 `curl -k https://127.0.0.1:8433` 正常 | 虚拟机 NAT 网络没做端口转发。见第 2.5 节 |
 | nginx 容器反复重启（`Restarting`） | 配置语法错误或证书缺失。`docker compose logs nginx` 看具体行号；或 `docker exec nginx nginx -t` |
 | nginx 报 `cannot load certificate` | `docker/nginx/ssl/server.pem` / `server.key` 不存在。按第 5.4 节生成 |
 | **502 Bad Gateway** | 后端没起来。`docker compose logs backend` 看报错，常见是 MySQL/Redis 连不上或 `SECRET_KEY` 等必填项缺失 |
@@ -642,7 +642,7 @@ gunzip -c ~/backup-db-2026-01-01.sql.gz | \
 | 前端白屏 / 刷新 404 | `docker/nginx/web/dist` 目录不存在或内容为空，重新构建上传 |
 | MySQL 起不来，日志报权限错误 | `sudo chown -R 999:999 docker/mysql/data && sudo chmod -R 755 docker/mysql/data` |
 | HTTPS_PORT 冲突 | 改 `docker/.env` 的 `HTTPS_PORT`（如 9443），重新 `./deploy.sh`，访问地址变成 `https://<IP>:9443`；**同时要改 `VITE_APP_WS_ENDPOINT` 并重新构建前端** |
-| AI 对话 / 进度条不更新 | `frontend/web/.env.production` 的 `VITE_APP_WS_ENDPOINT` 配错。HTTPS 部署必须是 `wss://<IP>:8443`，改完**重新构建前端并上传** |
+| AI 对话 / 进度条不更新 | `frontend/web/.env.production` 的 `VITE_APP_WS_ENDPOINT` 配错。HTTPS 部署必须是 `wss://<IP>:8433`，改完**重新构建前端并上传** |
 | WebSocket 报 `Mixed Content` 被浏览器拦截 | 页面是 https 但 WS 用了 `ws://`。改成 `wss://` 后重新构建前端 |
 | 登录后立刻掉线 | `SECRET_KEY` 变更导致已签发的 JWT 失效，重新登录即可；若持续掉线检查 Redis 是否正常 |
 | 上传大文件失败 | nginx `client_max_body_size` 为 50m，如需调大改 `docker/nginx/nginx.conf` 后 `docker compose restart nginx` |
@@ -671,7 +671,7 @@ gunzip -c ~/backup-db-2026-01-01.sql.gz | \
 
 ## 10. 关于自签证书
 
-本方案用 HTTPS（8443），属于**安全上下文**，浏览器的 `navigator.clipboard`、
+本方案用 HTTPS（8433），属于**安全上下文**，浏览器的 `navigator.clipboard`、
 Service Worker 等能力均可正常使用。
 
 代价是每次访问都有证书告警，需要用户手动点一次「继续前往」。
