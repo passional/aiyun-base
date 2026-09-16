@@ -182,7 +182,8 @@ class Settings(BaseSettings):
     # ================================================= #
     # ******************* 安全中间件配置 ****************** #
     # ================================================= #
-    ALLOWED_HOSTS: list[str] = ["service.fastapiadmin.com", "*.fastapiadmin.com"]  # 允许访问的主机名列表
+    ALLOWED_HOSTS: list[str] = ["service.fastapiadmin.com", "*.fastapiadmin.com"]  # 允许访问的主机名列表（内网用 IP 访问时需设为 ["*"]）
+    HTTPS_REDIRECT_ENABLE: bool = True  # 是否强制 HTTP → HTTPS 重定向（仅 prod 生效；内网纯 HTTP 部署必须设为 False）
 
     # 接口白名单（无需认证即可访问的接口路径，支持 * 开头表示前缀匹配）
     WHITE_API_LIST_PATH: list[str] = [
@@ -260,7 +261,7 @@ class Settings(BaseSettings):
     @property
     def MIDDLEWARE_LIST(self) -> list[str | None]:
         MIDDLEWARES: list[str | None] = [
-            "app.core.middlewares.CustomHTTPSRedirectMiddleware" if self.ENVIRONMENT == EnvironmentEnum.PROD else None,
+            "app.core.middlewares.CustomHTTPSRedirectMiddleware" if self.ENVIRONMENT == EnvironmentEnum.PROD and self.HTTPS_REDIRECT_ENABLE else None,
             "app.core.middlewares.CustomTrustedHostMiddleware" if self.ENVIRONMENT == EnvironmentEnum.PROD else None,
             "app.core.middlewares.CustomCORSMiddleware",
             "app.core.middlewares.RequestLogMiddleware",
