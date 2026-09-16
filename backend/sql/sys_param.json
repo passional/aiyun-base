@@ -58,7 +58,7 @@
     {
         "config_name": "备案号",
         "config_key": "keep_record",
-        "config_value": "陕ICP备2025069493号-1",
+        "config_value": "",
         "config_type": true,
         "status": 0,
         "description": "ICP备案号"

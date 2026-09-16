@@ -4,21 +4,25 @@
       <div class="fa-card relative flex flex-col justify-center h-30 px-5">
         <div class="flex items-center justify-between">
           <span class="text-sm text-g-600">{{ item.des }}</span>
-          <ElTag v-if="item.tag" :type="item.tagType || 'danger'" size="small">
+          <ElTag v-if="loaded && item.tag" :type="item.tagType || 'danger'" size="small">
             {{ item.tag }}
           </ElTag>
         </div>
 
         <div class="flex items-center justify-between mt-2">
           <div class="flex items-center gap-2">
-            <span v-if="item.animatedCount" class="text-lg font-medium">
-              {{ item.animatedCount }}
-            </span>
-            <FaCountTo v-else class="text-lg font-medium" :target="item.num" :duration="1300" />
-            <span v-if="item.status" class="text-xs" :class="item.statusColor || 'text-success'">
-              <ElIcon v-if="item.statusIcon"><component :is="item.statusIcon" /></ElIcon>
-              {{ item.status }}
-            </span>
+            <!-- 数值仅在拿到真实数据后呈现，失败/无权限时不显示任何数字 -->
+            <template v-if="loaded">
+              <span v-if="item.animatedCount" class="text-lg font-medium">
+                {{ item.animatedCount }}
+              </span>
+              <FaCountTo v-else class="text-lg font-medium" :target="item.num" :duration="1300" />
+              <span v-if="item.status" class="text-xs" :class="item.statusColor || 'text-success'">
+                <ElIcon v-if="item.statusIcon"><component :is="item.statusIcon" /></ElIcon>
+                {{ item.status }}
+              </span>
+            </template>
+            <span v-else class="text-lg font-medium text-g-500">—</span>
           </div>
           <div
             v-if="item.icon"
@@ -37,7 +41,7 @@
         </div>
 
         <div class="flex items-center justify-between mt-1 text-xs text-g-600">
-          <span>
+          <span v-if="loaded">
             <template v-if="item.change !== undefined">
               较上周
               <span :class="item.change.indexOf('+') === 0 ? 'text-success' : 'text-danger'">
@@ -48,7 +52,8 @@
               {{ item.totalLabel }}：{{ item.totalValue }}
             </template>
           </span>
-          <span v-if="item.updateTime">{{ item.updateTime }}</span>
+          <span v-else-if="statsMessage" class="text-danger">{{ statsMessage }}</span>
+          <span v-if="loaded && item.updateTime">{{ item.updateTime }}</span>
         </div>
       </div>
     </ElCol>
@@ -56,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, markRaw, type Component } from "vue";
+import { ref, computed, onMounted, markRaw, type Component } from "vue";
 import { Connection } from "@element-plus/icons-vue";
 import { checkPerm } from "@/utils/checkPerm";
 import DashboardAPI from "@/api/module_monitor/dashboard";
@@ -82,9 +87,27 @@ interface CardDataItem {
   animatedCount?: number;
 }
 
-const now = new Date();
+/**
+ * 统计块状态。数值只在 ready 时呈现；failed / forbidden 一律不显示预设数值，
+ * 而是给出可见的失败或空状态。
+ */
+type StatsState = "loading" | "ready" | "failed" | "forbidden";
+
+const STATS_PERM = "module_monitor:dashboard:query";
+
+const statsState = ref<StatsState>("loading");
+const loaded = computed(() => statsState.value === "ready");
+const statsMessage = computed(() => {
+  if (statsState.value === "failed") return "数据加载失败";
+  if (statsState.value === "forbidden") return "无查看权限";
+  return "";
+});
+
 const pad = (n: number) => String(n).padStart(2, "0");
-const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+const nowStamp = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
 
 const dataList = ref<CardDataItem[]>([
   {
@@ -100,7 +123,6 @@ const dataList = ref<CardDataItem[]>([
     status: "已连接",
     statusColor: "text-success",
     statusIcon: markRaw(Connection),
-    updateTime: timeStr,
   },
   {
     des: "注册用户",
@@ -127,16 +149,21 @@ const dataList = ref<CardDataItem[]>([
 ]);
 
 async function loadStats() {
-  // 无权限则跳过 API 调用，避免 403 错误
-  if (!checkPerm("module_monitor:dashboard:query")) return;
+  // 无权限则跳过 API 调用，避免 403 错误；同时不呈现任何数值
+  if (!checkPerm(STATS_PERM)) {
+    statsState.value = "forbidden";
+    return;
+  }
 
   try {
     const { data: res } = await DashboardAPI.getStats();
     const stats = res?.data as DashboardStats | undefined;
-    if (!stats) return;
+    if (!stats) {
+      statsState.value = "failed";
+      return;
+    }
 
-    const now2 = new Date();
-    const ts = `${now2.getFullYear()}-${pad(now2.getMonth() + 1)}-${pad(now2.getDate())} ${pad(now2.getHours())}:${pad(now2.getMinutes())}:${pad(now2.getSeconds())}`;
+    const ts = nowStamp();
 
     // 在线用户（第1个卡片）
     dataList.value[0]!.num = stats.online_users;
@@ -151,8 +178,11 @@ async function loadStats() {
     dataList.value[2]!.num = stats.today_login_count;
     dataList.value[2]!.totalValue = stats.today_unique_users;
     dataList.value[2]!.animatedCount = stats.today_login_count;
+
+    statsState.value = "ready";
   } catch {
-    // 接口错误不影响页面渲染
+    // 接口失败必须可见：不回退到任何预设数值
+    statsState.value = "failed";
   }
 }
 

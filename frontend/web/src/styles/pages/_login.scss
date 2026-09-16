@@ -270,14 +270,6 @@ html.dark .login-page-panel {
   min-height: 42px;
 }
 
-// 桌面端按钮保持原始高度；H5 由 ConfigProvider size="small" 接管
-@media (width >= 768px) {
-  .login-secondary-actions .login-secondary-btn {
-    height: 42px;
-    border-radius: 8px;
-  }
-}
-
 html.dark {
   .login-page-form .el-input__wrapper {
     background-color: rgb(255 255 255 / 6%) !important;
@@ -307,25 +299,6 @@ html.dark {
 
   .login-remember .el-checkbox__label {
     color: rgb(255 255 255 / 65%);
-  }
-
-  .login-secondary-btn {
-    color: rgb(255 255 255 / 85%) !important;
-    background: transparent !important;
-    border-color: rgb(255 255 255 / 22%) !important;
-    border-radius: 8px;
-
-    &:hover {
-      color: var(--el-color-primary) !important;
-      background: var(--el-color-primary-light-9) !important;
-      border-color: var(--el-color-primary) !important;
-    }
-  }
-
-  @media (width >= 768px) {
-    .login-secondary-actions .login-secondary-btn {
-      height: 42px;
-    }
   }
 }
 
@@ -452,50 +425,4 @@ html.dark {
       border-color: var(--el-color-primary);
     }
   }
-}
-
-// ── 第三方登录区 ──
-.login-third-on-dark {
-  margin-top: 1rem;
-
-  .divider-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .divider-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--el-border-color-lighter), transparent);
-  }
-
-  .divider-text {
-    padding: 0 12px;
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-    white-space: nowrap;
-  }
-}
-
-html.dark .login-third-on-dark {
-  .divider-line {
-    background: linear-gradient(to right, transparent, rgb(255 255 255 / 15%), transparent);
-  }
-
-  .divider-text {
-    color: rgb(255 255 255 / 38%);
-  }
-}
-
-.oauth-social-btn:hover {
-  background-color: var(--el-fill-color-light);
-}
-
-.oauth-social-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--el-color-primary-light-7);
-}
-
-html.dark .oauth-social-btn:hover {
-  background-color: rgb(255 255 255 / 10%);
 }

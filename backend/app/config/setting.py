@@ -137,7 +137,9 @@ class Settings(BaseSettings):
     # ***************** 第三方 OAuth 登录（可选）********* #
     # ================================================= #
     OAUTH_DEFAULT_ROLE_IDS: list[int] = [2]
-    OAUTH_FRONTEND_FALLBACK: str = "http://127.0.0.1:5173/login"
+    # 第三方登录回退的前端地址（如 https://admin.example.com/login）。
+    # 默认留空：未注入时不回退到任何写死的地址；state 中已还原的前端地址不受影响。
+    OAUTH_FRONTEND_FALLBACK: str = ""
     OAUTH_GITHUB_CLIENT_ID: str = ""
     OAUTH_GITHUB_CLIENT_SECRET: str = ""
     OAUTH_GITEE_CLIENT_ID: str = ""

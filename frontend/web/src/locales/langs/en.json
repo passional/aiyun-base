@@ -37,8 +37,6 @@
       "changeLog": "Release notes",
       "paramConfig": "Config center",
       "docs": "Document",
-      "github": "Github",
-      "gitee": "Gitee",
       "tour": "Guided tour",
       "lockScreen": "Lock screen",
       "logout": "Log out"
@@ -344,30 +342,12 @@
     "title": "Welcome back 👋",
     "subTitle": "Enter your account details to start managing your project",
     "versionLabel": "Version",
-    "quickSelectAccount": "Quick select account",
-    "mobileLogin": "Mobile login",
-    "mobileLoginSubTitle": "Enter your mobile number to start managing your projects",
-    "mobilePhonePlaceholder": "Mobile number",
-    "getSmsCode": "Get code",
-    "smsCodeSentMock": "Verification code sent (demo only)",
-    "smsCodeRequired": "Enter the 6-digit SMS code",
-    "mobileLoginPending": "Mobile login API is not connected yet — UI preview only",
-    "backToAccountLogin": "Back",
-    "qrLogin": "QR code login",
-    "qrLoginTitle": "Welcome back 📱",
-    "qrLoginSubTitle": "Scan the QR code with your phone to sign in",
-    "qrLoginHint": "After scanning, tap Confirm on your phone to finish signing in",
     "oauthNoticeTitle": "Notice",
     "oauthLoginSuccess": "Signed in with your social account",
     "oauthLoginFailed": "Social sign-in failed. Try username and password.",
     "comingSoon": "Coming soon",
     "accountLoginTab": "Account",
     "quickLoginTab": "Quick login",
-    "roles": {
-      "super": "Super Admin",
-      "admin": "Admin",
-      "user": "User"
-    },
     "placeholder": {
       "username": "Please enter account",
       "password": "Please enter password",
@@ -432,13 +412,6 @@
         "required": "Please agree to the User Agreement"
       }
     },
-    "oauthTooltip": {
-      "wechat": "WeChat",
-      "qq": "QQ",
-      "github": "GitHub",
-      "gitee": "Gitee"
-    },
-    "otherLoginMethods": "Other",
     "resetPassword": "Reset password",
     "thinkOfPasswd": "Remember your password?",
     "agree": "I have read and agree to the",
@@ -550,9 +523,6 @@
     "home": {
       "title": "Home"
     },
-    "workplace": {
-      "title": "Workbench"
-    },
     "fachat": {
       "title": "Fachat"
     },
@@ -560,9 +530,6 @@
       "title": "Release notes"
     },
     "dashboard": {
-      "title": "Dashboard",
-      "workplace": "Workplace",
-      "analysis": "Analysis",
       "visualization": "3D Visualization",
       "pricing": "Pricing",
       "tutorial": "User manual"

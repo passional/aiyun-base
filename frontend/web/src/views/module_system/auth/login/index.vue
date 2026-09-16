@@ -42,45 +42,24 @@
                       <p class="sub-title">{{ panelSubTitle }}</p>
                     </div>
 
-                    <template v-if="authPanel === 'login'">
-                      <template v-if="loginFlowMode === 'account'">
-                        <FaLoginAccountForm
-                          ref="accountFormRef"
-                          v-model:is-passing="isPassing"
-                          v-model:is-click-pass="isClickPass"
-                          v-model:login-form="loginForm"
-                          :rules="rules"
-                          :captcha-state="captchaState"
-                          :code-loading="codeLoading"
-                          :demo-account-key="demoAccountKey"
-                          :accounts="accounts"
-                          :form-key="formKey"
-                          :is-dark="isDark"
-                          :drag-verify-text-color="dragVerifyTextColor"
-                          :loading="loading"
-                          @submit="handleSubmit"
-                          @setup-account="setupAccount"
-                          @get-captcha="getCaptcha"
-                          @open-mobile="openMobileLogin"
-                          @open-qr="openQrLogin"
-                          @forget="setAuthPanel('forget')"
-                          @register="setAuthPanel('register')"
-                          @oauth="handleOAuthLogin"
-                        />
-                      </template>
-
-                      <FaLoginMobilePanel
-                        v-else-if="loginFlowMode === 'mobile'"
-                        @back="backToAccountLogin"
-                        @register="setAuthPanel('register')"
-                      />
-
-                      <FaLoginQrPanel
-                        v-else-if="loginFlowMode === 'qr'"
-                        @back="backToAccountLogin"
-                        @register="setAuthPanel('register')"
-                      />
-                    </template>
+                    <FaLoginAccountForm
+                      v-if="authPanel === 'login'"
+                      ref="accountFormRef"
+                      v-model:is-passing="isPassing"
+                      v-model:is-click-pass="isClickPass"
+                      v-model:login-form="loginForm"
+                      :rules="rules"
+                      :captcha-state="captchaState"
+                      :code-loading="codeLoading"
+                      :form-key="formKey"
+                      :is-dark="isDark"
+                      :drag-verify-text-color="dragVerifyTextColor"
+                      :loading="loading"
+                      @submit="handleSubmit"
+                      @get-captcha="getCaptcha"
+                      @forget="setAuthPanel('forget')"
+                      @register="setAuthPanel('register')"
+                    />
 
                     <FaLoginRegisterPanel
                       v-else-if="authPanel === 'register'"
@@ -176,18 +155,13 @@
 
 <script setup lang="ts">
 import type { LocationQuery, RouteLocationRaw } from "vue-router";
-import AuthAPI, {
-  type CaptchaInfo,
-  type LoginFormData,
-  type OAuthProvider,
-} from "@/api/module_system/auth";
+import AuthAPI, { type CaptchaInfo, type LoginFormData } from "@/api/module_system/auth";
 
 import UserAPI, { type ForgetPasswordForm, type RegisterForm } from "@/api/module_system/user";
 import { useConfigStore, useAppStore, useSettingsStore, useUserStore } from "@stores";
-import { Auth, HttpError, startOAuthLogin } from "@utils";
+import { Auth, HttpError } from "@utils";
 import { ElMessage, ElNotification } from "element-plus";
 import type { FormRules } from "element-plus";
-import type { Account, AccountKey } from "./types";
 import { useLoginPanelAlign } from "./components/composables/useLoginPanelAlign";
 import type FaLoginAccountForm from "./components/forms/FaLoginAccountForm.vue";
 import type FaLoginRegisterPanel from "./components/panels/FaLoginRegisterPanel.vue";
@@ -196,9 +170,6 @@ import type FaLoginForgetPanel from "./components/panels/FaLoginForgetPanel.vue"
 defineOptions({ name: "Login" });
 
 type AuthPanel = "login" | "register" | "forget";
-
-/** 登录区内：账号密码 ↔ 手机号 ↔ 扫码（扫码 / 手机号为演示交互） */
-type LoginFlowMode = "account" | "mobile" | "qr";
 
 const configStore = useConfigStore();
 const settingStore = useSettingsStore();
@@ -209,28 +180,15 @@ const { t, locale } = useI18n();
 const { panelAlign } = useLoginPanelAlign();
 
 const authPanel = ref<AuthPanel>("login");
-const loginFlowMode = ref<LoginFlowMode>("account");
 
 const panelTitle = computed(() => {
   if (authPanel.value === "forget") return t("login.resetPassword");
-  if (
-    authPanel.value === "login" &&
-    (loginFlowMode.value === "mobile" || loginFlowMode.value === "qr")
-  ) {
-    return t("login.qrLoginTitle");
-  }
   return t("login.title");
 });
 
 const panelSubTitle = computed(() => {
   if (authPanel.value === "register") return t("register.subTitle");
   if (authPanel.value === "forget") return t("forgetPassword.subTitle");
-  if (authPanel.value === "login" && loginFlowMode.value === "mobile") {
-    return t("login.mobileLoginSubTitle");
-  }
-  if (authPanel.value === "login" && loginFlowMode.value === "qr") {
-    return t("login.qrLoginSubTitle");
-  }
   return t("login.subTitle");
 });
 
@@ -238,36 +196,11 @@ const userAgreementHref = computed(() => configStore.configData?.clause?.config_
 
 function setAuthPanel(panel: AuthPanel) {
   authPanel.value = panel;
-  if (panel !== "login") {
-    loginFlowMode.value = "account";
-  }
   nextTick(() => {
     accountFormRef.value?.clearValidate?.();
     registerPanelRef.value?.clearValidate?.();
     forgetPanelRef.value?.clearValidate?.();
   });
-}
-
-function openMobileLogin() {
-  loginFlowMode.value = "mobile";
-}
-
-function openQrLogin() {
-  loginFlowMode.value = "qr";
-}
-
-function backToAccountLogin() {
-  loginFlowMode.value = "account";
-  nextTick(() => {
-    getCaptcha();
-    accountFormRef.value?.resetDragVerify?.();
-    isPassing.value = false;
-    isClickPass.value = false;
-  });
-}
-
-function handleOAuthLogin(provider: OAuthProvider) {
-  startOAuthLogin(provider);
 }
 
 async function tryConsumeOAuthCallback() {
@@ -323,38 +256,12 @@ watch(locale, () => {
 
 watch(authPanel, (panel) => {
   if (panel !== "login") return;
-  if (loginFlowMode.value !== "account") return;
   getCaptcha();
   accountFormRef.value?.resetDragVerify?.();
   isPassing.value = false;
   isClickPass.value = false;
 });
 
-const accounts = computed<Account[]>(() => [
-  {
-    key: "super",
-    label: t("login.roles.super"),
-    username: "super",
-    password: "123456",
-    roles: ["R_SUPER"],
-  },
-  {
-    key: "admin",
-    label: t("login.roles.admin"),
-    username: "admin",
-    password: "123456",
-    roles: ["R_ADMIN"],
-  },
-  {
-    key: "user",
-    label: t("login.roles.user"),
-    username: "user",
-    password: "123456",
-    roles: ["R_USER"],
-  },
-]);
-
-const demoAccountKey = ref<AccountKey>("super");
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
@@ -471,13 +378,6 @@ const rules = computed<FormRules>(() => {
   return base;
 });
 
-function setupAccount(key: AccountKey) {
-  const selected = accounts.value.find((a: Account) => a.key === key);
-  demoAccountKey.value = key;
-  loginForm.username = selected?.username ?? "";
-  loginForm.password = selected?.password ?? "";
-}
-
 async function getCaptcha() {
   try {
     codeLoading.value = true;
@@ -527,28 +427,7 @@ function resolveRedirectTarget(query: LocationQuery): RouteLocationRaw {
   }
 }
 
-let notificationInstance: ReturnType<typeof ElNotification> | null = null;
-
-const showVoteNotification = () => {
-  notificationInstance = ElNotification({
-    title: "⭐ FastapiAdmin 完全开源 · 期待您的 Star 支持 🙏",
-    message: `项目持续迭代中，若对您有所帮助，欢迎点亮 Star 支持！
-    <br/><a href="https://github.com/fastapiadmin/FastapiAdmin" target="_blank" style="color: var(--el-color-primary); text-decoration: none; font-weight: 500;">Github仓库 →</a>
-    <br/><a href="https://gitee.com/fastapiadmin/FastapiAdmin" target="_blank" style="color: var(--el-color-warning); text-decoration: none; font-weight: 500;">Gitee仓库 →</a>`,
-    type: "success",
-    position:
-      panelAlign.value === "right" || panelAlign.value === "center"
-        ? "bottom-left"
-        : "bottom-right",
-    duration: 0,
-    dangerouslyUseHTMLString: true,
-  });
-};
-
-let voteTimer: ReturnType<typeof setTimeout> | null = null;
-
 onMounted(async () => {
-  setupAccount("super");
   await configStore.getConfig(true);
   await tryConsumeOAuthCallback();
   if (userStore.isLogin) {
@@ -556,24 +435,17 @@ onMounted(async () => {
     return;
   }
   getCaptcha();
-  voteTimer = setTimeout(showVoteNotification, 500);
 });
 
 onActivated(() => {
-  if (authPanel.value !== "login" || loginFlowMode.value !== "account") return;
+  if (authPanel.value !== "login") return;
   getCaptcha();
-});
-
-onBeforeUnmount(() => {
-  if (voteTimer !== null) clearTimeout(voteTimer);
-  notificationInstance?.close();
-  notificationInstance = null;
 });
 
 watch(
   () => route.fullPath,
   () => {
-    if (authPanel.value !== "login" || loginFlowMode.value !== "account") return;
+    if (authPanel.value !== "login") return;
     getCaptcha();
   }
 );

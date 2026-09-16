@@ -21,8 +21,6 @@ import { describe, it, expect, vi } from "vitest";
 // （unplugin-auto-import / unplugin-vue-components），单测环境无法求值。本用例只校验
 // 路由记录的**结构**，故把视图全部替换为桩，避免拉起整条组件依赖链。
 vi.mock("@/layouts/index.vue", () => ({ default: { name: "AppLayout" } }));
-vi.mock("@views/dashboard/workplace/index.vue", () => ({ default: { name: "DashboardWorkplace" } }));
-vi.mock("@views/dashboard/analysis/index.vue", () => ({ default: { name: "DashboardAnalysis" } }));
 vi.mock("@views/dashboard/home/index.vue", () => ({ default: { name: "DashboardHome" } }));
 vi.mock("@views/redirect/index.vue", () => ({ default: { name: "RedirectView" } }));
 vi.mock("@views/module_system/auth/login/index.vue", () => ({ default: { name: "LoginView" } }));
@@ -72,19 +70,21 @@ describe("静态路由 — 中间层不挂组件（深度跳级的前提）", ()
 
     for (const route of flatten(root!.children ?? [])) {
       if (route.children?.length) {
-        expect(route.component, `目录 "${route.path}" 不应挂组件（会使深度跳级失效）`).toBeUndefined();
+        expect(
+          route.component,
+          `目录 "${route.path}" 不应挂组件（会使深度跳级失效）`
+        ).toBeUndefined();
       }
     }
   });
 
-  it("dashboard / fastlink 两个多级目录保持无组件（历史壳组件的回归锚点）", async () => {
+  it("fastlink 多级目录保持无组件（历史壳组件的回归锚点）", async () => {
     const { staticRoutes } = await import("@/router/routes");
-    for (const name of ["Dashboard", "Fastlink"]) {
-      const route = findByName(staticRoutes as AnyRoute[], name);
-      expect(route, `未找到目录 "${name}"`).toBeDefined();
-      expect(route!.children?.length, `"${name}" 应仍有子路由`).toBeGreaterThan(0);
-      expect(route!.component, `目录 "${name}" 不应挂组件`).toBeUndefined();
-    }
+    const name = "Fastlink";
+    const route = findByName(staticRoutes as AnyRoute[], name);
+    expect(route, `未找到目录 "${name}"`).toBeDefined();
+    expect(route!.children?.length, `"${name}" 应仍有子路由`).toBeGreaterThan(0);
+    expect(route!.component, `目录 "${name}" 不应挂组件`).toBeUndefined();
   });
 
   it("根 Layout 的子孙里，叶子记录必须能渲染出内容", async () => {
@@ -118,7 +118,10 @@ const MENU_FIXTURE = [
 
 describe("后端菜单数据 — 目录不挂组件", () => {
   it("找到菜单数据文件", () => {
-    expect(MENU_FIXTURE, `未找到 backend/sql/sys_menu.json（基准目录 ${process.cwd()}）`).toBeTruthy();
+    expect(
+      MENU_FIXTURE,
+      `未找到 backend/sql/sys_menu.json（基准目录 ${process.cwd()}）`
+    ).toBeTruthy();
   });
 
   it("目录节点（type=CATALOG）不得配 component_path", () => {

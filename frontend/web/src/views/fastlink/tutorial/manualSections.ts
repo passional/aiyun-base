@@ -345,15 +345,6 @@ export const MANUAL_MODULES_AFTER_SYSTEM: ManualModuleSection[] = [
         ],
       },
       {
-        anchor: "page-db-workplace",
-        title: "工作台",
-        path: "dashboard/workplace/index.vue",
-        notes: [
-          "仪表盘子路由 `dashboard/workplace`：独立 `dashboard-container` 布局（含 Github 角标、问候区、天气文案、统计卡片与图表等，以页面为准）。",
-          "与 `/home` 所用 `dashboard/index.vue` 不是同一文件；完整性需单独打开该路由逐项看区块是否渲染。",
-        ],
-      },
-      {
         anchor: "page-db-console",
         title: "控制台",
         path: "dashboard/console/index.vue",
@@ -361,12 +352,6 @@ export const MANUAL_MODULES_AFTER_SYSTEM: ManualModuleSection[] = [
           "控制台仪表盘分区（卡片/图表）；meta.fixedTab 等影响标签钉扎行为。",
           "完整性：各区块渲染与路由切换无报错。",
         ],
-      },
-      {
-        anchor: "page-db-analysis",
-        title: "分析页",
-        path: "dashboard/analysis/index.vue",
-        notes: ["图表与卡片布局演示页；完整性：各图表组件 mount 成功、无控制台报错。"],
       },
       {
         anchor: "page-db-ecommerce",

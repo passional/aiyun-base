@@ -259,16 +259,8 @@
                                 更新日志
                               </ElLink>
                               ·
-                              <ElLink href="#page-db-workplace" type="primary" underline="never">
-                                工作台
-                              </ElLink>
-                              ·
                               <ElLink href="#page-db-console" type="primary" underline="never">
                                 控制台
-                              </ElLink>
-                              ·
-                              <ElLink href="#page-db-analysis" type="primary" underline="never">
-                                分析页
                               </ElLink>
                               ·
                               <ElLink href="#page-db-ecommerce" type="primary" underline="never">
@@ -1156,9 +1148,7 @@ const MANUAL_TOC: ManualModule[] = [
       { anchor: "page-home", title: "首页" },
       { anchor: "page-profile", title: "个人中心" },
       { anchor: "page-changelog", title: "更新日志" },
-      { anchor: "page-db-workplace", title: "工作台" },
       { anchor: "page-db-console", title: "控制台" },
-      { anchor: "page-db-analysis", title: "分析页" },
       { anchor: "page-db-ecommerce", title: "电子商务" },
       { anchor: "page-db-map", title: "地图" },
       { anchor: "page-db-pricing", title: "定价" },

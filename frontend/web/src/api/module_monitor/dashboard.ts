@@ -1,8 +1,16 @@
 import { request } from "@utils";
 import { createSSEClient, httpEndpoint, type SSEClient } from "@utils/sse";
-import type { HealthItem } from "@/mock/dashboard";
 
 const API_PATH = "/monitor/online";
+
+/** 系统健康项（数据库 / Redis 等依赖的连通状态展示项） */
+export interface HealthItem {
+  icon: string;
+  class: string;
+  title: string;
+  status: string;
+  time: string;
+}
 
 export interface RecentLoginItem {
   username: string;

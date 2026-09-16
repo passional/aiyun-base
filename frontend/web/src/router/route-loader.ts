@@ -114,11 +114,7 @@ function warnInvalidRouteConfig(routes: AppRouteRecord[], parentPath = ""): void
         );
       }
       // 检查目录挂组件：会让 RouterView 的深度跳级失效（出口渲染目录组件而非叶子页面，叶子被重复挂载）
-      if (
-        route.children?.length &&
-        route.component &&
-        route.component !== ROUTE_COMPONENT_LAYOUT
-      ) {
+      if (route.children?.length && route.component && route.component !== ROUTE_COMPONENT_LAYOUT) {
         console.warn(
           `[路由配置] 目录节点不应挂组件: "${route.path}" → ${String(route.component)}；` +
             "中间层一旦有组件，RouterView 深度跳级即失效，页面会被重复挂载、接口重复请求"
@@ -368,7 +364,7 @@ export class RouteRegistry {
 
   /** 判断 path 第一段是否是壳层路径 */
   private isShellSegment(segment: string): boolean {
-    return ["home", "profile", "changelog", "dashboard"].includes(segment);
+    return ["home", "profile", "changelog"].includes(segment);
   }
 }
 
