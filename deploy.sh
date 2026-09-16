@@ -45,13 +45,28 @@ check_deps() {
     for cmd in docker; do
         command -v $cmd &>/dev/null || missing+=($cmd)
     done
-    if ! docker compose version &>/dev/null && ! docker-compose --version &>/dev/null; then
-        missing+=("docker compose")
-    fi
     if [ ${#missing[@]} -gt 0 ]; then
         log "缺少依赖: ${missing[*]}" "ERROR"; exit 1
     fi
-    log "✅ 依赖检查通过" "SUCCESS"
+
+    # 必须是 Compose v2（docker compose 子命令）。
+    # 【不要】退回 docker-compose（v1）：本项目的 compose 文件用了
+    #   - depends_on.condition: service_healthy  等待 MySQL 就绪再启动 backend
+    #   - deploy.resources.limits.cpus           容器 CPU 限制
+    # v1 对前者不支持、对后者静默忽略，结果是「启动顺序错乱 + 资源限制失效」，
+    # 而且要到运行期才暴露，比直接报错难查得多。
+    if ! docker compose version &>/dev/null; then
+        log "未找到 Docker Compose v2（docker compose 命令）" "ERROR"
+        if command -v docker-compose &>/dev/null; then
+            log "检测到 docker-compose（v1）: $(docker-compose --version 2>/dev/null)" "WARN"
+            log "v1 无法正确执行本项目的 compose 文件，请勿改用它。" "WARN"
+        fi
+        log "安装方式见 DEPLOYMENT.md 第 2 节；若已配置 docker-ce 软件源：" "INFO"
+        log "  yum install -y docker-compose-plugin" "INFO"
+        exit 1
+    fi
+
+    log "✅ 依赖检查通过（Docker Compose $(docker compose version --short 2>/dev/null)）" "SUCCESS"
 }
 
 check_code() {
@@ -101,10 +116,17 @@ show_logs() {
 }
 
 verify() {
+    # 必须 cd 到 docker 目录：compose 文件在那里。
+    # 漏了这一步时，`./deploy.sh verify` 单独调用会因为找不到 compose 文件
+    # 而把每个服务都报成 "not found"（完整部署时因为前面的函数已经 cd 过，
+    # 反而看不出问题——所以这个 bug 只在单独调用时暴露）。
+    cd "${DOCKER_DIR}"
     local ok=true
     for svc in mysql redis backend nginx; do
-        local st=$(docker compose ps "$svc" --format '{{.Status}}' 2>/dev/null || echo "not found")
-        if echo "$st" | grep -qE "Up|healthy"; then
+        local st=$(docker compose ps "$svc" --format '{{.Status}}' 2>/dev/null)
+        if [ -z "$st" ]; then
+            log "❌ $svc: 未找到容器" "ERROR"; ok=false
+        elif echo "$st" | grep -qE "Up|healthy"; then
             log "✅ $svc: $st" "SUCCESS"
         else
             log "❌ $svc: $st" "ERROR"; ok=false

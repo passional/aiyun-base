@@ -14,7 +14,11 @@ WORKDIR /home
 COPY ./backend/requirements.txt .
 
 # 安装依赖
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# pip 源通过 build arg 注入，方便在不同网络环境切换，默认阿里云。
+# 换源：在 docker/.env 里设置 PIP_INDEX_URL，或临时执行
+#   PIP_INDEX_URL=https://xxx/simple/ docker compose build
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+RUN pip install --no-cache-dir -r requirements.txt -i "${PIP_INDEX_URL}"
 
 # 复制应用代码（backend/.venv、logs、缓存等由根 .dockerignore 排除）
 COPY ./backend/ .
