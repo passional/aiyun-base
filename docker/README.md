@@ -1,6 +1,8 @@
 # FastapiAdmin 部署说明
 
 > **与仓库根文档的关系**：项目总览、快速开始、演示账号等请以 [根目录 README.md](../README.md) 为准；**本文档**侧重 Docker 部署的详细操作。
+>
+> **部署到内网服务器（无域名、无证书）**：请直接看 [DEPLOYMENT.md](../DEPLOYMENT.md)，其中包含必须改动的配置项与完整操作步骤。
 
 ## 项目结构
 
@@ -55,24 +57,28 @@ docker/
    | `MYSQL_PASSWORD` | 是 | - | 数据库密码 |
    | `REDIS_PASSWORD` | 是 | - | Redis 密码 |
    | `BACKEND_PORT` | 否 | `8001` | 后端服务宿主机端口 |
-   | `HTTP_PORT` | 否 | `80` | HTTP 宿主机端口 |
-   | `HTTPS_PORT` | 否 | `443` | HTTPS 宿主机端口 |
+   | `HTTPS_PORT` | 否 | `8443` | HTTPS 宿主机端口（容器内固定监听 443） |
    | `DEPLOY_ENV` | 否 | `prod` | 部署环境（dev/prod） |
    | `BACKEND_IMAGE_TAG` | 否 | `3.0.0` | 后端镜像标签 |
    | `BUILD_WEB` | 否 | `false` | 部署时构建前端 Web |
-   | `NGINX_SERVER_NAME` | 否 | `service.fastapiadmin.com` | Nginx 域名 |
 
-2. **SSL 证书配置**（可选，但生产环境必须）
+2. **后端环境配置**
+
+   后端以 `--env=prod` 启动，读取 `backend/env/.env.prod`：
 
    ```bash
-   # 自签名证书（测试用）：
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-     -keyout docker/nginx/ssl/server.key \
-     -out docker/nginx/ssl/server.pem \
-     -subj "/CN=service.fastapiadmin.com"
-
-   # 生产环境请使用正规 CA 签发的证书
+   cp backend/env/.env.prod.example backend/env/.env.prod
+   # 修改 SECRET_KEY / HTTPS_REDIRECT_ENABLE / ALLOWED_HOSTS 等
    ```
+
+   该文件会被打进后端镜像，**必须先配置好再构建**。详见 [DEPLOYMENT.md](../DEPLOYMENT.md)。
+
+3. **SSL 证书配置**
+
+   `nginx.conf` 已配置为 HTTPS，使用 `docker/nginx/ssl/server.pem` 与 `server.key`。
+   仓库预置了一套自签证书（含 `192.168.10.15` / `192.168.115.129` 的 IP SAN），
+   **部署到其他 IP 的服务器时必须重新生成**，命令见
+   [DEPLOYMENT.md 第 5.4 节](../DEPLOYMENT.md)。
 
 ## 部署方式
 
@@ -129,13 +135,15 @@ docker compose up -d --no-deps --build [service_name]
 
 | 服务 | 地址 |
 |------|------|
-| 前端 | `https://your-domain/web` |
-| Swagger API 文档 | `https://your-domain/docs` |
-| ReDoc API 文档 | `https://your-domain/redoc` |
-| API 健康检查 | `https://your-domain/health` |
+| 前端 | `https://<服务器IP>:8443/web`（访问根路径会 302 跳转到这里） |
+| Swagger API 文档 | `https://<服务器IP>:8443/api/v1/docs` |
+| ReDoc API 文档 | `https://<服务器IP>:8443/api/v1/redoc` |
+| API 健康检查 | `https://<服务器IP>:8443/api/v1/monitor/health/check` |
 | 后台登录 | 默认账号 `admin`，密码 `123456` |
 
 > **注意**: `docs`（官网）和 `app`（移动端 H5）默认不参与部署，如需启用请取消 docker-compose.yaml 中相关卷挂载注释。
+
+> **安全提示**: 首次登录后请立即修改默认密码。
 
 ## 容器资源限制
 
@@ -211,7 +219,7 @@ docker compose logs -f [服务名]
 1. **修改默认密码**：部署后请修改 `.env` 中的密码
 2. **保护 `.env` 文件**：已加入 `.gitignore`，请勿手动提交
 3. **使用正规 SSL 证书**：生产中不要使用自签名证书
-4. **限制端口访问**：通过防火墙只开放 80/443 端口
+4. **限制端口访问**：通过防火墙只开放 `HTTPS_PORT`（默认 8443）
 5. **及时更新**：定期执行部署脚本获取最新版本
 
 ## 版本更新

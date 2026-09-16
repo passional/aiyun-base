@@ -1,0 +1,56 @@
+# ============================================
+# 部署排除清单 —— 同时供 rsync 与 tar 使用
+#   rsync: ./scripts/upload.sh
+#   tar:   tar --exclude-from=.deployignore -czf /tmp/x.tar.gz ./
+# ============================================
+#
+# 【重要】这里刻意**不写结尾的斜杠**。
+#
+#   rsync 里 `frontend/`（带斜杠）只匹配目录，语义更精确；
+#   但 GNU tar 的 --exclude-from **不支持**结尾斜杠 —— 写成 `frontend/`
+#   在 tar 里完全不生效，会把整个 frontend/（含 .venv 等）打进包里。
+#
+#   去掉斜杠后两边都能正确工作，所以统一用不带斜杠的写法。
+#   （不带斜杠时 rsync 会匹配任意层级的同名文件或目录，正是我们要的。）
+#
+# 被这里排除的路径，rsync 的 --delete 也会**保护**它们不被删除
+# （除非额外传 --delete-excluded），所以服务器上的数据和配置是安全的。
+
+# ---- 版本控制 ----
+.git
+
+# ---- 依赖：服务器上重新装 / 已有现成产物 ----
+node_modules
+.venv
+venv
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# ---- 本地开发数据：传上去会把本地库和 root 属主的文件带过去 ----
+docker/mysql/data
+docker/redis/data
+backend/logs
+*.log
+
+# ---- 只存在于本地、含本地密码的配置（服务器上单独生成）----
+docker/.env
+backend/env/.env.dev
+backend/env/.env.test
+backend/env/.env.prod
+backend/data/dev.db
+
+# ---- 服务器上用户上传的文件：排除是为了让 --delete 保护它们不被清空 ----
+docker/backend/static/upload
+
+# ---- 前端源码：产物在 docker/nginx/web/dist，服务器不构建前端 ----
+#    （刻意排除。若在服务器上跑 --build-frontend，它会因缺源码而报错，
+#      这正是我们想要的：避免用错的环境变量构建出错误的 WebSocket 地址）
+frontend
+
+# ---- 编辑器 / 工具目录 ----
+.claude
+.pi
+.vscode
+.idea
