@@ -175,11 +175,13 @@ services:
     environment:
       TZ: "Asia/Shanghai"
     ports:
-      # 宿主机 HTTPS_PORT（默认 8433）→ 容器 443。证书在 docker/nginx/ssl/ 下，
+      # 宿主机(虚拟机) HTTPS_PORT（默认 443）→ 容器 443。证书在 docker/nginx/ssl/ 下，
       # 自签且含 IP SAN；重新生成见 DEPLOYMENT.md。
+      # 若本机是 NAT 模式虚拟机，物理宿主再把对外端口（如 8443）转发到本机 443，
+      # 见 DEPLOYMENT.md 第 2.5 节。
       # BIND_IP 默认 0.0.0.0（监听所有网卡）；设为服务器内网 IP 可把访问限制到该地址，
       # 这是比防火墙规则更可靠的隔离手段（见 DEPLOYMENT.md 第 2 节）
-      - "${BIND_IP:-0.0.0.0}:${HTTPS_PORT:-8433}:443"
+      - "${BIND_IP:-0.0.0.0}:${HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/web:/usr/share/nginx/html/web:ro

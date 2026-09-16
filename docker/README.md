@@ -57,7 +57,7 @@ docker/
    | `MYSQL_PASSWORD` | 是 | - | 数据库密码 |
    | `REDIS_PASSWORD` | 是 | - | Redis 密码 |
    | `BACKEND_PORT` | 否 | `8001` | 后端服务宿主机端口 |
-   | `HTTPS_PORT` | 否 | `8433` | HTTPS 宿主机端口（容器内固定监听 443） |
+   | `HTTPS_PORT` | 否 | `443` | HTTPS 宿主机端口（容器内固定监听 443） |
    | `DEPLOY_ENV` | 否 | `prod` | 部署环境（dev/prod） |
    | `BACKEND_IMAGE_TAG` | 否 | `3.0.0` | 后端镜像标签 |
    | `BUILD_WEB` | 否 | `false` | 部署时构建前端 Web |
@@ -135,11 +135,14 @@ docker compose up -d --no-deps --build [service_name]
 
 | 服务 | 地址 |
 |------|------|
-| 前端 | `https://<服务器IP>:8433/web`（访问根路径会 302 跳转到这里） |
-| Swagger API 文档 | `https://<服务器IP>:8433/api/v1/docs` |
-| ReDoc API 文档 | `https://<服务器IP>:8433/api/v1/redoc` |
-| API 健康检查 | `https://<服务器IP>:8433/api/v1/monitor/health/check` |
+| 前端 | `https://<服务器IP>:8443/web`（访问根路径会 302 跳转到这里） |
+| Swagger API 文档 | `https://<服务器IP>:8443/api/v1/docs` |
+| ReDoc API 文档 | `https://<服务器IP>:8443/api/v1/redoc` |
+| API 健康检查 | `https://<服务器IP>:8443/api/v1/monitor/health/check` |
 | 后台登录 | 默认账号 `admin`，密码 `123456` |
+
+> 上表的 `8443` 是**物理宿主 NAT 的对外端口**（NAT 虚拟机场景）。若服务器
+> 直接有内网 IP（桥接），`HTTPS_PORT=443` 下地址为 `https://<服务器IP>/`，不用写端口。
 
 > **注意**: `docs`（官网）和 `app`（移动端 H5）默认不参与部署，如需启用请取消 docker-compose.yaml 中相关卷挂载注释。
 
@@ -219,7 +222,7 @@ docker compose logs -f [服务名]
 1. **修改默认密码**：部署后请修改 `.env` 中的密码
 2. **保护 `.env` 文件**：已加入 `.gitignore`，请勿手动提交
 3. **使用正规 SSL 证书**：生产中不要使用自签名证书
-4. **限制端口访问**：通过防火墙只开放 `HTTPS_PORT`（默认 8433）
+4. **限制端口访问**：通过防火墙只开放 `HTTPS_PORT`（默认 443）
 5. **及时更新**：定期执行部署脚本获取最新版本
 
 ## 版本更新
