@@ -78,3 +78,5 @@ AGENTS.md
 docker/mysql/
 docker/redis/
 uv.lock
+.claude/
+backend/data/
