@@ -7,6 +7,7 @@ from app.core.base_schema import AuthSchema, PageResultSchema
 from app.core.exceptions import CustomException
 from app.modules.task.storage.core.base import (
     DEFAULT_PORTS,
+    BaseStorageAdapter,
     StorageAdapterConfig,
     StorageProtocol,
     decrypt_password,
@@ -189,6 +190,11 @@ class StorageNodeService:
         if source:
             return source
         raise CustomException(msg="未配置可用的存储源，请先在存储源管理中创建")
+
+    @staticmethod
+    def build_adapter(source: StorageNodeModel) -> BaseStorageAdapter:
+        """由存储源构造适配器实例（供其它模块复用产物读写，用完由调用方 close）。"""
+        return StorageAdapterFactory.create(StorageNodeService._build_config(source))
 
     async def get_active_sources(self, ids: list[int]) -> list[StorageNodeModel]:
         """批量获取可用存储源：全部存在且启用，任一无效即抛错（一次查询，避免 N+1）。"""

@@ -1,0 +1,8 @@
+# 见 docs/PLUGIN_ARCHITECTURE.md
+
+name = "image_workbench"
+title = "绘图工作台"
+version = "1.0.0"
+description = "图片生成工作台：绘图服务配置、绘图模型能力声明、单图生成任务与历史。"
+optional = true
+tags = ["image_workbench", "image", "generation"]

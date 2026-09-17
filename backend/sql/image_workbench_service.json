@@ -1,0 +1,10 @@
+[
+  {
+    "name": "火山方舟 Agent Plan",
+    "dialect": "ark",
+    "base_url": "https://ark.cn-beijing.volces.com/api/plan/v3",
+    "api_key_enc": null,
+    "status": 0,
+    "remark": "Agent Plan 必须使用专属 Base URL 与专属 API Key，与标准 API 混用会调用失败或产生额外费用；凭证留空待管理员在「绘图工作台 → 绘图服务」中填写后生效"
+  }
+]

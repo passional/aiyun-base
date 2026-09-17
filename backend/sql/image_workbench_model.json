@@ -1,0 +1,36 @@
+[
+  {
+    "service_name": "火山方舟 Agent Plan",
+    "model_id": "doubao-seedream-5-0-pro",
+    "display_name": "Seedream 5.0 pro",
+    "capability_json": {
+      "sizes": ["1K", "1.5K", "2K"],
+      "allow_custom_size": false,
+      "support_reference": true,
+      "max_reference_images": 10,
+      "output_formats": ["png", "jpeg"],
+      "default_output_format": "png",
+      "watermark_default": false,
+      "extra_params": {}
+    },
+    "status": 0,
+    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）；能力声明按上游文档预置，管理员可改"
+  },
+  {
+    "service_name": "火山方舟 Agent Plan",
+    "model_id": "doubao-seedream-5-0-lite",
+    "display_name": "Seedream 5.0 lite",
+    "capability_json": {
+      "sizes": ["2K", "3K", "4K"],
+      "allow_custom_size": false,
+      "support_reference": true,
+      "max_reference_images": 10,
+      "output_formats": ["png", "jpeg"],
+      "default_output_format": "png",
+      "watermark_default": false,
+      "extra_params": {}
+    },
+    "status": 0,
+    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）；能力声明按上游文档预置，管理员可改"
+  }
+]

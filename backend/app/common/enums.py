@@ -51,6 +51,7 @@ class RedisInitKeyConfig(Enum):
     AI_MODEL_CONFIG = {"key": "ai_model_config", "remark": "用户AI模型配置"}
     WX_MINI_ACCESS_TOKEN = {"key": "wx_mini_access_token", "remark": "微信小程序 access_token 缓存"}
     CHANNEL_EVAL_RUN_PROGRESS = {"key": "channel_eval_run_progress", "remark": "渠道评估运行进度"}
+    IMAGE_WORKBENCH_JOB_PROGRESS = {"key": "image_workbench_job_progress", "remark": "绘图工作台任务进度"}
 
     @property
     def key(self) -> str:

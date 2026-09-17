@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     from app.core.redis_crud import redis_connect
     from app.modules.ai.chat.crud import init_agno_tables
     from app.modules.channel_eval.run.engine import recover_interrupted_runs
+    from app.modules.image_workbench.job.engine import recover_interrupted_jobs
     from app.modules.system.dict.service import DictDataService
     from app.modules.system.params.service import ParamsService
     from app.scripts.initialize import InitializeData
@@ -37,6 +38,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     recovered = await recover_interrupted_runs()
     if recovered:
         logger.info("✅ 渠道评估：已将 {} 个进程重启前执行中的运行置为 failed", recovered)
+    interrupted_jobs = await recover_interrupted_jobs()
+    if interrupted_jobs:
+        logger.info("✅ 绘图工作台：已将 {} 个进程重启前进行中的绘图任务置为 failed", interrupted_jobs)
     await ParamsService.init_cache(redis=app.state.redis)
     logger.info("✅ Redis系统参数 初始化完成")
     await DictDataService.init_cache(redis=app.state.redis)

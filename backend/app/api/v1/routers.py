@@ -8,6 +8,8 @@ from app.modules.channel_eval.report.controller import ReportRouter as ChannelEv
 from app.modules.channel_eval.run.controller import RunRouter as ChannelEvalRunRouter
 from app.modules.common.file.controller import FileRouter
 from app.modules.generator.gencode.controller import GenRouter
+from app.modules.image_workbench.config.controller import ImageWorkbenchModelRouter, ImageWorkbenchServiceRouter
+from app.modules.image_workbench.job.controller import ImageWorkbenchJobRouter
 from app.modules.monitor.cache.controller import CacheRouter
 from app.modules.monitor.health.controller import HealthRouter
 from app.modules.monitor.online.controller import OnlineRouter
@@ -68,6 +70,11 @@ DOMAIN_CONTROLLERS: dict[str, list[APIRouter]] = {
         ChannelEvalPlatformRouter,
         ChannelEvalRunRouter,
         ChannelEvalReportRouter,
+    ],
+    "/image_workbench": [
+        ImageWorkbenchServiceRouter,
+        ImageWorkbenchModelRouter,
+        ImageWorkbenchJobRouter,
     ],
 }
 

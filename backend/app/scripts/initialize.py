@@ -11,6 +11,10 @@ from app.config.setting import settings
 from app.core.base_model import MappedBase
 from app.core.database import async_db_session, async_engine, create_tables
 from app.core.logger import logger
+from app.modules.image_workbench.config.model import (
+    ImageWorkbenchModelModel,
+    ImageWorkbenchServiceModel,
+)
 from app.modules.system.dept.model import DeptModel
 from app.modules.system.dict.model import DictDataModel, DictTypeModel
 from app.modules.system.menu.model import MenuModel
@@ -42,6 +46,9 @@ class InitializeData:
         VersionModel,
         NodeModel,
         StorageNodeModel,
+        # 绘图工作台：绘图模型种子靠 service_name 解析 service_id，必须排在绘图服务之后
+        ImageWorkbenchServiceModel,
+        ImageWorkbenchModelModel,
     ]
 
     # 树形模型：JSON 含嵌套 children，需递归创建对象
@@ -182,6 +189,8 @@ class InitializeData:
                     objs = self.__create_objects_with_children(data, model)
                 elif table_name == "sys_dict_data":
                     objs = await self.__create_dict_data_objs(db, data)
+                elif table_name == "image_workbench_model":
+                    objs = await self.__create_image_workbench_model_objs(db, data)
                 else:
                     objs = [model(**item) for item in data]
 
@@ -199,6 +208,7 @@ class InitializeData:
         # 存量库菜单幂等合并：种子新增的「评估中心」菜单在已有数据的库上补齐（设计迁移计划：
         # 已有环境重启即得菜单；新库由上方常规种子导入，此处跳过）
         await self.__ensure_seed_menu_merged(db, route_name="ChannelEval", title="评估中心")
+        await self.__ensure_seed_menu_merged(db, route_name="ImageWorkbench", title="绘图工作台")
 
         if skipped:
             logger.info(f"⏭️  {len(skipped)} 张表已有数据，跳过初始化：{', '.join(skipped)}")
@@ -244,6 +254,31 @@ class InitializeData:
                 continue
             item["dict_type_id"] = dict_type_id
             objs.append(DictDataModel(**item))
+        return objs
+
+    @staticmethod
+    async def __create_image_workbench_model_objs(db: AsyncSession, data: list[dict]) -> list[ImageWorkbenchModelModel]:
+        """绘图模型种子：``service_id`` 通过查询库内绘图服务名解析。
+
+        种子文件用 ``service_name`` 引用所属绘图服务（可读，且不依赖数据库自增 ID）；
+        照 ``__create_dict_data_objs`` 的先例——现有 ``__create_objects_with_children``
+        只处理 ``sys_menu``/``sys_dept`` 的父子关系，不处理任意外键。
+        解析不到服务名时跳过该条并告警，不让一条错种子拖垮整次初始化。
+        """
+        service_names = {item.get("service_name") for item in data if item.get("service_name")}
+        result = await db.execute(select(ImageWorkbenchServiceModel.name, ImageWorkbenchServiceModel.id).where(ImageWorkbenchServiceModel.name.in_(service_names)))
+        id_map: dict[str, int] = {row[0]: row[1] for row in result.all()}
+
+        objs: list[ImageWorkbenchModelModel] = []
+        for raw in data:
+            item = dict(raw)
+            service_name = item.pop("service_name", None)
+            service_id = id_map.get(service_name)
+            if service_id is None:
+                logger.warning(f"⚠️  未找到绘图服务 {service_name}，跳过绘图模型种子")
+                continue
+            item["service_id"] = service_id
+            objs.append(ImageWorkbenchModelModel(**item))
         return objs
 
     @staticmethod
