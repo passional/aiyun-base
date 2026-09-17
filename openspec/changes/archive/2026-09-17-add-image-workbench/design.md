@@ -22,7 +22,7 @@
 
 **Non-Goals:**
 
-- 不做组图、图层拆分、交互编辑、联网搜索、流式输出（Seedream 5.0 pro 本就不支持前四项中的组图与联网搜索，其余留 v2）。
+- 不做组图、图层拆分、交互编辑、联网搜索、流式输出。其中**组图、联网搜索、流式输出是 Seedream 5.0 pro 本就不支持的上游能力**；而**图层拆分（`layer_decomposition`，产出一张底图 + 最多 16 个分层）与交互编辑（在提示词中写入归一化坐标标记）恰是 5.0 pro 的两项旗舰能力**，本变更仅因范围控制未纳入实现，留待后续变更。（原文误将后两项与"pro 不支持"并列，2026-09-17 订正。）
 - 不做批量生成、不做独立 worker 进程或任务队列。
 - 不做额度拦截与计费（只记录用量，见 `specs/image-workbench/generation`）。
 - 不做小程序端。
@@ -82,6 +82,7 @@ app/modules/image_workbench/
 | --- | --- |
 | `service_id` / `model_pk` | FK（`RESTRICT` 语义由服务层保证，见 D8） |
 | `model_id` | 模型标识快照（防上游标识漂移影响历史展示） |
+| `active_owner_id` | 并发闸门占位：进行中等于创建者 ID，终态为 NULL，唯一索引保证每用户最多一个进行中任务 |
 | `prompt` | 提示词 |
 | `params_json` | 本次参数快照：`size` / `output_format` / `watermark` / `reference_images`（本系统内相对路径数组） |
 | `status` | `pending` / `running` / `success` / `failed` / `cancelled` |
@@ -94,7 +95,7 @@ app/modules/image_workbench/
 
 三张表均继承 `ModelMixin`（含 `is_deleted` 软删与时间戳）；`job` 另继承 `UserMixin`，`created_id` 即创建者——数据范围过滤依赖它，无需自建 `user_id`。
 
-**参考图复用已有文件**：用户经 `POST /common/file/upload` 上传的参考图已经落在 `static/upload` 下，`params_json.reference_images` 只存这些相对路径，执行时按接入方式读取并编码上行，**不重复拷贝**。
+**参考图复用已有文件**：用户经模块专属 `POST /image_workbench/jobs/reference-images/upload` 上传的参考图已经落在 `static/upload` 下，`params_json.reference_images` 只存这些相对路径，执行时按接入方式读取并编码上行，**不重复拷贝**。专属入口要求生成权限并按真实文件内容校验图片格式，不改变公共文件接口的权限。
 
 ### D3 能力声明的结构
 
@@ -138,7 +139,8 @@ app/modules/image_workbench/
 
 ### D6 并发闸门与取消
 
-- 提交前统计该用户 `status in (pending, running)` 的任务数，`>= 1` 即拒绝（`CustomException`，明确提示）。
+- 提交前统计该用户 `status in (pending, running)` 的任务数，`>= 1` 即拒绝（`CustomException`，明确提示）；任务表另以唯一 `active_owner_id` 作为原子兜底，避免两个并发请求同时通过计数检查。
+- `pending` / `running` 时 `active_owner_id=created_id`，进入任一终态时清空为 NULL；数据库唯一索引保证同一用户最多占用一个活跃槽位。
 - 取消：置 `cancelling`，引擎在 await 边界退出并把状态落为 `cancelled`；已终态的任务取消被拒绝。
 - 取消语义在接口返回与前端确认框里都写明「不保证不产生上游费用」——我们不掌握上游的计费时点。
 
@@ -173,6 +175,7 @@ app/modules/image_workbench/
 | PUT | `/models/update/{id}` | `image_workbench:service:edit` | 编辑 |
 | DELETE | `/models/delete` | `image_workbench:service:delete` | 删除（引用保护） |
 | GET | `/jobs/models/optionselect` | `image_workbench:job:query` | 工作台可选模型（含能力声明） |
+| POST | `/jobs/reference-images/upload` | `image_workbench:job:create` | 上传并校验参考图 |
 | POST | `/jobs/create` | `image_workbench:job:create` | 提交生成（并发闸门 + 参数校验） |
 | GET | `/jobs/list` | `image_workbench:job:query` | 历史列表（数据范围过滤） |
 | GET | `/jobs/detail/{id}` | `image_workbench:job:query` | 详情 |
