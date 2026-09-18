@@ -12,10 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.base_schema import AuthSchema, PageResultSchema
 from app.utils.common_util import search_to_dict
 
+from .capability import dump_capability, parse_capability
 from .crud import ImageWorkbenchModelCRUD, ImageWorkbenchServiceCRUD
 from .model import ImageWorkbenchModelModel, ImageWorkbenchServiceModel
 from .schema import (
-    ImageWorkbenchCapabilitySchema,
     ImageWorkbenchModelCreateSchema,
     ImageWorkbenchModelOutSchema,
     ImageWorkbenchModelQueryParam,
@@ -241,20 +241,6 @@ class ImageWorkbenchServiceService:
         )
 
 
-def _parse_capability(raw: dict | None) -> ImageWorkbenchCapabilitySchema:
-    """库内能力声明 JSON → 结构化对象（缺省与超纲字段都收敛到 D3 的定义域）。"""
-    if not raw:
-        return ImageWorkbenchCapabilitySchema()
-    try:
-        return ImageWorkbenchCapabilitySchema.model_validate(raw)
-    except Exception:  # noqa: BLE001
-        # 历史/手改数据不符合 D3 结构时按默认值兜底，不因一条脏数据让整个列表 500
-        from app.core.logger import logger
-
-        logger.warning("绘图模型能力声明不符合 D3 结构，已按默认值兜底: {}", raw)
-        return ImageWorkbenchCapabilitySchema()
-
-
 def _model_to_out(obj: ImageWorkbenchModelModel, service_names: dict[int, str] | None = None) -> ImageWorkbenchModelOutSchema:
     out = ImageWorkbenchModelOutSchema.model_validate(
         {
@@ -268,7 +254,7 @@ def _model_to_out(obj: ImageWorkbenchModelModel, service_names: dict[int, str] |
             "service_name": (service_names or {}).get(obj.service_id),
             "model_id": obj.model_id,
             "display_name": obj.display_name,
-            "capability": _parse_capability(obj.capability_json),
+            "capability": parse_capability(obj.capability_json),
             "status": obj.status,
             "remark": obj.remark,
         }
@@ -342,7 +328,7 @@ class ImageWorkbenchModelService:
                 "service_id": data.service_id,
                 "model_id": data.model_id,
                 "display_name": data.display_name,
-                "capability_json": data.capability.model_dump(),
+                "capability_json": dump_capability(data.capability),
                 "status": data.status,
                 "remark": data.remark,
             }
@@ -361,7 +347,7 @@ class ImageWorkbenchModelService:
             "service_id": data.service_id,
             "model_id": data.model_id,
             "display_name": data.display_name,
-            "capability_json": data.capability.model_dump(),
+            "capability_json": dump_capability(data.capability),
             "status": data.status,
             "remark": data.remark,
         }.items():

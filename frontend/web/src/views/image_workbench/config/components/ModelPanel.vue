@@ -63,7 +63,7 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="760px"
+      width="960px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -86,34 +86,8 @@
               :label="statusLabel(asModel(row)?.status)"
             />
           </template>
-          <template #support_reference="{ row }">
-            <FaStatusTag
-              :type="asModel(row)?.capability?.support_reference ? 'success' : 'info'"
-              :label="
-                asModel(row)?.capability?.support_reference
-                  ? $t('image_workbench.common.yes')
-                  : $t('image_workbench.common.no')
-              "
-            />
-          </template>
-          <template #sizes="{ row }">
-            {{ joinValues(asModel(row)?.capability?.sizes) }}
-          </template>
-          <template #output_formats="{ row }">
-            {{ joinValues(asModel(row)?.capability?.output_formats) }}
-          </template>
-          <template #watermark_default="{ row }">
-            <FaStatusTag
-              :type="asModel(row)?.capability?.watermark_default ? 'warning' : 'info'"
-              :label="
-                asModel(row)?.capability?.watermark_default
-                  ? $t('image_workbench.common.yes')
-                  : $t('image_workbench.common.no')
-              "
-            />
-          </template>
-          <template #extra_params="{ row }">
-            {{ formatExtraParams(asModel(row)?.capability?.extra_params) }}
+          <template #capability="{ row }">
+            <CapabilitySummary :capability="asModel(row)?.capability" />
           </template>
         </FaDescriptions>
       </template>
@@ -135,14 +109,9 @@
           :show-submit="false"
           class="crud-dialog-art-form"
         >
-          <template #support_reference>
-            <ElSwitch v-model="formData.capability.support_reference" />
-          </template>
-          <template #allow_custom_size>
-            <ElSwitch v-model="formData.capability.allow_custom_size" />
-          </template>
-          <template #watermark_default>
-            <ElSwitch v-model="formData.capability.watermark_default" />
+          <template #capability_editor>
+            <!-- 能力声明是**数据**：表单按它的结构编排，保存时整体覆盖 -->
+            <CapabilityEditor v-model="formData.capability" />
           </template>
           <template #status>
             <ElRadioGroup v-model="formData.status">
@@ -165,6 +134,8 @@ import ModelAPI, {
   type ModelPageQuery,
   type ModelTable,
 } from "@/api/module_image_workbench/model";
+import CapabilityEditor from "./CapabilityEditor.vue";
+import CapabilitySummary from "./CapabilitySummary.vue";
 import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
 import { getColumnKey } from "@/hooks/core/useTableColumns";
 import type { ColumnOption } from "@/types/component";
@@ -188,13 +159,9 @@ const props = defineProps<{
 
 const { t, locale } = useI18n();
 
-/**
- * 弹窗表单：能力声明的额外参数以 JSON 文本编辑（提交前解析成对象）。
- * 能力声明的其余字段按 design D3 逐项对应。
- */
+/** 弹窗表单：能力声明按新结构整体编辑、整体覆盖（不做字段级合并） */
 interface ModelDialogForm extends ModelForm {
   capability: ModelCapability;
-  extra_params_text: string;
 }
 
 // ── 通用展示辅助 ───
@@ -211,9 +178,13 @@ function asModel(row: unknown): ModelTable | null {
   return (row as ModelTable | null) ?? null;
 }
 
-function formatExtraParams(extra?: Record<string, unknown> | null) {
-  if (!extra || Object.keys(extra).length === 0) return "—";
-  return JSON.stringify(extra);
+/**
+ * 能力声明是可编辑的嵌套数据：必须**复制**一份再交给编辑器。
+ * 直接传引用会让编辑中的每一次改动都落到列表行上，取消弹窗也回不去。
+ */
+function cloneCapability(capability?: ModelCapability | null): ModelCapability {
+  if (!capability) return createDefaultCapability();
+  return JSON.parse(JSON.stringify(capability)) as ModelCapability;
 }
 
 // ── 搜索 ───
@@ -274,17 +245,28 @@ function buildModelColumns(): ColumnOption<ModelTable>[] {
       showOverflowTooltip: true,
     },
     {
-      prop: "sizes",
-      label: t("image_workbench.model.sizes"),
+      prop: "capability_params",
+      label: t("image_workbench.model.paramsSection"),
+      minWidth: 110,
+      formatter: (row: ModelTable) =>
+        t("image_workbench.model.paramsCount", { count: row.capability?.params?.length ?? 0 }),
+    },
+    {
+      prop: "capability_modes",
+      label: t("image_workbench.model.modesSection"),
       minWidth: 130,
-      formatter: (row: ModelTable) => joinValues(row.capability?.sizes),
+      showOverflowTooltip: true,
+      formatter: (row: ModelTable) =>
+        joinValues(
+          (row.capability?.modes ?? []).map((mode) => mode.label?.zh || mode.key).filter(Boolean)
+        ),
     },
     {
       prop: "support_reference",
       label: t("image_workbench.model.supportReference"),
       width: 110,
       formatter: (row: ModelTable) =>
-        row.capability?.support_reference
+        row.capability?.reference?.supported
           ? t("image_workbench.common.yes")
           : t("image_workbench.common.no"),
     },
@@ -351,6 +333,8 @@ const {
 } = useTable({
   core: {
     apiFn: fetchModelListMerged,
+    // 父页尚未选中绘图服务时传入 0；面板仍会挂载，但此时不能请求列表。
+    immediate: props.serviceId > 0,
     apiParams: { page_no: 1, page_size: 10, service_id: props.serviceId, order_by: ORDER_BY_ASC },
     columnsFactory: resolveStatusColumns<ModelTable>(() => buildModelColumns()),
   },
@@ -390,7 +374,6 @@ function createInitialFormData(): ModelDialogForm {
     capability: createDefaultCapability(),
     status: 0,
     remark: undefined,
-    extra_params_text: "",
   };
 }
 
@@ -400,50 +383,19 @@ const formData = ref<ModelDialogForm>(createInitialFormData());
 const formRenderKey = ref(0);
 const dataFormRef = ref<InstanceType<typeof FaForm> | null>(null);
 
-const supportsReference = computed(() => formData.value.capability.support_reference);
-
-const outputFormatOptions = computed(() =>
-  (formData.value.capability.output_formats ?? []).map((item) => ({ label: item, value: item }))
-);
-
 const detailItems = computed<DescriptionsItem[]>(() => [
   { label: t("image_workbench.model.displayName"), prop: "display_name" },
   { label: t("image_workbench.model.modelId"), prop: "model_id" },
   { label: t("image_workbench.common.status"), prop: "status", slot: "status" },
-  { label: t("image_workbench.model.sizes"), prop: "sizes", slot: "sizes" },
-  {
-    label: t("image_workbench.model.supportReference"),
-    prop: "support_reference",
-    slot: "support_reference",
-  },
-  {
-    label: t("image_workbench.model.maxReferenceImages"),
-    prop: "capability.max_reference_images",
-  },
-  {
-    label: t("image_workbench.model.outputFormats"),
-    prop: "output_formats",
-    slot: "output_formats",
-  },
-  {
-    label: t("image_workbench.model.defaultOutputFormat"),
-    prop: "capability.default_output_format",
-  },
-  {
-    label: t("image_workbench.model.watermarkDefault"),
-    prop: "watermark_default",
-    slot: "watermark_default",
-  },
-  { label: t("image_workbench.model.extraParams"), prop: "extra_params", slot: "extra_params" },
+  { label: t("image_workbench.model.capability"), prop: "capability", slot: "capability", span: 2 },
   { label: t("image_workbench.model.remark"), prop: "remark", span: 2 },
   { label: t("image_workbench.common.createdTime"), prop: "created_time" },
   { label: t("image_workbench.common.updatedTime"), prop: "updated_time" },
 ]);
 
 /**
- * 能力声明按 design D3 逐项声明。
- * 尺寸取值不做归一化翻译：上游 A 收档位字符串、上游 B 收固定像素枚举，
- * 这里按上游原文填写，页面不做「方/横/竖」映射。
+ * 模型自身的字段在这里声明；能力声明是嵌套数据，交给 CapabilityEditor 编排
+ * （参数条目可增删、可排序，用平铺的表单项表达不了）。
  */
 const formItems = computed<FormItem[]>(() => [
   {
@@ -469,68 +421,7 @@ const formItems = computed<FormItem[]>(() => [
     },
   },
   { label: t("image_workbench.common.status"), key: "status", type: "radiogroup", span: 24 },
-  {
-    label: t("image_workbench.model.sizes"),
-    key: "capability.sizes",
-    type: "inputtag",
-    span: 24,
-    props: { placeholder: t("image_workbench.model.sizesPlaceholder") },
-  },
-  {
-    label: t("image_workbench.model.allowCustomSize"),
-    key: "capability.allow_custom_size",
-    type: "switch",
-    span: 12,
-  },
-  {
-    label: t("image_workbench.model.supportReference"),
-    key: "capability.support_reference",
-    type: "switch",
-    span: 12,
-  },
-  {
-    label: t("image_workbench.model.maxReferenceImages"),
-    key: "capability.max_reference_images",
-    type: "number",
-    span: 12,
-    hidden: !supportsReference.value,
-    props: { min: 0, max: 100, class: "w-full" },
-  },
-  {
-    label: t("image_workbench.model.outputFormats"),
-    key: "capability.output_formats",
-    type: "inputtag",
-    span: 24,
-    props: { placeholder: t("image_workbench.model.outputFormatsPlaceholder") },
-  },
-  {
-    label: t("image_workbench.model.defaultOutputFormat"),
-    key: "capability.default_output_format",
-    type: "select",
-    span: 12,
-    props: {
-      placeholder: t("image_workbench.common.selectPlaceholder"),
-      options: outputFormatOptions.value,
-      clearable: true,
-    },
-  },
-  {
-    label: t("image_workbench.model.watermarkDefault"),
-    key: "capability.watermark_default",
-    type: "switch",
-    span: 12,
-  },
-  {
-    label: t("image_workbench.model.extraParams"),
-    key: "extra_params_text",
-    type: "input",
-    span: 24,
-    props: {
-      type: "textarea",
-      rows: 3,
-      placeholder: t("image_workbench.model.extraParamsPlaceholder"),
-    },
-  },
+  { label: t("image_workbench.model.capability"), key: "capability_editor", span: 24 },
   {
     label: t("image_workbench.model.remark"),
     key: "remark",
@@ -546,58 +437,10 @@ const formItems = computed<FormItem[]>(() => [
   },
 ]);
 
-type RuleCallback = (error?: Error) => void;
-
-/** 取值不得重复（后端同样拒绝 sizes / output_formats 的重复项） */
-function uniqueArrayValidator(_rule: unknown, value: unknown, callback: RuleCallback) {
-  const list = Array.isArray(value) ? (value as string[]) : [];
-  const cleaned = list.filter((item) => item && String(item).trim());
-  if (new Set(cleaned).size !== cleaned.length) {
-    callback(new Error(t("image_workbench.model.duplicateValue")));
-    return;
-  }
-  callback();
-}
-
-/** 默认输出格式必须落在可选输出格式内（后端同样校验，前端先拦） */
-function defaultFormatValidator(_rule: unknown, value: unknown, callback: RuleCallback) {
-  const formats = formData.value.capability.output_formats ?? [];
-  const text = String(value ?? "").trim();
-  if (!text) {
-    callback();
-    return;
-  }
-  if (formats.length === 0) {
-    callback(new Error(t("image_workbench.model.outputFormatsRequired")));
-    return;
-  }
-  if (!formats.includes(text)) {
-    callback(new Error(t("image_workbench.model.defaultFormatInvalid")));
-    return;
-  }
-  callback();
-}
-
-/** 额外参数以 JSON 对象填写，原样透传给上游 */
-function extraParamsValidator(_rule: unknown, value: unknown, callback: RuleCallback) {
-  const text = String(value ?? "").trim();
-  if (!text) {
-    callback();
-    return;
-  }
-  try {
-    const parsed: unknown = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      callback(new Error(t("image_workbench.model.extraParamsInvalid")));
-      return;
-    }
-  } catch {
-    callback(new Error(t("image_workbench.model.extraParamsInvalid")));
-    return;
-  }
-  callback();
-}
-
+/**
+ * 只拦「填了没有」这类表单级必填；能力声明的合规性由后端按同一份结构判定
+ * （默认值是否落在取值域内、是否引用了不存在的参数等），前端不再写第二套规则。
+ */
 const rules = computed(() => ({
   display_name: [
     { required: true, message: t("image_workbench.model.displayNameRequired"), trigger: "blur" },
@@ -605,39 +448,28 @@ const rules = computed(() => ({
   model_id: [
     { required: true, message: t("image_workbench.model.modelIdRequired"), trigger: "blur" },
   ],
-  "capability.sizes": [{ validator: uniqueArrayValidator, trigger: "change" }],
-  "capability.output_formats": [{ validator: uniqueArrayValidator, trigger: "change" }],
-  "capability.default_output_format": [{ validator: defaultFormatValidator, trigger: "change" }],
-  extra_params_text: [{ validator: extraParamsValidator, trigger: "blur" }],
 }));
 
-/** 详情 → 弹窗表单：能力声明与额外参数文本一并回填 */
+/** 详情 → 弹窗表单：能力声明**复制**一份再编辑，取消弹窗不污染列表行 */
 function buildFormFromDetail(detail: ModelTable): ModelDialogForm {
-  const extra = detail.capability?.extra_params;
-  const hasExtra = !!extra && Object.keys(extra).length > 0;
   return {
     id: detail.id,
     service_id: detail.service_id,
     model_id: detail.model_id,
     display_name: detail.display_name,
-    capability: { ...createDefaultCapability(), ...detail.capability },
+    capability: cloneCapability(detail.capability),
     status: detail.status,
     remark: detail.remark,
-    extra_params_text: hasExtra ? JSON.stringify(extra, null, 2) : "",
   };
 }
 
-/** 提交前还原成后端契约：额外参数文本 → 对象，能力声明整体覆盖 */
+/** 提交契约：能力声明整体覆盖（不做字段级合并，避免「删掉的参数又回来」） */
 function toModelPayload(form: ModelDialogForm): ModelForm {
-  const text = (form.extra_params_text ?? "").trim();
   return {
     service_id: form.service_id ?? props.serviceId,
     model_id: form.model_id,
     display_name: form.display_name,
-    capability: {
-      ...form.capability,
-      extra_params: text ? (JSON.parse(text) as Record<string, unknown>) : {},
-    },
+    capability: form.capability,
     status: form.status,
     remark: form.remark,
   };
@@ -660,7 +492,7 @@ const { submitLoading, handleCloseDialog, handleOpenDialog, handleSubmit } =
     },
   });
 
-/** 打开弹窗：详情取完整列表项，编辑额外回填能力声明与额外参数文本 */
+/** 打开弹窗：详情取完整列表项，编辑回填一份能力声明的副本 */
 async function openModelDialog(type: "detail" | "update", row: ModelTable) {
   if (row.id == null) return;
   const response = await ModelAPI.detailModel(row.id);
@@ -684,7 +516,6 @@ async function handleAdd() {
     await handleOpenDialog("create");
     // 能力声明取默认值；所属服务由父组件注入
     formData.value.capability = createDefaultCapability();
-    formData.value.extra_params_text = "";
     formData.value.service_id = props.serviceId;
     dialogVisible.title = t("image_workbench.model.createTitle");
   } finally {

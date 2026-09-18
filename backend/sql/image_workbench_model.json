@@ -4,33 +4,147 @@
     "model_id": "doubao-seedream-5-0-pro",
     "display_name": "Seedream 5.0 pro",
     "capability_json": {
-      "sizes": ["1K", "1.5K", "2K"],
-      "allow_custom_size": false,
-      "support_reference": true,
-      "max_reference_images": 10,
-      "output_formats": ["png", "jpeg"],
-      "default_output_format": "png",
-      "watermark_default": false,
-      "extra_params": {}
+      "reference": { "supported": true, "max_images": 10 },
+      "modes": [
+        {
+          "key": "layer_decomposition",
+          "label": { "zh": "图层拆分", "en": "Layer decomposition" },
+          "trigger": { "param": "layer_decomposition", "eq": true }
+        },
+        {
+          "key": "interactive_edit",
+          "label": { "zh": "交互编辑", "en": "Interactive edit" },
+          "trigger": null,
+          "marker": {
+            "placeholder": "区域{n}",
+            "template": "<bbox>{x1} {y1} {x2} {y2}</bbox>",
+            "range": 1000
+          }
+        }
+      ],
+      "params": [
+        {
+          "key": "size",
+          "label": { "zh": "尺寸", "en": "Size" },
+          "control": "select",
+          "allowed": ["1K", "1.5K", "2K"],
+          "allow_custom": false,
+          "default": "2K",
+          "source": "documented",
+          "overrides": {
+            "layer_decomposition": { "allowed": ["1K", "1.5K", "2K", "auto"], "default": "auto" }
+          }
+        },
+        {
+          "key": "layer_decomposition",
+          "label": { "zh": "图层拆分", "en": "Layer decomposition" },
+          "control": "switch",
+          "default": false,
+          "source": "measured",
+          "when": { "all": [{ "request": "reference_count", "eq": 1 }] }
+        },
+        {
+          "key": "output_format",
+          "label": { "zh": "输出格式", "en": "Output format" },
+          "control": "select",
+          "allowed": ["png", "jpeg"],
+          "default": "png",
+          "source": "documented"
+        },
+        {
+          "key": "background",
+          "label": { "zh": "图片透明通道", "en": "Transparent background" },
+          "control": "select",
+          "allowed": ["opaque", "transparent"],
+          "default": "opaque",
+          "source": "documented",
+          "when": {
+            "all": [
+              { "param": "output_format", "not_in": ["jpeg"] },
+              { "request": "reference_count", "eq": 1 },
+              { "request": "reference_has_alpha", "eq": true }
+            ]
+          }
+        },
+        {
+          "key": "watermark",
+          "label": { "zh": "水印", "en": "Watermark" },
+          "control": "switch",
+          "default": false,
+          "source": "documented"
+        },
+        {
+          "key": "optimize_prompt_options.mode",
+          "label": { "zh": "提示词优化档位", "en": "Prompt optimization" },
+          "control": "select",
+          "allowed": ["standard", "fast"],
+          "default": "standard",
+          "source": "documented"
+        },
+        {
+          "key": "response_format",
+          "label": { "zh": "返回格式", "en": "Response format" },
+          "control": "select",
+          "allowed": ["url", "b64_json"],
+          "default": "url",
+          "source": "documented"
+        }
+      ]
     },
     "status": 0,
-    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）；能力声明按上游文档预置，管理员可改"
+    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）。能力声明按上游文档预置，管理员可改。水印：上游默认加水印，此处默认 false 是产品选择（ADR-0008），未显式传会被上游按 true 处理，因此默认值必须由服务端补齐。layer_decomposition 标 measured：已在 /api/plan/v3 上实测确认被接受；background 按文档声明为 opaque/transparent 字符串，布尔值已实测会被拒绝；本 seed 的 model_id 亦经实测可用。response_format 的 b64_json 取值与 optimize_prompt_options.mode 的 standard 默认档位同批实测确认。"
   },
   {
     "service_name": "火山方舟 Agent Plan",
     "model_id": "doubao-seedream-5-0-lite",
     "display_name": "Seedream 5.0 lite",
     "capability_json": {
-      "sizes": ["2K", "3K", "4K"],
-      "allow_custom_size": false,
-      "support_reference": true,
-      "max_reference_images": 10,
-      "output_formats": ["png", "jpeg"],
-      "default_output_format": "png",
-      "watermark_default": false,
-      "extra_params": {}
+      "reference": { "supported": true, "max_images": 14 },
+      "modes": [],
+      "params": [
+        {
+          "key": "size",
+          "label": { "zh": "尺寸", "en": "Size" },
+          "control": "select",
+          "allowed": ["2K", "3K", "4K"],
+          "allow_custom": false,
+          "default": "2K",
+          "source": "documented"
+        },
+        {
+          "key": "output_format",
+          "label": { "zh": "输出格式", "en": "Output format" },
+          "control": "select",
+          "allowed": ["png", "jpeg"],
+          "default": "png",
+          "source": "documented"
+        },
+        {
+          "key": "watermark",
+          "label": { "zh": "水印", "en": "Watermark" },
+          "control": "switch",
+          "default": false,
+          "source": "documented"
+        },
+        {
+          "key": "optimize_prompt_options.mode",
+          "label": { "zh": "提示词优化档位", "en": "Prompt optimization" },
+          "control": "select",
+          "allowed": ["standard"],
+          "default": "standard",
+          "source": "documented"
+        },
+        {
+          "key": "response_format",
+          "label": { "zh": "返回格式", "en": "Response format" },
+          "control": "select",
+          "allowed": ["url", "b64_json"],
+          "default": "url",
+          "source": "documented"
+        }
+      ]
     },
     "status": 0,
-    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）；能力声明按上游文档预置，管理员可改"
+    "remark": "模型标识为占位提示（Agent Plan 与标准 API 的写法不同，以实际入口为准）。能力声明按上游文档预置，管理员可改。参考图上限 14 是 lite 的实际值（pro 为 10）；提示词优化只给 standard——fast 档不支持 lite。不声明 layer_decomposition 与 background：这两项仅 5.0 pro 有（ADR-0006），不声明即不会发给上游。水印：上游默认加水印，此处默认 false 是产品选择（ADR-0008）。"
   }
 ]

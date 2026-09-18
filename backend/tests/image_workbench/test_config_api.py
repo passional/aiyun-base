@@ -200,21 +200,68 @@ def test_operation_log_does_not_contain_plaintext_credential(test_client: TestCl
 # ─────────────────────── 2.2 绘图模型 CRUD ───────────────────────
 
 
+def _size_param(**overrides) -> dict:
+    param = {
+        "key": "size",
+        "label": {"zh": "尺寸", "en": "Size"},
+        "control": "select",
+        "allowed": ["1K", "1.5K", "2K"],
+        "allow_custom": False,
+        "default": "2K",
+        "source": "documented",
+    }
+    param.update(overrides)
+    return param
+
+
+def _capability(**overrides) -> dict:
+    """一份与种子同构的清单：参数条目 + 出图方式 + 条件依赖 + 按出图方式的覆盖。"""
+    capability = {
+        "reference": {"supported": True, "max_images": 10},
+        "modes": [
+            {
+                "key": "layer_decomposition",
+                "label": {"zh": "图层拆分", "en": "Layer decomposition"},
+                "trigger": {"param": "layer_decomposition", "eq": True},
+            }
+        ],
+        "params": [
+            _size_param(overrides={"layer_decomposition": {"allowed": ["1K", "1.5K", "2K", "auto"], "default": "auto"}}),
+            {
+                "key": "layer_decomposition",
+                "label": {"zh": "图层拆分", "en": "Layer decomposition"},
+                "control": "switch",
+                "default": False,
+                "source": "inferred",
+                "when": {"all": [{"request": "reference_count", "eq": 1}]},
+            },
+            {
+                "key": "watermark",
+                "label": {"zh": "水印", "en": "Watermark"},
+                "control": "switch",
+                "default": False,
+                "source": "documented",
+            },
+            {
+                "key": "optimize_prompt_options.mode",
+                "label": {"zh": "提示词优化档位", "en": "Prompt optimization"},
+                "control": "select",
+                "allowed": ["standard", "fast"],
+                "default": "standard",
+                "source": "documented",
+            },
+        ],
+    }
+    capability.update(overrides)
+    return capability
+
+
 def _create_model(test_client: TestClient, auth_headers: dict, service_id: int, **overrides) -> dict:
     payload = {
         "service_id": service_id,
         "model_id": "doubao-seedream-5-0-pro",
         "display_name": "Seedream 5.0 pro",
-        "capability": {
-            "sizes": ["1K", "1.5K", "2K"],
-            "allow_custom_size": False,
-            "support_reference": True,
-            "max_reference_images": 10,
-            "output_formats": ["png", "jpeg"],
-            "default_output_format": "png",
-            "watermark_default": False,
-            "extra_params": {"sequential_image_generation": "disabled"},
-        },
+        "capability": _capability(),
         "status": 0,
     }
     payload.update(overrides)
@@ -224,21 +271,25 @@ def _create_model(test_client: TestClient, auth_headers: dict, service_id: int, 
 
 
 def test_model_belongs_to_service_and_capability_roundtrip(test_client: TestClient, auth_headers: dict) -> None:
-    """两级结构：模型挂在服务下；能力声明按 D3 逐字段存取一致。"""
+    """两级结构：模型挂在服务下；能力声明整体存取一致（含出图方式、覆盖、来源标记）。"""
     service = _create_service(test_client, auth_headers, name="caps")
     model = _create_model(test_client, auth_headers, service["id"])
     assert model["service_id"] == service["id"]
     assert model["service_name"] == "caps"
-    assert model["capability"]["sizes"] == ["1K", "1.5K", "2K"]
-    assert model["capability"]["support_reference"] is True
-    assert model["capability"]["max_reference_images"] == 10
-    assert model["capability"]["default_output_format"] == "png"
-    assert model["capability"]["watermark_default"] is False
-    assert model["capability"]["extra_params"] == {"sequential_image_generation": "disabled"}
+
+    capability = model["capability"]
+    assert capability["reference"] == {"supported": True, "max_images": 10}
+    assert [mode["key"] for mode in capability["modes"]] == ["layer_decomposition"]
+    by_key = {item["key"]: item for item in capability["params"]}
+    assert by_key["size"]["allowed"] == ["1K", "1.5K", "2K"] and by_key["size"]["default"] == "2K"
+    assert by_key["size"]["overrides"]["layer_decomposition"]["default"] == "auto"
+    assert by_key["layer_decomposition"]["source"] == "inferred"
+    assert by_key["layer_decomposition"]["when"] == {"all": [{"request": "reference_count", "eq": 1}]}
+    assert by_key["optimize_prompt_options.mode"]["key"].count(".") == 1, "点号键原样回显"
 
     # 重新打开（详情）原样回显
     detail = test_client.get(f"{MODELS_API}/detail/{model['id']}", headers=auth_headers).json()["data"]
-    assert detail["capability"] == model["capability"]
+    assert detail["capability"] == capability
 
     # 按 service_id 过滤的列表只含该服务下的模型
     other = _create_service(test_client, auth_headers, name="caps-other")
@@ -250,22 +301,16 @@ def test_model_belongs_to_service_and_capability_roundtrip(test_client: TestClie
 
 
 def test_capability_defaults_applied_when_omitted(test_client: TestClient, auth_headers: dict) -> None:
-    """能力声明缺省时按 D3 默认值落库（尤其 watermark_default=false）。"""
+    """能力声明缺省时是一份**空清单**：不替管理员断言任何参数或参考图能力。"""
     service = _create_service(test_client, auth_headers, name="defaults")
     model = _create_model(test_client, auth_headers, service["id"], model_id="default-model", display_name="D", capability={})
     cap = model["capability"]
-    assert cap["sizes"] == []
-    assert cap["allow_custom_size"] is False
-    assert cap["support_reference"] is True
-    assert cap["max_reference_images"] == 10
-    assert cap["output_formats"] == ["png", "jpeg"]
-    assert cap["default_output_format"] == "png"
-    assert cap["watermark_default"] is False, "上游默认加水印，必须显式给出 false 作为默认值"
-    assert cap["extra_params"] == {}
+    assert cap["reference"] == {"supported": False, "max_images": 0}
+    assert cap["modes"] == [] and cap["params"] == []
 
 
 def test_invalid_capability_rejected(test_client: TestClient, auth_headers: dict) -> None:
-    """能力声明按 D3 结构校验：默认格式必须可选、张数不能为负、取值不可重复。"""
+    """声明不合规时拒绝保存，并指出具体是哪一个参数的问题（spec: service-config）。"""
     service = _create_service(test_client, auth_headers, name="bad-caps")
     url = f"{MODELS_API}/create"
 
@@ -276,9 +321,31 @@ def test_invalid_capability_rejected(test_client: TestClient, auth_headers: dict
             headers=auth_headers,
         )
 
-    assert _post({"output_formats": ["png"], "default_output_format": "jpeg"}).status_code == 422
-    assert _post({"max_reference_images": -1}).status_code == 422
-    assert _post({"sizes": ["1K", "1K"]}).status_code == 422
+    # 默认值落在取值域之外
+    resp = _post(_capability(params=[_size_param(default="4K")]))
+    assert resp.status_code == 422 and "size" in resp.text
+
+    # 取值重复
+    assert _post(_capability(params=[_size_param(allowed=["1K", "1K"])])).status_code == 422
+
+    # 张数不能为负
+    assert _post(_capability(reference={"supported": True, "max_images": -1})).status_code == 422
+
+    # when 引用了不存在的参数
+    resp = _post(_capability(params=[_size_param(when={"all": [{"param": "output_formats", "eq": "png"}]})]))
+    assert resp.status_code == 422 and "output_formats" in resp.text
+
+    # modes[].trigger 指向不存在的参数
+    capability = _capability()
+    capability["modes"][0]["trigger"] = {"param": "layer_decompose", "eq": True}
+    assert _post(capability).status_code == 422
+
+    # select 未声明取值域 / 未声明默认值
+    assert _post(_capability(params=[_size_param(allowed=None)])).status_code == 422
+
+    # 覆盖引用了不存在的出图方式
+    capability = _capability(modes=[])
+    assert _post(capability).status_code == 422, "出图方式被删掉后，按它覆盖的条目也必须一并清掉"
 
 
 def test_unsupported_reference_normalizes_max_images(test_client: TestClient, auth_headers: dict) -> None:
@@ -290,10 +357,9 @@ def test_unsupported_reference_normalizes_max_images(test_client: TestClient, au
         service["id"],
         model_id="no-ref-model",
         display_name="N",
-        capability={"support_reference": False, "max_reference_images": 10},
+        capability=_capability(reference={"supported": False, "max_images": 10}),
     )
-    assert model["capability"]["support_reference"] is False
-    assert model["capability"]["max_reference_images"] == 0
+    assert model["capability"]["reference"] == {"supported": False, "max_images": 0}
 
 
 def test_model_id_preserved_verbatim(test_client: TestClient, auth_headers: dict) -> None:
@@ -328,16 +394,21 @@ def test_model_requires_existing_service(test_client: TestClient, auth_headers: 
 
 
 def test_update_model_overrides_capability(test_client: TestClient, auth_headers: dict) -> None:
-    """编辑能力声明整体覆盖（含把参考图关掉）。"""
+    """编辑能力声明整体覆盖（含把参考图关掉、把出图方式整条去掉）。"""
     service = _create_service(test_client, auth_headers, name="edit-caps")
     model = _create_model(test_client, auth_headers, service["id"], model_id="edit-me", display_name="E")
+
     resp = test_client.put(
         f"{MODELS_API}/update/{model['id']}",
         json={
             "service_id": service["id"],
             "model_id": "edit-me",
             "display_name": "E2",
-            "capability": {"sizes": ["2K", "3K", "4K"], "support_reference": False},
+            "capability": _capability(
+                reference={"supported": False, "max_images": 10},
+                modes=[],
+                params=[_size_param(allowed=["2K", "3K", "4K"], default="3K")],
+            ),
             "status": 1,
         },
         headers=auth_headers,
@@ -345,8 +416,9 @@ def test_update_model_overrides_capability(test_client: TestClient, auth_headers
     assert resp.status_code == 200, resp.text
     data = resp.json()["data"]
     assert data["display_name"] == "E2" and data["status"] == 1
-    assert data["capability"]["sizes"] == ["2K", "3K", "4K"]
-    assert data["capability"]["support_reference"] is False and data["capability"]["max_reference_images"] == 0
+    assert data["capability"]["reference"] == {"supported": False, "max_images": 0}
+    assert data["capability"]["modes"] == []
+    assert data["capability"]["params"] == [_size_param(allowed=["2K", "3K", "4K"], default="3K")]
 
 
 # ────────────────────── 2.3 连通性测试 ───────────────────────
@@ -500,9 +572,9 @@ def _insert_job(service_id: int, model_pk: int, model_id: str) -> None:
     try:
         conn.execute(
             "insert into image_workbench_job "
-            "(service_id, model_pk, model_id, prompt, status, uuid, is_deleted, created_time, updated_time) "
-            "values (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))",
-            (service_id, model_pk, model_id, "p", "success", _uuid.uuid4().hex, 0),
+            "(service_id, model_pk, model_id, prompt, prompt_final, status, uuid, is_deleted, created_time, updated_time) "
+            "values (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))",
+            (service_id, model_pk, model_id, "p", "p", "success", _uuid.uuid4().hex, 0),
         )
         conn.commit()
     finally:

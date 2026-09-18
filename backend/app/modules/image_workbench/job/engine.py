@@ -9,9 +9,10 @@
   （``async_db_session``），不占用请求事务；
 - 进度写 Redis（``progress.py``）供断线重连，与 SSE 推送并行。
 
-**产物转存（设计 D5）**：上游图片地址 24 小时后失效，因此拿到结果后立即取字节 →
-临时文件 → 默认存储节点 ``adapter.upload`` → ``image_path`` 落库 → 删临时文件。
-任一步失败即任务 ``failed``；``image_path`` 里**绝不存上游 URL**。
+**产物转存（设计 D5/D8）**：上游图片地址 24 小时后失效，因此拿到结果后立即取字节并
+转存到默认存储节点。一次任务可能返回多张（底图 + 图层），**全部都要转存**，任一张失败
+即整单失败且不留部分产物。产物落 ``image_workbench/{yyyy}/{mm}/{job_uuid}/``，
+``file_path`` 里**绝不存上游 URL**。
 
 **取消（设计 D6）**：取消端点把任务直接落终态 ``cancelled`` 并在此置取消标志 + 取消
 执行任务；引擎的收尾一律先读库内状态，已被取消则不覆盖（取消优先于成功）。
@@ -19,6 +20,7 @@
 
 import asyncio
 import os
+import shutil
 import tempfile
 import time
 from datetime import UTC, datetime
@@ -37,9 +39,9 @@ from app.modules.task.storage.core.base import StorageProtocol
 from app.modules.task.storage.node.service import StorageNodeService
 
 from ..config.model import ImageWorkbenchModelModel, ImageWorkbenchServiceModel
-from ..config.service import _parse_capability, decrypt_credential
-from .client import ImageUpstreamClient, ImageUpstreamError
-from .model import ImageWorkbenchJobModel
+from ..config.service import decrypt_credential
+from .client import ImageArtifact, ImageUpstreamClient, ImageUpstreamError
+from .model import ImageWorkbenchArtifactModel, ImageWorkbenchJobModel
 from .progress import write_progress
 from .schema import STATUS_CANCELLED, STATUS_FAILED, STATUS_PENDING, STATUS_RUNNING, STATUS_SUCCESS
 from .sse_manager import image_workbench_job_manager
@@ -189,30 +191,80 @@ def _guess_extension(raw: bytes, output_format: str | None) -> str:
     return "png"
 
 
-async def store_artifact_bytes(db: Any, job_uuid: str, raw: bytes, output_format: str | None) -> str:
-    """产物字节 → 默认存储节点，返回其在存储节点中的相对路径。
+def artifact_file_name(artifact: ImageArtifact, extension: str) -> str:
+    """产物在**任务目录**下的文件名：底图 ``base.{ext}``、图层 ``layer_{z:02d}.{ext}``。
 
-    远端路径 ``image_workbench/{yyyy}/{mm}/{job_uuid}.{ext}``（按日期分片）。写临时
-    文件 → ``adapter.upload`` → 删临时文件；失败向上抛，由调用方把任务判为 ``failed``。
+    图层恒为 PNG（上游如此），扩展名仍以字节魔数为准——``file_path`` 是权威，目录布局
+    只是约定（design D8），上游万一回了别的格式也不至于把文件标错。
+    """
+    if artifact.is_base:
+        return f"base.{extension}"
+    return f"layer_{artifact.z_index:02d}.{extension}"
+
+
+async def store_job_artifacts(
+    db: Any,
+    client: ImageUpstreamClient,
+    job_uuid: str,
+    artifacts: list[ImageArtifact],
+    output_format: str | None,
+) -> list[dict[str, Any]]:
+    """把上游返回的**全部**图片转存到本任务的目录下，返回待落库的产物行。
+
+    目录：``image_workbench/{yyyy}/{mm}/{job_uuid}/``（按日期与任务分片，同一次任务的
+    底图与图层因此聚在一处）。先全部取到本地临时目录，**再**逐张上传：任何一张取不到
+    时存储节点还没被碰过；上传中途失败则回滚已上传的那些。**不留部分产物**。
     """
     now = datetime.now(UTC)
-    extension = _guess_extension(raw, output_format)
-    remote_path = f"{_ARTIFACT_PREFIX}/{now:%Y/%m}/{job_uuid}.{extension}"
+    directory = f"{_ARTIFACT_PREFIX}/{now:%Y/%m}/{job_uuid}"
 
     source = await StorageNodeService(AuthSchema(), db).get_active_source()
     adapter = StorageNodeService.build_adapter(source)
-    fd, tmp_path = tempfile.mkstemp(prefix="iw_artifact_", suffix=f".{extension}")
+    uploaded: list[str] = []
+    staged: list[dict[str, Any]] = []
+    tmp_dir = tempfile.mkdtemp(prefix="iw_artifacts_")
     try:
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(raw)
-        await adapter.upload(tmp_path, remote_path)
+        for index, artifact in enumerate(artifacts):
+            raw = await client.fetch_image_bytes(artifact)
+            # 底图用清单声明的格式兜底；图层恒为 PNG，以字节魔数为准
+            extension = _guess_extension(raw, output_format if artifact.is_base else None)
+            local_path = Path(tmp_dir) / f"{index}.{extension}"
+            local_path.write_bytes(raw)
+            staged.append(
+                {
+                    "artifact": artifact,
+                    "local_path": str(local_path),
+                    "remote_path": f"{directory}/{artifact_file_name(artifact, extension)}",
+                    "output_format": extension,
+                }
+            )
+        try:
+            for item in staged:
+                await adapter.upload(item["local_path"], item["remote_path"])
+                uploaded.append(item["remote_path"])
+        except Exception:
+            for remote_path in uploaded:
+                try:
+                    await adapter.delete(remote_path)
+                except Exception as e:  # noqa: BLE001 — 回滚尽力而为，随后任务仍判失败
+                    logger.warning("绘图工作台：产物回滚失败，存储节点可能残留 {}: {}", remote_path, e)
+            raise
     finally:
         await adapter.close()
-        try:
-            os.unlink(tmp_path)
-        except OSError:  # noqa: PERF203 — 临时文件清理失败不影响产物落库
-            logger.warning("绘图工作台：产物临时文件清理失败: {}", tmp_path)
-    return remote_path
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    return [
+        {
+            "z_index": item["artifact"].z_index,
+            "name": item["artifact"].name,
+            "description": item["artifact"].description,
+            "bounding_box_json": item["artifact"].bounding_box,
+            "file_path": item["remote_path"],
+            "image_size": item["artifact"].size,
+            "output_format": item["output_format"],
+        }
+        for item in staged
+    ]
 
 
 def _local_abs_path(host: str | None, remote_path: str) -> str:
@@ -310,16 +362,17 @@ async def _finalize(
     *,
     owner_id: int | None = None,
     error: str | None = None,
-    image_path: str | None = None,
-    image_size: str | None = None,
+    artifacts: list[dict[str, Any]] | None = None,
     usage: dict[str, Any] | None = None,
     elapsed_ms: int | None = None,
     message: str | None = None,
 ) -> None:
-    """收敛任务终态并推送进度。
+    """收敛任务终态、落产物行并推送进度。
 
     **取消优先**：库内已是 ``cancelled`` 时任何非取消终态都不覆盖——否则用户点了取消
     却在几秒后看到「生成成功」，取消语义就废了（spec: generation / 取消进行中的任务）。
+
+    产物行与终态在**同一个事务**里落库：不会出现「任务显示成功但产物行还没写」的中间态。
     """
     async with async_db_session() as db, db.begin():
         job = await db.get(ImageWorkbenchJobModel, job_id)
@@ -333,10 +386,8 @@ async def _finalize(
             job.active_owner_id = None
         job.finished_at = datetime.now(UTC)
         job.error = error
-        if image_path is not None:
-            job.image_path = image_path
-        if image_size is not None:
-            job.image_size = image_size
+        for row in artifacts or []:
+            db.add(ImageWorkbenchArtifactModel(job_id=job_id, **row))
         if usage is not None:
             job.usage_json = usage
         if elapsed_ms is not None:
@@ -346,7 +397,7 @@ async def _finalize(
         owner_id,
         status=status,
         error=error,
-        image_path=image_path,
+        artifact_count=len(artifacts or []),
         elapsed_ms=elapsed_ms,
         message=message,
     )
@@ -366,8 +417,11 @@ async def _execute_job(job_id: int) -> None:
             owner_id = job.created_id
             job_uuid = job.uuid
             model_id = job.model_id
-            prompt = job.prompt
+            # 发给上游的是**最终提示词**（含坐标标记），不是用户原话（design D5）。
+            # 原话里只有 `区域1` 这样的占位符——发出去等于把坐标静默丢了。
+            prompt = job.prompt_final
             params: dict[str, Any] = dict(job.params_json or {})
+            reference_paths: list[str] = list(job.reference_images_json or [])
             model = await db.get(ImageWorkbenchModelModel, job.model_pk)
             service = await db.get(ImageWorkbenchServiceModel, job.service_id)
 
@@ -390,50 +444,42 @@ async def _execute_job(job_id: int) -> None:
             await _finalize(job_id, STATUS_CANCELLED, owner_id=owner_id, elapsed_ms=_elapsed(started), message="任务已取消")
             return
 
-        capability = _parse_capability(model.capability_json)
-        reference_images = resolve_reference_files(params.get("reference_images") or [])
+        reference_images = resolve_reference_files(reference_paths)
         client = ImageUpstreamClient(
             service.base_url,
             api_key=decrypt_credential(service.api_key_enc),
             dialect=service.dialect,
         )
+        # 参数**原样**取自任务快照：快照就是提交时按清单解析并补齐的那一份，
+        # 引擎不再做任何参数分支（发与不发只由清单决定，design D4）
         result = await client.generate(
             model=model_id,
             prompt=prompt,
-            size=params.get("size"),
-            output_format=params.get("output_format"),
-            watermark=params.get("watermark"),
+            params=params,
             reference_images=reference_images or None,
-            extra_params=capability.extra_params,
         )
-        if len(result.artifacts) != 1:
-            logger.warning("绘图工作台：任务 {} 上游返回 {} 张图，按「一次任务一张图」取首张", job_id, len(result.artifacts))
 
         if is_cancelled(job_id):
             await _finalize(job_id, STATUS_CANCELLED, owner_id=owner_id, elapsed_ms=_elapsed(started), message="任务已取消")
             return
 
-        # 产物转存（设计 D5）：拿到结果立即落盘，绝不把上游 URL 当长期访问方式
-        await push_job_progress(job_id, owner_id, status=STATUS_RUNNING, message="正在转存产物…")
-        raw_bytes = await client.fetch_image_bytes(result.artifacts[0])
-        if is_cancelled(job_id):
-            await _finalize(job_id, STATUS_CANCELLED, owner_id=owner_id, elapsed_ms=_elapsed(started), message="任务已取消")
-            return
-
+        # 产物转存（设计 D5/D8）：拿到结果立即落盘，绝不把上游 URL 当长期访问方式；
+        # 一次返回多张时**全部**转存，不留部分产物（4.2）
+        await push_job_progress(job_id, owner_id, status=STATUS_RUNNING, message=f"正在转存 {len(result.artifacts)} 张产物…")
         async with async_db_session() as db:
-            image_path = await store_artifact_bytes(db, job_uuid, raw_bytes, params.get("output_format"))
+            stored = await store_job_artifacts(db, client, job_uuid, result.artifacts, params.get("output_format"))
 
         await _finalize(
             job_id,
             STATUS_SUCCESS,
             owner_id=owner_id,
-            image_path=image_path,
-            image_size=result.artifacts[0].size,
-            usage={"images": 1, "upstream": result.usage or {}},
+            artifacts=stored,
+            # 生成张数按**实际产物数**记，而不是按上游声明的张数（4.5）
+            usage={"images": len(stored), "upstream": result.usage or {}},
             elapsed_ms=_elapsed(started),
             message="生成成功",
         )
-        logger.info("绘图工作台：任务 {} 执行完成，产物 {}", job_id, image_path)
+        logger.info("绘图工作台：任务 {} 执行完成，产物 {} 张", job_id, len(stored))
     except asyncio.CancelledError:
         # 用户取消：取消端点已把任务落为终态 cancelled，这里只补耗时并收敛进度
         logger.info("绘图工作台：任务 {} 被取消，停止执行", job_id)

@@ -13,6 +13,7 @@ import uuid
 from typing import Any
 
 from redis.asyncio import Redis
+from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from app.core.logger import logger
 
@@ -150,8 +151,17 @@ class SSEConnectionManager:
         try:
             await pubsub.subscribe(channel)
             logger.info("{} 通道跨进程监听已启动: {}", self._channel, channel)
-            async for raw in pubsub.listen():
-                if raw.get("type") != "message":
+            while True:
+                # 用 get_message 而不是 pubsub.listen()：客户端带 socket_timeout
+                # （settings.POOL_TIMEOUT，默认 30s），空闲超过它时 Redis 读操作抛
+                # TimeoutError。listen() 会把这一异常抛出循环、让监听协程退出并记一条
+                # ERROR——那只是「这段时间没人发消息」，不是故障；而监听协程一旦退出，
+                # 在下次 SSE 连接把它重启之前，别的 worker 广播来的推送投不进本进程。
+                try:
+                    raw = await pubsub.get_message(ignore_subscribe_messages=True, timeout=None)
+                except RedisTimeoutError:
+                    continue
+                if raw is None:
                     continue
                 try:
                     payload = json.loads(raw["data"])

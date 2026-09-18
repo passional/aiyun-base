@@ -264,6 +264,11 @@ class InitializeData:
         照 ``__create_dict_data_objs`` 的先例——现有 ``__create_objects_with_children``
         只处理 ``sys_menu``/``sys_dept`` 的父子关系，不处理任意外键。
         解析不到服务名时跳过该条并告警，不让一条错种子拖垮整次初始化。
+
+        ``capability_json`` 在这里**严格**过一遍新结构校验（design D1：清单是数据，
+        写错要到运行期才暴露，因此存储时必须做结构校验）：不合规的种子直接让初始化失败，
+        而不是把一份跑不通的声明悄悄写进库——``parse_capability`` 那种「兜底为空清单」
+        的宽容是给存量脏数据用的，不该用在种子入口。
         """
         service_names = {item.get("service_name") for item in data if item.get("service_name")}
         result = await db.execute(select(ImageWorkbenchServiceModel.name, ImageWorkbenchServiceModel.id).where(ImageWorkbenchServiceModel.name.in_(service_names)))
@@ -277,6 +282,13 @@ class InitializeData:
             if service_id is None:
                 logger.warning(f"⚠️  未找到绘图服务 {service_name}，跳过绘图模型种子")
                 continue
+            if item.get("capability_json") is not None:
+                from app.modules.image_workbench.config.capability import (
+                    ImageWorkbenchCapabilitySchema,
+                    dump_capability,
+                )
+
+                item["capability_json"] = dump_capability(ImageWorkbenchCapabilitySchema.model_validate(item["capability_json"]))
             item["service_id"] = service_id
             objs.append(ImageWorkbenchModelModel(**item))
         return objs

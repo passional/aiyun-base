@@ -2,7 +2,7 @@
 
 - ``iw_db``：独立 sqlite 文件库（函数级、绑定当前事件循环、开启 FK 级联），
   供 model / service / engine 层的异步直测使用，避开全局引擎跨事件循环复用问题。
-- 仅建绘图工作台 3 表 + ``sys_user``（UserMixin 的 FK 目标），加速建库。
+- 仅建绘图工作台 4 表 + ``sys_user``（UserMixin 的 FK 目标），加速建库。
 """
 
 import pytest
@@ -15,7 +15,11 @@ from app.modules.image_workbench.config.model import (
     ImageWorkbenchModelModel,
     ImageWorkbenchServiceModel,
 )
-from app.modules.image_workbench.job.model import ImageWorkbenchJobModel
+from app.modules.image_workbench.job.model import (
+    ImageWorkbenchArtifactModel,
+    ImageWorkbenchJobArtifactRefModel,
+    ImageWorkbenchJobModel,
+)
 from app.modules.system.dept.model import DeptModel
 from app.modules.system.user.model import UserModel
 from app.modules.task.storage.node.model import StorageNodeModel
@@ -33,6 +37,8 @@ _IW_TABLES = [
     ImageWorkbenchServiceModel.__table__,
     ImageWorkbenchModelModel.__table__,
     ImageWorkbenchJobModel.__table__,
+    ImageWorkbenchArtifactModel.__table__,
+    ImageWorkbenchJobArtifactRefModel.__table__,
 ]
 
 

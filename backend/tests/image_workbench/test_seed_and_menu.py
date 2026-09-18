@@ -98,18 +98,70 @@ def test_seeded_service_has_no_credential(test_client: TestClient) -> None:
     assert status == 0
 
 
-def test_seeded_capabilities_match_upstream_limits(test_client: TestClient) -> None:
-    """pro / lite 两个模型的能力声明：尺寸档位分别为 1K/1.5K/2K 与 2K/3K/4K。"""
+def _param(capability: dict[str, Any], key: str) -> dict[str, Any]:
+    return next(item for item in capability["params"] if item["key"] == key)
+
+
+def test_seeded_capabilities_parse_and_match_upstream_limits(test_client: TestClient) -> None:
+    """预置的两行都能被新 schema 解析，且逐模型数值各按实际（任务 5.1）。"""
+    from app.modules.image_workbench.config.capability import ImageWorkbenchCapabilitySchema
+
     models = _seeded_models()
     assert set(models) == {"doubao-seedream-5-0-pro", "doubao-seedream-5-0-lite"}
-    assert models["doubao-seedream-5-0-pro"]["capability"]["sizes"] == ["1K", "1.5K", "2K"]
-    assert models["doubao-seedream-5-0-lite"]["capability"]["sizes"] == ["2K", "3K", "4K"]
+    parsed = {key: ImageWorkbenchCapabilitySchema.model_validate(model["capability"]) for key, model in models.items()}
+
+    # 参考图上限：pro 10 / lite 14（lite 由 10 修正为上游文档的 14）
+    assert parsed["doubao-seedream-5-0-pro"].reference.max_images == 10
+    assert parsed["doubao-seedream-5-0-lite"].reference.max_images == 14
+
+    # 尺寸档位各自反映该模型的实际支持
+    assert _param(models["doubao-seedream-5-0-pro"]["capability"], "size")["allowed"] == ["1K", "1.5K", "2K"]
+    assert _param(models["doubao-seedream-5-0-lite"]["capability"], "size")["allowed"] == ["2K", "3K", "4K"]
+
+    # 水印：上游默认加水印，预置必须显式 false（ADR-0008），且备注里写明这件事
     for model in models.values():
-        capability = model["capability"]
-        assert capability["output_formats"] == ["png", "jpeg"]
-        assert capability["default_output_format"] == "png"
-        # 上游默认加水印：预置必须显式 false，否则成品图会被打上「AI 生成」水印
-        assert capability["watermark_default"] is False
+        assert _param(model["capability"], "watermark")["default"] is False
+    remarks = _rows(
+        "select m.remark from image_workbench_model m join image_workbench_service s on s.id = m.service_id where s.name = '火山方舟 Agent Plan'"
+    )
+    assert len(remarks) == 2
+    for row in remarks:
+        assert "上游默认加水印" in (row[0] or ""), "备注必须写明上游默认是加水印"
+
+
+def test_seeded_capabilities_mark_measured_values_as_measured(test_client: TestClient) -> None:
+    """图层拆分的实测值与 background 的文档字符串域各按其证据标来源。"""
+    pro = _seeded_models()["doubao-seedream-5-0-pro"]["capability"]
+    assert _param(pro, "layer_decomposition")["source"] == "measured"
+    background = _param(pro, "background")
+    assert background["source"] == "documented"
+    assert background["control"] == "select"
+    assert background["allowed"] == ["opaque", "transparent"]
+    assert background["default"] == "opaque"
+    for key in ("size", "output_format", "watermark", "response_format", "optimize_prompt_options.mode"):
+        assert _param(pro, key)["source"] == "documented"
+
+    # 两个参数都带「只在本次请求的输入满足条件时可用」的依赖（design D2）
+    assert _param(pro, "layer_decomposition")["when"] == {"all": [{"request": "reference_count", "eq": 1}]}
+    assert _param(pro, "background")["when"]["all"][0] == {"param": "output_format", "not_in": ["jpeg"]}
+
+
+def test_seeded_models_declare_their_own_modes_and_options(test_client: TestClient) -> None:
+    """逐模型差异：图层拆分方式与 fast 档只属 pro；lite 不声明即不会发出这两个参数。"""
+    models = _seeded_models()
+    pro, lite = models["doubao-seedream-5-0-pro"]["capability"], models["doubao-seedream-5-0-lite"]["capability"]
+
+    assert [mode["key"] for mode in pro["modes"]] == ["layer_decomposition", "interactive_edit"]
+    assert pro["modes"][0]["trigger"] == {"param": "layer_decomposition", "eq": True}
+    assert lite["modes"] == [], "lite 不支持图层拆分，不得声明该方式"
+
+    lite_keys = {item["key"] for item in lite["params"]}
+    assert "layer_decomposition" not in lite_keys and "background" not in lite_keys
+    assert _param(lite, "optimize_prompt_options.mode")["allowed"] == ["standard"], "fast 档不支持 lite"
+    assert _param(pro, "optimize_prompt_options.mode")["allowed"] == ["standard", "fast"]
+
+    # 同一参数在图层拆分方式下的取值域与默认值不同（design D3 的 overrides）
+    assert _param(pro, "size")["overrides"]["layer_decomposition"] == {"allowed": ["1K", "1.5K", "2K", "auto"], "default": "auto"}
 
 
 # ─────────────────────── 5.3 存量库幂等补种 ───────────────────────
@@ -152,3 +204,25 @@ async def test_menu_merge_fills_missing_subtree_and_stays_idempotent(test_client
     # 补齐的子树权限码完整
     rows = _rows("select permission from sys_menu where permission like 'image_workbench:%' and type = 3")
     assert {row[0] for row in rows} == _EXPECTED_PERMISSIONS
+
+
+def test_seeded_pro_model_declares_interactive_edit_marker(test_client: TestClient) -> None:
+    """pro 预置交互编辑（固有能力位）及其标记语法，工作台的画布入口据此出现。
+
+    交互编辑在上游没有对应参数，它靠提示词里的坐标标记表达——因此标记的占位形态、坐标
+    标记写法与坐标区间只能来自声明（spec: service-config / 绘图模型能力声明）。
+    坐标标记语法**尚未在 /api/plan/v3 上实测**，因此来源标 ``documented``。
+    """
+    from app.modules.image_workbench.config.capability import ImageWorkbenchCapabilitySchema
+
+    pro = ImageWorkbenchCapabilitySchema.model_validate(_seeded_models()["doubao-seedream-5-0-pro"]["capability"])
+    mode = pro.coordinate_mode
+    assert mode is not None and mode.key == "interactive_edit"
+    assert mode.trigger is None, "交互编辑是固有方式，不由任何参数触发"
+    assert mode.marker.placeholder == "区域{n}"
+    assert mode.marker.template == "<bbox>{x1} {y1} {x2} {y2}</bbox>"
+    assert mode.marker.range == 1000, "坐标归一化到 1000×1000，取值 0–999"
+
+    # 图层拆分与坐标无关，不要求它声明任何标记语法
+    layer_mode = next(item for item in pro.modes if item.key == "layer_decomposition")
+    assert layer_mode.marker is None

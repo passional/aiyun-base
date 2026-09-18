@@ -9,9 +9,13 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.base_schema import BaseQueryParam, BaseSchema
+
+# 能力声明的结构、求值与校验集中在 capability.py（设计 D1/D2/D3/D5），此处只做再导出，
+# 让「绘图模型的入参出参」与「清单本身的定义」各归其位。
+from .capability import ImageWorkbenchCapabilitySchema
 
 Dialect = Literal["ark", "openai"]
 """接入方式：ark=火山方舟（参考图与提示词同请求体），openai=OpenAI 兼容（参考图走 /images/edits 多部分表单）"""
@@ -117,44 +121,6 @@ class ImageWorkbenchTestConnectionResultSchema(BaseModel):
 
 
 # ────────────────────── 绘图模型（两级结构的下级） ───────────────────────
-
-
-class ImageWorkbenchCapabilitySchema(BaseModel):
-    """能力声明（设计 D3）——逐模型可配，代码不内置按模型标识推断的能力表。
-
-    尺寸取值**不做归一化翻译**：上游 A 收档位字符串（``1K``/``1.5K``）、上游 B 收固定
-    像素枚举（``1024x1024``），硬套一层"方/横/竖"映射会在像素与宽高比约束上立刻碎掉。
-    因此 ``sizes`` 就是该模型可选的取值字面量列表，原样透传给上游。
-
-    ``watermark_default`` 默认 **false**：上游默认是 true，不显式传 false 会给成品图
-    打上「AI 生成」水印。
-    """
-
-    sizes: list[str] = Field(default_factory=list, description='可选尺寸取值(档位字符串或"宽x高"，空数组表示该模型无尺寸概念)')
-    allow_custom_size: bool = Field(default=False, description='是否额外允许填自定义"宽x高"')
-    support_reference: bool = Field(default=True, description="是否支持参考图")
-    max_reference_images: int = Field(default=10, ge=0, description="参考图张数上限")
-    output_formats: list[str] = Field(default_factory=lambda: ["png", "jpeg"], description="可选输出格式")
-    default_output_format: str = Field(default="png", description="默认输出格式")
-    watermark_default: bool = Field(default=False, description="本次是否加水印的默认值")
-    extra_params: dict = Field(default_factory=dict, description="原样透传给上游的默认参数")
-
-    @field_validator("sizes", "output_formats")
-    @classmethod
-    def _strip_items(cls, value: list[str]) -> list[str]:
-        cleaned = [item.strip() for item in value if item and item.strip()]
-        if len(cleaned) != len(set(cleaned)):
-            raise ValueError("取值不得重复")
-        return cleaned
-
-    @model_validator(mode="after")
-    def _check_default_format(self) -> "ImageWorkbenchCapabilitySchema":
-        if self.output_formats and self.default_output_format not in self.output_formats:
-            raise ValueError(f"默认输出格式 {self.default_output_format!r} 不在可选输出格式中")
-        if not self.support_reference and self.max_reference_images:
-            # 不支持参考图的模型带上限没有意义，直接归一为 0，避免前端误显示入口
-            self.max_reference_images = 0
-        return self
 
 
 class ImageWorkbenchModelCreateSchema(BaseModel):

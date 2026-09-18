@@ -18,7 +18,7 @@ from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.response import ResponseSchema, SuccessResponse, UploadFileResponse
-from app.core.base_schema import AuthSchema, PageResultSchema, PaginationQueryParam, UploadResponseSchema
+from app.core.base_schema import AuthSchema, PageResultSchema, PaginationQueryParam
 from app.core.dependencies import AuthPermission, db_getter, get_current_user, redis_getter
 from app.core.logger import logger
 from app.core.router_class import OperationLogRoute
@@ -26,13 +26,14 @@ from app.core.sse_manager import SSE_QUEUE_MAX_SIZE
 from app.modules.common.file.service import FileService
 from app.utils.upload_util import UploadUtil
 
-from .image_validation import validate_reference_image_bytes
+from .image_validation import detect_alpha, validate_reference_image_bytes
 from .progress import read_progress
 from .schema import (
     ImageWorkbenchJobCreateSchema,
     ImageWorkbenchJobModelOptionSchema,
     ImageWorkbenchJobOutSchema,
     ImageWorkbenchJobQueryParam,
+    ImageWorkbenchReferenceUploadSchema,
 )
 from .service import ImageWorkbenchJobService
 from .sse_manager import image_workbench_job_manager
@@ -51,24 +52,32 @@ _IMAGE_MEDIA_TYPES: dict[str, str] = {
 @ImageWorkbenchJobRouter.post(
     "/reference-images/upload",
     summary="上传绘图参考图",
-    response_model=ResponseSchema[UploadResponseSchema],
+    response_model=ResponseSchema[ImageWorkbenchReferenceUploadSchema],
 )
 async def upload_reference_image_controller(
     auth: Annotated[AuthSchema, Security(AuthPermission(["image_workbench:job:create"]))],
     request: Request,
     file: Annotated[UploadFile, File(description="绘图参考图")],
 ) -> JSONResponse:
-    """模块专属上传入口：校验真实图片内容，不扩大公共文件模块权限。"""
+    """模块专属上传入口：校验真实图片内容，不扩大公共文件模块权限。
+
+    响应里的 ``has_alpha`` 由**头部解析**在此时判出（design D9），前端据此当场决定
+    「图片透明通道」等依赖本次输入的参数是否可用。
+    """
     UploadUtil.check_file_size(file)
     content = await file.read()
-    validate_reference_image_bytes(content, file.filename)
+    image_format = validate_reference_image_bytes(content, file.filename)
+    has_alpha = detect_alpha(content, image_format)
     await file.seek(0)
     result = await FileService.upload_service(
         base_url=str(request.base_url),
         file=file,
         upload_type="file",
     )
-    return SuccessResponse(data=result, msg="上传参考图成功")
+    return SuccessResponse(
+        data=ImageWorkbenchReferenceUploadSchema(**result.model_dump(), has_alpha=has_alpha),
+        msg="上传参考图成功",
+    )
 
 
 @ImageWorkbenchJobRouter.get("/models/optionselect", summary="工作台可选绘图模型（含能力声明）", response_model=ResponseSchema[list[ImageWorkbenchJobModelOptionSchema]])
@@ -110,7 +119,7 @@ async def get_job_detail_controller(
 async def create_job_controller(
     auth: Annotated[AuthSchema, Security(AuthPermission(["image_workbench:job:create"]))],
     db: Annotated[AsyncSession, Depends(db_getter)],
-    data: Annotated[ImageWorkbenchJobCreateSchema, Body(description="绘图任务提交参数")],
+    data: Annotated[ImageWorkbenchJobCreateSchema, Body(description="绘图任务提交参数(参数按清单校验，未提交的由服务端补默认值)")],
 ) -> JSONResponse:
     result = await ImageWorkbenchJobService(auth, db).submit(data=data)
     return SuccessResponse(data=result, msg="已提交绘图任务，正在异步生成")
@@ -147,14 +156,20 @@ async def delete_job_controller(
     return SuccessResponse(msg="删除绘图任务成功")
 
 
-@ImageWorkbenchJobRouter.get("/{id}/download", summary="下载产物")
-async def download_job_controller(
+@ImageWorkbenchJobRouter.get("/{id}/artifacts/{artifact_id}/download", summary="下载单张产物")
+async def download_artifact_controller(
     auth: Annotated[AuthSchema, Security(AuthPermission(["image_workbench:job:download"]))],
     db: Annotated[AsyncSession, Depends(db_getter)],
     background_tasks: BackgroundTasks,
     id: Annotated[int, Path(description="绘图任务ID", ge=1)],
+    artifact_id: Annotated[int, Path(description="产物ID", ge=1)],
 ) -> UploadFileResponse:
-    file_path, file_name, is_temp = await ImageWorkbenchJobService(auth, db).download(id=id)
+    """**按产物**逐张下载（设计 D11）。
+
+    任务级下载端点已移除：一次任务可以产出底图 + 多个图层，「任务 → 一个文件」的
+    假设不再成立，整包下载也无从表达要哪一张。
+    """
+    file_path, file_name, is_temp = await ImageWorkbenchJobService(auth, db).download(id=id, artifact_id=artifact_id)
     if is_temp:
         # 非本地存储节点：产物先落到临时文件，响应结束后清理
         background_tasks.add_task(_remove_temp_file, file_path)

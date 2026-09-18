@@ -142,7 +142,7 @@ pnpm build        # 构建
 - 小程序侧有自己的 skills（`frontend/app/.agents/skills/`），改小程序 UI 时遵循 wot-ui 约定
 - 文档站改动记得中英两份（`src/guide/` 与 `src/en/guide/`）
 
-## 9. 前端产物验证（dist）
+## 9. 前端产物验证（dist）（部署阶段，开发阶段不需要）
 
 **源码已修 ≠ 部署已修。** dist 是生成物、不入库（`.gitignore`），但仓库内存在多份预构建副本并直接被打进部署，改完前端源码必须重建并同步，否则线上仍跑旧行为（AI chat 重复「连接成功」就因此漏判过一轮：源码 `e39a369b` 已修，三份 dist 仍停在修复前）。
 
