@@ -9,6 +9,16 @@ from app.core.validator import DateTimeStr
 
 RunStatusType = Literal["pending", "running", "cancelling", "success", "failed", "cancelled"]
 
+
+class ChannelEvalRunPlatformOptionSchema(BaseModel):
+    """测试运行可选平台：只暴露选择所需字段。"""
+
+    id: int
+    name: str
+    type: str
+    is_baseline: bool
+    status: int
+
 # 运行参数默认值（spec: test-run / 测试运行创建）
 DEFAULT_REQUEST_COUNT = 3
 DEFAULT_WARMUP = True

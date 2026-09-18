@@ -714,6 +714,7 @@
       "platform": "平台",
       "platformPlaceholder": "请选择平台（仅启用中的平台可发起运行）",
       "noEnabledPlatform": "暂无启用中的平台，请先到「平台管理」添加并启用",
+      "platformLoadFailed": "平台列表加载失败，请稍后重试",
       "platformHint": "选定平台后将实时拉取渠道目录（不缓存）；基准平台整站视为一条隐式渠道。",
       "catalogLoading": "正在实时拉取渠道目录…",
       "catalogFailed": "渠道目录拉取失败",

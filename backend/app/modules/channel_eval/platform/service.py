@@ -17,6 +17,7 @@ from app.utils.common_util import search_to_dict
 from ..run.new_api_client import NewApiClient, probe_pin_capability, test_admin_connection, test_user_connection
 from ..run.provision import build_client
 from .crud import ChannelEvalPlatformCRUD
+from .model import ChannelEvalPlatformModel
 from .schema import (
     ChannelEvalChannelCatalogSchema,
     ChannelEvalChannelItemSchema,
@@ -200,11 +201,15 @@ class ChannelEvalPlatformService:
 
     # ─────────────────────── 渠道目录实时拉取 ───────────────────────
 
-    async def get_channel_catalog(self, id: int) -> ChannelEvalChannelCatalogSchema:
+    async def get_channel_catalog(self, id: int, *, for_run: bool = False) -> ChannelEvalChannelCatalogSchema:
         """实时拉取平台渠道目录（不持久化；失败返回明确错误，不展示过期缓存）。"""
         from app.utils.crypto_util import CryptoUtil
 
-        platform = await self.crud.get_or_404(id=id, msg="平台不存在")
+        # 测试运行选择的平台是共享资源；其独立接口已校验 run:add，按主键读取以免
+        # 通用 CRUD 的「仅本人」数据范围屏蔽管理员登记的平台。
+        platform = await self.db.get(ChannelEvalPlatformModel, id) if for_run else await self.crud.get_or_404(id=id, msg="平台不存在")
+        if platform is None or platform.is_deleted:
+            raise CustomException(msg="平台不存在", code=404, status_code=404)
         if platform.status != 0:
             raise CustomException(msg="平台已停用，请先启用后再拉取渠道目录", code=400, status_code=400)
 

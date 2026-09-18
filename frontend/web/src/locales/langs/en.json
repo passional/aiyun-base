@@ -714,6 +714,7 @@
       "platform": "Platform",
       "platformPlaceholder": "Select a platform (only enabled platforms can start runs)",
       "noEnabledPlatform": "No enabled platform. Add and enable one in Platforms first.",
+      "platformLoadFailed": "Failed to load platforms. Please try again later.",
       "platformHint": "The channel catalog is fetched live (not cached) after selecting a platform; a baseline platform counts as one implicit channel.",
       "catalogLoading": "Fetching channel catalog…",
       "catalogFailed": "Failed to fetch the channel catalog",

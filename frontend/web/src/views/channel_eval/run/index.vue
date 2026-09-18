@@ -49,8 +49,11 @@
 </template>
 
 <script setup lang="ts">
-import RunAPI, { type RunStatus, type RunTable } from "@/api/module_channel_eval/run";
-import PlatformAPI, { type PlatformTable } from "@/api/module_channel_eval/platform";
+import RunAPI, {
+  type RunPlatformOption,
+  type RunStatus,
+  type RunTable,
+} from "@/api/module_channel_eval/run";
 import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
 import { getColumnKey } from "@/hooks/core/useTableColumns";
 import { runStatusMap } from "./status";
@@ -83,7 +86,7 @@ const showSearchBar = ref(true);
 const searchBarRef = ref<InstanceType<typeof FaSearchBar> | null>(null);
 const searchBarRules: Record<string, unknown> = {};
 
-const platformOptions = ref<PlatformTable[]>([]);
+const platformOptions = ref<RunPlatformOption[]>([]);
 
 const platformFilterOptions = computed(() =>
   platformOptions.value.map((item) => ({ label: item.name, value: item.id }))
@@ -342,7 +345,7 @@ onUnmounted(() => stopActivePoll());
 
 onMounted(async () => {
   try {
-    const response = await PlatformAPI.platformOptions();
+    const response = await RunAPI.platformOptions(true);
     platformOptions.value = response.data.data ?? [];
   } catch {
     platformOptions.value = [];

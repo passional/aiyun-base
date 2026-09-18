@@ -6,12 +6,16 @@
 （真实逻辑由 test_provision_and_logs.py / test_new_api_client.py 覆盖）。
 """
 
-from unittest.mock import patch
+import sqlite3
+import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config.setting import settings
 from app.utils.crypto_util import CryptoUtil
+from app.utils.password_util import PwdUtil
 
 API = "/channel_eval/runs"
 
@@ -61,6 +65,63 @@ def _create_run(test_client: TestClient, auth_headers: dict, platform_id: int, c
         headers=auth_headers,
     )
     return resp  # type: ignore[return-value]
+
+
+def test_run_only_role_can_select_admin_platform(test_client: TestClient, auth_headers: dict) -> None:
+    """仅授予测试运行的角色可选择管理员登记的平台并读取渠道目录。"""
+    enabled = _create_platform(test_client, auth_headers, "run-role-enabled")
+    disabled = _create_platform(test_client, auth_headers, "run-role-disabled")
+    test_client.put(
+        f"/channel_eval/platforms/update/{disabled['id']}",
+        json={
+            "name": "run-role-disabled",
+            "type": "admin",
+            "base_url": "https://api.example.com",
+            "status": 1,
+        },
+        headers=auth_headers,
+    )
+
+    username = f"run-only-{uuid.uuid4().hex[:8]}"
+    now = "2026-09-18 00:00:00.000000"
+    with sqlite3.connect(settings.DATABASE_NAME) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            'insert into sys_role (name, code, "order", status, description, data_scope, uuid, is_deleted, created_time, updated_time) values (?, ?, ?, 0, ?, ?, ?, 0, ?, ?)',
+            (username, username, 999, None, 1, uuid.uuid4().hex, now, now),
+        )
+        role_id = cur.lastrowid
+        for permission in ("channel_eval:run:query", "channel_eval:run:add"):
+            cur.execute("insert into sys_role_menus (role_id, menu_id) select ?, id from sys_menu where permission = ?", (role_id, permission))
+        cur.execute(
+            "insert into sys_user (username, password, name, is_superuser, status, uuid, is_deleted, created_time, updated_time) values (?, ?, ?, 0, 0, ?, 0, ?, ?)",
+            (username, PwdUtil.hash_password("123456"), username, uuid.uuid4().hex, now, now),
+        )
+        cur.execute("insert into sys_user_roles (user_id, role_id) values (?, ?)", (cur.lastrowid, role_id))
+
+    login = test_client.post("/system/auth/login", data={"username": username, "password": "123456"})
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['data']['access_token']}"}
+    assert test_client.get("/channel_eval/platforms/optionselect", headers=headers).status_code == 403
+
+    options = test_client.get(f"{API}/platform-options", headers=headers)
+    assert options.status_code == 200
+    assert options.headers["content-type"].startswith("application/json")
+    items = options.json()["data"]
+    assert enabled["id"] in [item["id"] for item in items]
+    assert disabled["id"] not in [item["id"] for item in items]
+    assert set(items[0]) == {"id", "name", "type", "is_baseline", "status"}
+    historical_options = test_client.get(f"{API}/platform-options?include_disabled=true", headers=headers)
+    assert historical_options.status_code == 200
+    assert disabled["id"] in [item["id"] for item in historical_options.json()["data"]]
+
+    fake_client = MagicMock()
+    fake_client.list_channels = AsyncMock(return_value=[{"id": 70, "name": "channel-70", "status": 1, "models": "m1"}])
+    with patch("app.modules.channel_eval.platform.service.build_client", return_value=fake_client):
+        catalog = test_client.get(f"{API}/platforms/{enabled['id']}/channels", headers=headers)
+    assert catalog.status_code == 200
+    assert catalog.json()["data"]["channels"][0]["channel_id"] == 70
+    assert test_client.get(f"{API}/platforms/{disabled['id']}/channels", headers=headers).status_code == 400
 
 
 def test_create_run_empty_combos_rejected(test_client: TestClient, auth_headers: dict) -> None:

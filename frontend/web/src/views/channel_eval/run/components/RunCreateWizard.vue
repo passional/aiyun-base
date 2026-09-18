@@ -42,7 +42,13 @@
         </ElFormItem>
       </ElForm>
       <ElAlert
-        v-if="!platformsLoading && selectablePlatforms.length === 0"
+        v-if="!platformsLoading && platformLoadError"
+        type="error"
+        :closable="false"
+        :title="platformLoadError"
+      />
+      <ElAlert
+        v-else-if="!platformsLoading && selectablePlatforms.length === 0"
         type="warning"
         :closable="false"
         :title="$t('channel_eval.run.noEnabledPlatform')"
@@ -177,12 +183,12 @@
 </template>
 
 <script setup lang="ts">
-import PlatformAPI, {
-  type ChannelCatalog,
-  type ChannelCatalogItem,
-  type PlatformTable,
-} from "@/api/module_channel_eval/platform";
-import RunAPI, { type RunComboInput, type RunTable } from "@/api/module_channel_eval/run";
+import type { ChannelCatalog, ChannelCatalogItem } from "@/api/module_channel_eval/platform";
+import RunAPI, {
+  type RunComboInput,
+  type RunPlatformOption,
+  type RunTable,
+} from "@/api/module_channel_eval/run";
 import { ElMessage } from "element-plus";
 import type { FormItem } from "@/components/forms/fa-form/index.vue";
 import FaForm from "@/components/forms/fa-form/index.vue";
@@ -198,7 +204,8 @@ const step = ref(0);
 
 // ─── 平台列表 ───
 const platformsLoading = ref(false);
-const platforms = ref<PlatformTable[]>([]);
+const platforms = ref<RunPlatformOption[]>([]);
+const platformLoadError = ref<string | null>(null);
 const selectablePlatforms = computed(() => platforms.value.filter((item) => item.status === 0));
 const platformId = ref<number | undefined>(undefined);
 
@@ -333,7 +340,7 @@ async function loadCatalog() {
   catalogLoading.value = true;
   catalogError.value = null;
   try {
-    const response = await PlatformAPI.getPlatformChannels(platformId.value);
+    const response = await RunAPI.getPlatformChannels(platformId.value);
     const data = response.data.data;
     catalog.value = data;
     Object.keys(selection).forEach((key) => delete selection[Number(key)]);
@@ -376,11 +383,13 @@ watch(visible, async (value) => {
   if (!value) return;
   resetWizard();
   platformsLoading.value = true;
+  platformLoadError.value = null;
   try {
-    const response = await PlatformAPI.platformOptions();
+    const response = await RunAPI.platformOptions();
     platforms.value = response.data.data ?? [];
-  } catch {
+  } catch (error) {
     platforms.value = [];
+    platformLoadError.value = extractErrorMessage(error, t("channel_eval.run.platformLoadFailed"));
   } finally {
     platformsLoading.value = false;
   }

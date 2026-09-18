@@ -1,10 +1,20 @@
 import { request } from "@utils";
 import { createSSEClient, httpEndpoint, type SSEClient } from "@utils/sse";
+import type { ChannelCatalog } from "./platform";
 
 const API_PATH = "/channel_eval/runs";
 
 /** 运行状态机：pending → running → success/failed/cancelled（cancelling 为取消请求中） */
 export type RunStatus = "pending" | "running" | "cancelling" | "success" | "failed" | "cancelled";
+
+/** 测试运行可选平台；不包含平台管理信息或凭证占位。 */
+export interface RunPlatformOption {
+  id: number;
+  name: string;
+  type: "admin" | "user";
+  is_baseline: boolean;
+  status: number;
+}
 
 /** 运行分页查询参数 */
 export interface RunPageQuery extends PageQuery {
@@ -119,6 +129,21 @@ export interface RunProgress {
 }
 
 const RunAPI = {
+  platformOptions(includeDisabled = false) {
+    return request<ApiResponse<RunPlatformOption[]>>({
+      url: `${API_PATH}/platform-options`,
+      method: "get",
+      params: { include_disabled: includeDisabled },
+    });
+  },
+
+  getPlatformChannels(id: number) {
+    return request<ApiResponse<ChannelCatalog>>({
+      url: `${API_PATH}/platforms/${id}/channels`,
+      method: "get",
+    });
+  },
+
   listRun(query: RunPageQuery) {
     return request<ApiResponse<PageResult<RunTable>>>({
       url: `${API_PATH}/list`,

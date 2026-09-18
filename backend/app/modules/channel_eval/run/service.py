@@ -2,12 +2,14 @@
 
 from typing import Any
 
-from sqlalchemy import event, select
+from sqlalchemy import event, false, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base_schema import AuthSchema, PageResultSchema
 from app.core.exceptions import CustomException
 from app.modules.channel_eval.platform.model import ChannelEvalPlatformModel
+from app.modules.channel_eval.platform.schema import ChannelEvalChannelCatalogSchema
+from app.modules.channel_eval.platform.service import ChannelEvalPlatformService
 from app.utils.common_util import search_to_dict
 
 from .aggregation import aggregate_combo, combo_samples_by_id, samples_to_out, threshold_ms_from_params
@@ -21,6 +23,7 @@ from .schema import (
     ChannelEvalRunCreateSchema,
     ChannelEvalRunDetailSchema,
     ChannelEvalRunOutSchema,
+    ChannelEvalRunPlatformOptionSchema,
     ChannelEvalRunQueryParam,
 )
 
@@ -32,6 +35,30 @@ class ChannelEvalRunService:
         self.auth = auth
         self.db = db
         self.crud = ChannelEvalRunCRUD(auth, db)
+
+    async def platform_options(self, *, include_disabled: bool = False) -> list[ChannelEvalRunPlatformOptionSchema]:
+        """运行目标是共享资源；按启用状态查询，不使用创建人的数据范围。"""
+        stmt = select(ChannelEvalPlatformModel).where(ChannelEvalPlatformModel.is_deleted == false())
+        if not include_disabled:
+            stmt = stmt.where(ChannelEvalPlatformModel.status == 0)
+        rows = (
+            await self.db.execute(
+                stmt.order_by(ChannelEvalPlatformModel.id)
+            )
+        ).scalars().all()
+        return [
+            ChannelEvalRunPlatformOptionSchema(
+                id=row.id,
+                name=row.name,
+                type=row.type,
+                is_baseline=row.is_baseline,
+                status=row.status,
+            )
+            for row in rows
+        ]
+
+    async def platform_channels(self, id: int) -> ChannelEvalChannelCatalogSchema:
+        return await ChannelEvalPlatformService(self.auth, self.db).get_channel_catalog(id=id, for_run=True)
 
     # ─────────────────────── 创建 ───────────────────────
 

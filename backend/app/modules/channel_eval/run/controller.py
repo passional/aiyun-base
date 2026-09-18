@@ -17,6 +17,7 @@ from app.core.dependencies import AuthPermission, db_getter, redis_getter
 from app.core.logger import logger
 from app.core.router_class import OperationLogRoute
 from app.core.sse_manager import SSE_QUEUE_MAX_SIZE
+from app.modules.channel_eval.platform.schema import ChannelEvalChannelCatalogSchema
 
 from .model import ChannelEvalRunModel
 from .progress import read_progress
@@ -24,6 +25,7 @@ from .schema import (
     ChannelEvalRunCreateSchema,
     ChannelEvalRunDetailSchema,
     ChannelEvalRunOutSchema,
+    ChannelEvalRunPlatformOptionSchema,
     ChannelEvalRunQueryParam,
 )
 from .service import ChannelEvalRunService
@@ -32,6 +34,26 @@ from .sse_manager import channel_eval_run_manager
 RunRouter = APIRouter(route_class=OperationLogRoute, prefix="/runs", tags=["评估中心-测试运行"])
 
 _TERMINAL_STATUSES = {"success", "failed", "cancelled"}
+
+
+@RunRouter.get("/platform-options", summary="获取测试运行可选平台", response_model=ResponseSchema[list[ChannelEvalRunPlatformOptionSchema]])
+async def get_run_platform_options_controller(
+    auth: Annotated[AuthSchema, Security(AuthPermission(["channel_eval:run:query", "channel_eval:run:add"]))],
+    db: Annotated[AsyncSession, Depends(db_getter)],
+    include_disabled: Annotated[bool, Query(description="是否包含已停用平台（历史运行筛选用）")] = False,
+) -> JSONResponse:
+    result = await ChannelEvalRunService(auth, db).platform_options(include_disabled=include_disabled)
+    return SuccessResponse(data=result, msg="查询可选平台成功")
+
+
+@RunRouter.get("/platforms/{id}/channels", summary="获取测试运行平台渠道目录", response_model=ResponseSchema[ChannelEvalChannelCatalogSchema])
+async def get_run_platform_channels_controller(
+    auth: Annotated[AuthSchema, Security(AuthPermission(["channel_eval:run:add"]))],
+    db: Annotated[AsyncSession, Depends(db_getter)],
+    id: Annotated[int, Path(description="平台ID", ge=1)],
+) -> JSONResponse:
+    result = await ChannelEvalRunService(auth, db).platform_channels(id=id)
+    return SuccessResponse(data=result, msg="拉取渠道目录成功")
 
 
 @RunRouter.get("/list", summary="查询运行列表", response_model=ResponseSchema[PageResultSchema[ChannelEvalRunOutSchema]])
