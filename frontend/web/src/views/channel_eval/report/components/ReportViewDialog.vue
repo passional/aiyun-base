@@ -27,13 +27,94 @@
           <span class="whitespace-pre-wrap">{{ view.report.note }}</span>
         </div>
 
-        <!-- 按模型分组：对比图 + 明细表 -->
-        <template v-for="group in view.models" :key="group.model">
-          <div class="mt-4 mb-2 flex items-center gap-2">
+        <!-- 关键指标概览 -->
+        <div class="mt-3 grid grid-cols-5 gap-2">
+          <div v-for="card in kpiCards" :key="card.label" class="rounded bg-g-50 p-2">
+            <div class="text-xs text-g-500">{{ card.label }}</div>
+            <div class="text-base font-medium">{{ card.value }}</div>
+            <div class="text-xs text-g-500">{{ card.foot }}</div>
+          </div>
+        </div>
+
+        <!-- 模型对齐：未确认归属的模型独立成行、绝不隐藏 -->
+        <div v-if="hasAlignment" class="mt-3 rounded bg-g-50 p-2 text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-medium">{{ $t("channel_eval.report.alignmentTitle") }}</span>
+            <ElTag v-if="view.alignment.unmapped_count" size="small" type="warning">
+              {{
+                $t("channel_eval.report.unmappedCount", { count: view.alignment.unmapped_count })
+              }}
+            </ElTag>
+            <ElTag v-else size="small" type="success">
+              {{ $t("channel_eval.report.allAligned") }}
+            </ElTag>
+          </div>
+          <ul v-if="view.alignment.notes.length" class="mt-1 list-disc pl-5 text-g-500">
+            <li v-for="(note, index) in view.alignment.notes" :key="index">{{ note }}</li>
+          </ul>
+          <div v-if="view.alignment.mappings.length" class="mt-1 text-g-500">
+            {{ $t("channel_eval.report.mappingsLabel") }}
+            <ElTag
+              v-for="item in view.alignment.mappings"
+              :key="item.alias"
+              size="small"
+              class="ml-1"
+            >
+              {{ item.alias }} → {{ item.canonical }}
+            </ElTag>
+          </div>
+        </div>
+
+        <!-- 可比性提醒（仅陈述参数差异事实） -->
+        <div v-if="view.comparable_notes.length" class="mt-3">
+          <div class="mb-1 text-sm font-medium">
+            {{ $t("channel_eval.report.comparableTitle") }}
+          </div>
+          <div
+            v-for="(note, index) in view.comparable_notes"
+            :key="index"
+            class="mb-1 flex items-start gap-2 rounded bg-g-50 p-2 text-xs"
+          >
+            <ElTag size="small" :type="note.level === 'warning' ? 'warning' : 'info'">
+              {{
+                note.level === "warning"
+                  ? $t("channel_eval.report.comparableWarning")
+                  : $t("channel_eval.report.comparableInfo")
+              }}
+            </ElTag>
+            <span>{{ note.content }}</span>
+          </div>
+        </div>
+
+        <!-- 系列筛选 -->
+        <div v-if="families.length > 1" class="mt-3 flex items-center gap-2">
+          <span class="text-xs text-g-500">{{ $t("channel_eval.report.familyFilter") }}</span>
+          <ElSelect v-model="familyFilter" size="small" style="width: 160px">
+            <ElOption :value="'all'" :label="$t('channel_eval.report.familyAll')" />
+            <ElOption v-for="item in families" :key="item" :value="item" :label="item" />
+          </ElSelect>
+        </div>
+
+        <!-- 按规范模型分组：对比图 + 明细表 -->
+        <template v-for="group in visibleGroups" :key="group.model_key">
+          <div class="mt-4 mb-2 flex flex-wrap items-center gap-2">
             <span class="text-sm font-medium">{{ group.model }}</span>
+            <ElTag v-if="group.family" size="small">{{ group.family }}</ElTag>
+            <ElTag v-if="group.alignment === 'aligned'" size="small" type="success">
+              {{ $t("channel_eval.report.alignedTag") }}
+            </ElTag>
+            <ElTag v-else-if="group.alignment === 'unmapped'" size="small" type="warning">
+              {{ $t("channel_eval.report.unmappedTag") }}
+            </ElTag>
+            <ElTag v-if="group.raw_models.length > 1" size="small" type="info">
+              {{ $t("channel_eval.report.namingDiffTag") }}
+            </ElTag>
             <ElTag v-if="!group.has_baseline" size="small" type="info">
               {{ $t("channel_eval.report.noBaselineData") }}
             </ElTag>
+            <span v-if="group.alignment_note" class="text-xs text-g-500">
+              {{ group.alignment_note }}
+            </span>
           </div>
           <FaDualBarCompareChart
             :positive-data="chartData(group).positive"
@@ -89,10 +170,54 @@
           :image-size="60"
         />
 
-        <!-- 指标口径说明 -->
-        <div class="mt-4 rounded bg-g-50 p-2 text-xs text-g-500">
-          {{ $t("channel_eval.report.metricNote") }}
+        <!-- 测试配置与执行信息 -->
+        <div class="mt-4 mb-2 text-sm font-medium">
+          {{ $t("channel_eval.report.runConfigTitle") }}
         </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div
+            v-for="config in view.run_configs"
+            :key="config.run_id"
+            class="rounded bg-g-50 p-3 text-xs"
+          >
+            <div class="mb-2 flex flex-wrap items-center gap-2 text-sm font-medium">
+              #{{ config.run_id }} {{ config.platform_name || "—" }}
+              <ElTag v-if="config.is_baseline" size="small" type="success">
+                {{ $t("channel_eval.report.baselineTag") }}
+              </ElTag>
+              <ElTag size="small">{{ config.status }}</ElTag>
+            </div>
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1">
+              <span class="text-g-500">{{ $t("channel_eval.report.cfgWindow") }}</span>
+              <span>{{ config.started_at || "—" }} ~ {{ config.finished_at || "—" }}</span>
+              <span class="text-g-500">{{ $t("channel_eval.report.cfgComboCount") }}</span>
+              <span>{{ config.combo_count }} × {{ config.request_count ?? "—" }}</span>
+              <span class="text-g-500">{{ $t("channel_eval.run.warmup") }}</span>
+              <span>{{ warmupLabel(config.warmup) }}</span>
+              <span class="text-g-500">{{ $t("channel_eval.report.cfgIntervalTimeout") }}</span>
+              <span
+                >{{ config.interval_seconds ?? "—" }} / {{ config.timeout_seconds ?? "—" }}</span
+              >
+              <span class="text-g-500">
+                {{ $t("channel_eval.report.cfgAnomalyThreshold") }}
+              </span>
+              <span>{{ config.anomaly_threshold_seconds ?? "—" }}</span>
+              <span class="text-g-500">{{ $t("channel_eval.report.cfgResult") }}</span>
+              <span>{{ config.success }} / {{ config.failed }} / {{ config.anomaly }}</span>
+            </div>
+            <div v-if="config.prompt" class="mt-2 whitespace-pre-wrap rounded bg-white p-2">
+              {{ config.prompt }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 指标口径说明（由视图数据自动生成，含本次实际生效的映射关系） -->
+        <div class="mt-4 mb-2 text-sm font-medium">
+          {{ $t("channel_eval.report.metricNoteTitle") }}
+        </div>
+        <ul class="list-disc pl-5 text-xs text-g-500">
+          <li v-for="(note, index) in view.caliber_notes" :key="index">{{ note }}</li>
+        </ul>
       </template>
       <ElEmpty v-else-if="!loading" :description="$t('channel_eval.report.loadFailed')" />
     </div>
@@ -149,6 +274,7 @@ async function loadView() {
 watch([visible, () => props.reportId], ([isVisible, reportId]) => {
   if (isVisible && reportId) {
     view.value = null;
+    familyFilter.value = "all";
     void loadView();
   }
 });
@@ -167,6 +293,79 @@ function formatSignedMs(value?: number | null) {
 function formatRate(value?: number | null) {
   return value == null ? "—" : `${(value * 100).toFixed(1)}%`;
 }
+
+function warmupLabel(value?: boolean | null) {
+  if (value == null) return t("channel_eval.report.warmupUnknown");
+  return value ? t("channel_eval.report.warmupOn") : t("channel_eval.report.warmupOff");
+}
+
+// ─── 关键指标概览 / 对齐 / 系列筛选 ───
+const kpiCards = computed(() => {
+  const current = view.value;
+  if (!current) return [];
+  const rows = current.models.flatMap((group) => groupRows(group));
+  const sum = (pick: (row: ReportComboView) => number | null | undefined) =>
+    rows.reduce((total, row) => total + (pick(row) ?? 0), 0);
+  const planned = sum((row) => row.planned);
+  const success = sum((row) => row.success);
+  const anomaly = sum((row) => row.anomaly);
+  const failed = sum((row) => row.failed);
+  const unmapped = current.alignment.unmapped_count;
+  return [
+    {
+      label: t("channel_eval.report.kpiModels"),
+      value: String(current.models.length),
+      foot: unmapped
+        ? t("channel_eval.report.kpiUnmapped", { count: unmapped })
+        : t("channel_eval.report.kpiAllAligned"),
+    },
+    {
+      label: t("channel_eval.report.kpiCombos"),
+      value: String(rows.length),
+      foot: t("channel_eval.report.kpiChannelModel"),
+    },
+    {
+      label: t("channel_eval.report.kpiSamples"),
+      value: String(sum((row) => row.executed)),
+      foot: t("channel_eval.report.kpiNonWarmup"),
+    },
+    {
+      label: t("channel_eval.report.kpiSuccessRate"),
+      value: planned ? `${((100 * success) / planned).toFixed(1)}%` : "—",
+      foot: t("channel_eval.report.kpiPlanned", { success, planned }),
+    },
+    {
+      label: t("channel_eval.report.kpiAnomalyFailed"),
+      value: `${anomaly} / ${failed}`,
+      foot: t("channel_eval.report.kpiAnomalyFailedFoot", { anomaly, failed }),
+    },
+  ];
+});
+
+const hasAlignment = computed(() => {
+  const current = view.value;
+  if (!current) return false;
+  return Boolean(
+    current.alignment.unmapped_count ||
+    current.alignment.mappings.length ||
+    current.alignment.notes.length
+  );
+});
+
+const families = computed(() =>
+  Array.from(
+    new Set(view.value?.models.map((group) => group.family).filter(Boolean) as string[])
+  ).sort()
+);
+
+const familyFilter = ref<string>("all");
+
+const visibleGroups = computed(() => {
+  const groups = view.value?.models ?? [];
+  return familyFilter.value === "all"
+    ? groups
+    : groups.filter((group) => group.family === familyFilter.value);
+});
 
 function runTagLabel(run: ReportRunInfo) {
   return `#${run.id} ${run.platform_name || ""}`.trim();

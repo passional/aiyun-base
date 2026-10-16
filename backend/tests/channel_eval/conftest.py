@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.config.setting import settings
 from app.core.base_model import MappedBase
 from app.core.base_schema import AuthSchema, CoreUserSchema
+from app.modules.channel_eval.model_map.model import ChannelEvalCanonicalModel, ChannelEvalModelAlias
 from app.modules.channel_eval.platform.model import ChannelEvalPlatformModel
 from app.modules.channel_eval.report.model import ChannelEvalReportModel
 from app.modules.channel_eval.run.model import (
@@ -26,7 +27,7 @@ from app.utils.import_util import ImportUtil
 # 注册全部模型（含 sys_user 等 FK 依赖表）
 ImportUtil.find_models(MappedBase)
 
-# eval_db 只建渠道评估 5 表 + sys_user（UserMixin FK 目标），加速建库
+# eval_db 只建渠道评估各表 + sys_user（UserMixin FK 目标），加速建库
 _EVAL_TABLES = [
     UserModel.__table__,
     ChannelEvalPlatformModel.__table__,
@@ -34,6 +35,8 @@ _EVAL_TABLES = [
     ChannelEvalRunComboModel.__table__,
     ChannelEvalSampleModel.__table__,
     ChannelEvalReportModel.__table__,
+    ChannelEvalCanonicalModel.__table__,
+    ChannelEvalModelAlias.__table__,
 ]
 
 

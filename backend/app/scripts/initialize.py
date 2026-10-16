@@ -209,6 +209,12 @@ class InitializeData:
         # 已有环境重启即得菜单；新库由上方常规种子导入，此处跳过）
         await self.__ensure_seed_menu_merged(db, route_name="ChannelEval", title="评估中心")
         await self.__ensure_seed_menu_merged(db, route_name="ImageWorkbench", title="绘图工作台")
+        await self.__ensure_seed_child_menu_merged(
+            db,
+            parent_route_name="ChannelEval",
+            child_route_name="ChannelEvalModelMap",
+            title="模型对齐",
+        )
 
         if skipped:
             logger.info(f"⏭️  {len(skipped)} 张表已有数据，跳过初始化：{', '.join(skipped)}")
@@ -233,6 +239,33 @@ class InitializeData:
         db.add(obj)
         await db.flush()
         logger.info(f"✅ 已向存量库补齐「{title}」菜单种子（幂等合并）")
+
+    async def __ensure_seed_child_menu_merged(self, db: AsyncSession, *, parent_route_name: str, child_route_name: str, title: str) -> None:
+        """按 route_name 幂等补齐种子新增的**子菜单**（含其按钮子树）到存量库。
+
+        顶级菜单的合并只处理「整棵子树缺失」；向已存在的顶级菜单追加子页面（如评估中心的
+        「模型对齐」）走这里，否则存量库永远看不到新页面。
+        """
+        from sqlalchemy import select
+
+        exists = await db.execute(select(MenuModel.id).where(MenuModel.route_name == child_route_name).limit(1))
+        if exists.first() is not None:
+            return
+        parent_id = (await db.execute(select(MenuModel.id).where(MenuModel.route_name == parent_route_name).limit(1))).scalar_one_or_none()
+        if parent_id is None:
+            logger.warning(f"⚠️  未找到父菜单 {parent_route_name}，跳过「{title}」子菜单补齐")
+            return
+        data = self.__load_json("sys_menu")
+        parent = next((m for m in data if m.get("route_name") == parent_route_name), None)
+        child = next((c for c in ((parent or {}).get("children") or []) if c.get("route_name") == child_route_name), None)
+        if not child:
+            logger.warning(f"⚠️  种子 JSON 中未找到 {title}（{child_route_name}）菜单")
+            return
+        obj = self.__create_objects_with_children([child], MenuModel)[0]
+        obj.parent_id = parent_id
+        db.add(obj)
+        await db.flush()
+        logger.info(f"✅ 已向存量库补齐「{title}」子菜单种子（幂等合并）")
 
     @staticmethod
     async def __create_dict_data_objs(db: AsyncSession, data: list[dict]) -> list[DictDataModel]:

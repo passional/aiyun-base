@@ -39,6 +39,21 @@ export interface ReportRunInfo {
   combo_count: number;
 }
 
+/** 单样本明细（导出件「展开原始样本」用） */
+export interface ReportSampleView {
+  seq: number;
+  is_warmup: boolean;
+  status: string;
+  ttft_ms?: number | null;
+  total_ms?: number | null;
+  tps?: number | null;
+  tokens_out?: number | null;
+  be_matched: boolean;
+  be_frt_ms?: number | null;
+  be_use_time_ms?: number | null;
+  error?: string | null;
+}
+
 /** 对比视图中的单组合聚合（客户端实测 + 后台日志 + 交叉对比 + 基准差值） */
 export interface ReportComboView {
   run_id: number;
@@ -67,14 +82,69 @@ export interface ReportComboView {
   cross_total_diff_ms?: number | null;
   ttft_vs_baseline_ms?: number | null;
   total_vs_baseline_ms?: number | null;
+  /** 原始样本明细（含热身） */
+  samples: ReportSampleView[];
 }
 
-/** 按模型分组的对比视图 */
+/** 按规范模型分组的对比视图 */
 export interface ReportModelGroup {
+  /** 规范模型显示名（未确认归属时为渠道模型串本身） */
   model: string;
+  /** 分组稳定键（c{规范模型ID} 或 raw:{渠道模型串}） */
+  model_key: string;
+  /** 组内出现过的渠道模型串（去重） */
+  raw_models: string[];
+  /** aligned:已确认归属 unmapped:疑似同族待确认 singleton:未发现同族 */
+  alignment: "aligned" | "unmapped" | "singleton";
+  /** 命名差异或未对齐说明 */
+  alignment_note?: string | null;
+  /** 系列（用于筛选） */
+  family?: string | null;
   baseline?: ReportComboView | null;
   has_baseline: boolean;
   combos: ReportComboView[];
+}
+
+/** 本次报告实际生效的一条模型映射 */
+export interface ReportMapping {
+  alias: string;
+  canonical: string;
+}
+
+/** 对齐汇总：未对齐计数与本次生效的映射关系 */
+export interface ReportAlignment {
+  group_count: number;
+  unmapped_count: number;
+  mappings: ReportMapping[];
+  notes: string[];
+}
+
+/** 可比性提醒条目（仅陈述参数差异事实） */
+export interface ReportComparableNote {
+  /** warning:影响可比性 info:提示 */
+  level: "warning" | "info";
+  content: string;
+}
+
+/** 运行参数快照与执行结果 */
+export interface ReportRunConfig {
+  run_id: number;
+  platform_name?: string | null;
+  is_baseline: boolean;
+  status: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  combo_count: number;
+  request_count?: number | null;
+  /** 热身只有开关，无次数 */
+  warmup?: boolean | null;
+  interval_seconds?: number | null;
+  timeout_seconds?: number | null;
+  anomaly_threshold_seconds?: number | null;
+  prompt?: string | null;
+  success: number;
+  failed: number;
+  anomaly: number;
 }
 
 /** 异常清单条目（超阈值样本与失败样本） */
@@ -107,6 +177,11 @@ export interface ReportView {
   models: ReportModelGroup[];
   anomalies: ReportAnomalyItem[];
   conclusions: ReportConclusion[];
+  alignment: ReportAlignment;
+  comparable_notes: ReportComparableNote[];
+  run_configs: ReportRunConfig[];
+  /** 指标口径说明（自动生成，含实际生效的映射关系） */
+  caliber_notes: string[];
   generated_at: string;
 }
 

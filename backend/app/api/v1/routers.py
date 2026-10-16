@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.modules.ai.chat.controller import ChatRouter
+from app.modules.channel_eval.model_map.controller import ModelMapRouter as ChannelEvalModelMapRouter
 from app.modules.channel_eval.platform.controller import PlatformRouter as ChannelEvalPlatformRouter
 from app.modules.channel_eval.report.controller import ReportRouter as ChannelEvalReportRouter
 from app.modules.channel_eval.run.controller import RunRouter as ChannelEvalRunRouter
@@ -70,6 +71,7 @@ DOMAIN_CONTROLLERS: dict[str, list[APIRouter]] = {
         ChannelEvalPlatformRouter,
         ChannelEvalRunRouter,
         ChannelEvalReportRouter,
+        ChannelEvalModelMapRouter,
     ],
     "/image_workbench": [
         ImageWorkbenchServiceRouter,

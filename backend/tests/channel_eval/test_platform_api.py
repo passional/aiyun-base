@@ -456,7 +456,7 @@ def test_menu_seed_and_rbac(test_client: TestClient, auth_headers: dict) -> None
 
     walk(menus)
     assert "评估中心" in flat_names
-    for name in ("平台管理", "测试运行", "对比报告"):
+    for name in ("平台管理", "测试运行", "对比报告", "模型对齐"):
         assert name in flat_names
 
     # 超管可访问接口

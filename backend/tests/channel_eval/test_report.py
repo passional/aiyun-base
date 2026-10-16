@@ -8,6 +8,7 @@
 服务层直测（eval_db）+ API 层冒烟（test_client）。
 """
 
+import json
 import re
 from datetime import UTC, datetime
 
@@ -16,6 +17,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.core.base_schema import AuthSchema
 from app.core.exceptions import CustomException
+from app.modules.channel_eval.model_map.schema import CanonicalModelCreateSchema
+from app.modules.channel_eval.model_map.service import ChannelEvalModelMapService
 from app.modules.channel_eval.platform.model import ChannelEvalPlatformModel
 from app.modules.channel_eval.report.schema import ChannelEvalReportCreateSchema
 from app.modules.channel_eval.report.service import ChannelEvalReportService
@@ -70,6 +73,36 @@ async def _make_run(
                 sample_fields.setdefault("status", "success")
                 session.add(ChannelEvalSampleModel(combo_id=combo.id, **sample_fields))
         return run.id
+
+
+async def _make_run_with_params(
+    db: async_sessionmaker,
+    platform_id: int,
+    *,
+    params: dict,
+    combos: tuple[tuple[int, str, str], ...] = ((70, "ch70", "m1"),),
+    samples: dict[tuple[int, str], list[dict]] | None = None,
+) -> int:
+    """同 _make_run，但运行参数快照由调用方给定；不写执行时间窗（可比性用例需两运行时间窗一致）。"""
+    async with db() as session, session.begin():
+        run = ChannelEvalRunModel(platform_id=platform_id, status="success", params_json=params, started_at=None, finished_at=None)
+        session.add(run)
+        await session.flush()
+        for channel_id, channel_name, model in combos:
+            combo = ChannelEvalRunComboModel(run_id=run.id, channel_id=channel_id, channel_name=channel_name, model=model, planned=params.get("request_count") or 0)
+            session.add(combo)
+            await session.flush()
+            for sample_fields in (samples or {}).get((channel_id, model), []):
+                sample_fields.setdefault("status", "success")
+                session.add(ChannelEvalSampleModel(combo_id=combo.id, **sample_fields))
+        return run.id
+
+
+async def _map_svc(fake_auth: AuthSchema, db, method: str, *args):
+    """在独立事务中执行一次模型映射服务调用（报告用例准备别名用）。"""
+    async with db() as session, session.begin():
+        service = ChannelEvalModelMapService(fake_auth, session)
+        return await getattr(service, method)(*args)
 
 
 async def _svc(fake_auth: AuthSchema, db, method: str, *args):
@@ -295,13 +328,33 @@ async def test_export_html_self_contained(eval_db: async_sessionmaker, fake_auth
     assert "导出测试报告" in html
     assert "生成时间" in html
     assert f"#{run_a}" in html and f"#{baseline_run}" in html
-    # 关键区块
-    for section in ("关键指标概览", "跨渠道对比", "交叉对比", "异常清单", "自动结论与管理员备注", "指标口径说明"):
+    # 关键区块（区块名以本变更的 compare-report 规格为准）
+    for section in (
+        "比较范围",
+        "关键指标概览",
+        "核心结论",
+        "逐模型性能可视化",
+        "详细指标对比",
+        "交叉对比",
+        "异常清单",
+        "测试配置与执行信息",
+        "自动结论与管理员备注",
+        "指标口径说明",
+    ):
         assert section in html, f"缺少区块: {section}"
     # 备注随导出包含
     assert "备注内容 XYZ" in html
-    # 数据 JSON 内嵌
+    # 数据 JSON 内嵌（导出件为客户端渲染：内容由内嵌 JSON 生成）
     assert 'id="report-data"' in html
+    payload = json.loads(re.search(r'<script type="application/json" id="report-data">(.*?)</script>', html, re.S).group(1))
+    # 新增板块的数据都在内嵌快照里：对齐汇总、可比性提醒、运行参数快照、自动口径说明
+    assert "alignment" in payload and "unmapped_count" in payload["alignment"]
+    assert "comparable_notes" in payload
+    assert payload["run_configs"] and payload["run_configs"][0]["run_id"] in {run_a, baseline_run}
+    assert payload["caliber_notes"]
+    # 原始样本明细随导出，供「展开原始样本」使用
+    assert payload["models"][0]["combos"][0]["samples"]
+    assert "raw_models" in payload["models"][0] and "model_key" in payload["models"][0]
     # 零外部资源引用：无 script src / link href / img src
     assert "<script src" not in html
     assert "<link" not in html
@@ -339,3 +392,239 @@ async def test_export_freezes_data(eval_db: async_sessionmaker, fake_auth: AuthS
     # 重新导出才包含新数据（Web 视图实时，文件导出即冻结）
     re_exported = await _svc(fake_auth, eval_db, "export_html", created.id)
     assert "45000" in re_exported
+
+
+# ─────────────────────── 模型映射驱动的分组与对齐 ───────────────────────
+
+
+async def _make_sibling_runs(eval_db: async_sessionmaker) -> tuple[int, int]:
+    """两渠道各跑一条同族但命名不同的串（claude-opus-5-5 / anthropic/claude-opus-5.5）。"""
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    aihubmix_id = await _make_platform(eval_db, name="aihubmix", baseline=True, ptype="user")
+    run_a = await _make_run(
+        eval_db,
+        apiworld_id,
+        combos=((70, "ch70", "claude-opus-5-5"),),
+        samples={(70, "claude-opus-5-5"): [{"seq": 1, "ttft_ms": 1200, "total_ms": 2400}]},
+    )
+    run_b = await _make_run(
+        eval_db,
+        aihubmix_id,
+        combos=((72, "ch72", "anthropic/claude-opus-5.5"),),
+        samples={(72, "anthropic/claude-opus-5.5"): [{"seq": 1, "ttft_ms": 1100, "total_ms": 2300}]},
+    )
+    return run_a, run_b
+
+
+async def test_report_grouping_with_confirmed_alias(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """已确认别名：两渠道的不同命名串归到同一规范模型组，并标注命名差异。"""
+    canonical = await _map_svc(
+        fake_auth,
+        eval_db,
+        "create",
+        CanonicalModelCreateSchema(display_name="Claude Opus 5.5", family="Claude", aliases=["claude-opus-5-5", "anthropic/claude-opus-5.5"]),
+    )
+    run_a, run_b = await _make_sibling_runs(eval_db)
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="对齐分组", run_ids=[run_a, run_b]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert len(view.models) == 1, "已确认别名的两条串应归为同一组"
+    group = view.models[0]
+    assert group.model == "Claude Opus 5.5", "组名应为规范模型显示名"
+    assert group.model_key == f"c{canonical.id}"
+    assert group.family == "Claude"
+    assert group.alignment == "aligned"
+    assert group.raw_models == ["anthropic/claude-opus-5.5", "claude-opus-5-5"], "raw_models 应含组内两条原始串"
+    assert {combo.channel_id for combo in group.combos} == {70, 72}, "两渠道的组合应并列在同一组"
+    assert group.alignment_note is not None
+    assert "组内渠道模型串不同" in group.alignment_note, "应说明组内命名差异"
+    assert "claude-opus-5-5" in group.alignment_note and "anthropic/claude-opus-5.5" in group.alignment_note
+    assert view.alignment.unmapped_count == 0
+
+
+async def test_report_grouping_without_alias_stays_split(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """未确认归属：同族串绝不合并，各自独立成组并标记 unmapped（建议待确认）。"""
+    run_a, run_b = await _make_sibling_runs(eval_db)
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="未对齐分组", run_ids=[run_a, run_b]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert len(view.models) == 2, "未确认归属的同族串不得合并"
+    assert {group.model for group in view.models} == {"claude-opus-5-5", "anthropic/claude-opus-5.5"}
+    assert {group.alignment for group in view.models} == {"unmapped"}, "两组都应标记为待确认归属"
+    assert view.alignment.unmapped_count == 2
+    assert view.alignment.mappings == []
+    # 每组说明里点出疑似同族的另一条串
+    for group in view.models:
+        assert group.alignment_note is not None
+        assert "疑似与" in group.alignment_note and "尚未确认归属" in group.alignment_note
+
+
+async def test_report_grouping_singleton(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """孤串：未发现同族 → singleton（既非已对齐，也无待确认的建议）。"""
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    run_a = await _make_run(
+        eval_db,
+        apiworld_id,
+        combos=((70, "ch70", "gpt-6-sol"),),
+        samples={(70, "gpt-6-sol"): [{"seq": 1, "ttft_ms": 800, "total_ms": 1600}]},
+    )
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="孤串分组", run_ids=[run_a]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert len(view.models) == 1
+    group = view.models[0]
+    assert group.model == "gpt-6-sol", "未确认归属时组名即渠道模型串本身"
+    assert group.model_key == "raw:gpt-6-sol"
+    assert group.alignment == "singleton"
+    assert group.raw_models == ["gpt-6-sol"]
+    assert group.alignment_note is None, "无同族也无命名差异，无需说明"
+    # singleton 没有待办，不计入「疑似同族待确认」——否则一份含大量独有模型的报告
+    # 会喊出同样多的「未确认归属」，纯噪音
+    assert view.alignment.unmapped_count == 0
+    assert not any("疑似同族未确认" in note for note in view.caliber_notes)
+
+
+async def test_report_alignment_mappings_list_only_used(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """对齐汇总只列本次报告真的用到的映射，不把整张别名表倒出来。"""
+    await _map_svc(
+        fake_auth,
+        eval_db,
+        "create",
+        CanonicalModelCreateSchema(display_name="Claude Opus 5.5", aliases=["claude-opus-5-5", "anthropic/claude-opus-5.5"]),
+    )
+    await _map_svc(
+        fake_auth,
+        eval_db,
+        "create",
+        CanonicalModelCreateSchema(display_name="GPT-6 Sol", aliases=["openai/gpt-6-sol", "gpt-6-sol"]),
+    )
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    run_a = await _make_run(
+        eval_db,
+        apiworld_id,
+        combos=((70, "ch70", "claude-opus-5-5"),),
+        samples={(70, "claude-opus-5-5"): [{"seq": 1, "ttft_ms": 1200, "total_ms": 2400}]},
+    )
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="映射清单", run_ids=[run_a]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert [(item.alias, item.canonical) for item in view.alignment.mappings] == [("claude-opus-5-5", "Claude Opus 5.5")], "只列本次用到的映射"
+
+
+async def test_caliber_notes_reflect_effective_mappings(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """口径说明：未用别名时声明按原样分组；补一条别名后同一报告立刻列出实际生效的映射。"""
+    run_a, run_b = await _make_sibling_runs(eval_db)
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="口径说明", run_ids=[run_a, run_b]))
+
+    before = await _svc(fake_auth, eval_db, "view", created.id)
+    joined_before = "\n".join(before.caliber_notes)
+    assert "未用到任何已确认的别名" in joined_before, "无别名时应声明按原样分组"
+    assert "→" not in joined_before
+
+    # 解析发生在渲染时：补一条别名，历史报告立刻正确
+    await _map_svc(
+        fake_auth,
+        eval_db,
+        "create",
+        CanonicalModelCreateSchema(display_name="Claude Opus 5.5", aliases=["claude-opus-5-5", "anthropic/claude-opus-5.5"]),
+    )
+    after = await _svc(fake_auth, eval_db, "view", created.id)
+    joined_after = "\n".join(after.caliber_notes)
+    assert "未用到任何已确认的别名" not in joined_after
+    assert "claude-opus-5-5 → Claude Opus 5.5" in joined_after, "应列出实际生效的映射关系"
+    assert "anthropic/claude-opus-5.5 → Claude Opus 5.5" in joined_after
+
+
+# ─────────────────────── 可比性提醒与运行配置 ───────────────────────
+
+_BASE_PARAMS: dict = {"request_count": 2, "warmup": False, "interval_seconds": 0, "timeout_seconds": 10, "prompt": "hi", "anomaly_threshold_seconds": 30}
+
+
+async def test_comparable_notes_warn_on_param_difference_without_advice(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """热身开关不同 → warning，仅陈述差异事实，不含建议性措辞。"""
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    aihubmix_id = await _make_platform(eval_db, name="aihubmix", baseline=True, ptype="user")
+    run_a = await _make_run_with_params(eval_db, apiworld_id, params=_BASE_PARAMS)
+    run_b = await _make_run_with_params(eval_db, aihubmix_id, params={**_BASE_PARAMS, "warmup": True})
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="可比性-热身", run_ids=[run_a, run_b]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert [note.level for note in view.comparable_notes] == ["warning"], "只有热身开关不同，应只产出一条警示"
+    content = view.comparable_notes[0].content
+    assert "热身不同" in content
+    assert "开启" in content and "关闭" in content
+    for note in view.comparable_notes:
+        assert "建议" not in note.content, "可比性提醒不得含建议性措辞"
+
+
+async def test_comparable_notes_empty_when_params_identical(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """参数与时间窗完全一致 → 无可比性提醒。"""
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    aihubmix_id = await _make_platform(eval_db, name="aihubmix", baseline=True, ptype="user")
+    run_a = await _make_run_with_params(eval_db, apiworld_id, params=_BASE_PARAMS)
+    run_b = await _make_run_with_params(eval_db, aihubmix_id, params=dict(_BASE_PARAMS))
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="可比性-一致", run_ids=[run_a, run_b]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert view.comparable_notes == [], "参数一致时不应有可比性提醒"
+
+
+async def test_comparable_notes_warn_on_request_count(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """每组合正式次数不同 → warning。"""
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    aihubmix_id = await _make_platform(eval_db, name="aihubmix", baseline=True, ptype="user")
+    run_a = await _make_run_with_params(eval_db, apiworld_id, params=_BASE_PARAMS)
+    run_b = await _make_run_with_params(eval_db, aihubmix_id, params={**_BASE_PARAMS, "request_count": 5})
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="可比性-次数", run_ids=[run_a, run_b]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert [note.level for note in view.comparable_notes] == ["warning"]
+    content = view.comparable_notes[0].content
+    assert "每组合正式次数不同" in content
+    assert "建议" not in content
+
+
+async def test_run_configs_carry_params_and_execution_counts(eval_db: async_sessionmaker, fake_auth: AuthSchema) -> None:
+    """运行配置：参数取自 params_json（热身只有开关、不得虚构次数）与成功/失败/异常计数。"""
+    params = {"request_count": 3, "warmup": True, "interval_seconds": 0.5, "timeout_seconds": 20, "anomaly_threshold_seconds": 30, "prompt": "hi"}
+    apiworld_id = await _make_platform(eval_db, name="apiworld", baseline=False, ptype="admin")
+    run_a = await _make_run_with_params(
+        eval_db,
+        apiworld_id,
+        params=params,
+        combos=((70, "ch70", "m1"),),
+        samples={
+            (70, "m1"): [
+                {"seq": 0, "is_warmup": True, "ttft_ms": 500, "total_ms": 1000},  # 热身：只开关，不计入计数
+                {"seq": 1, "ttft_ms": 1000, "total_ms": 2000},
+                {"seq": 2, "ttft_ms": 45000, "total_ms": 46000},  # 超 30s 阈值 → 异常
+                {"seq": 3, "status": "failed", "error": "timeout", "ttft_ms": None, "total_ms": None},
+            ]
+        },
+    )
+
+    created = await _svc(fake_auth, eval_db, "create", ChannelEvalReportCreateSchema(name="运行配置", run_ids=[run_a]))
+    view = await _svc(fake_auth, eval_db, "view", created.id)
+
+    assert len(view.run_configs) == 1
+    config = view.run_configs[0]
+    assert config.run_id == run_a
+    assert config.platform_name == "apiworld"
+    assert config.status == "success"
+    assert config.combo_count == 1
+    assert config.request_count == 3
+    assert config.warmup is True, "热身是布尔开关，不得被虚构为次数"
+    assert config.interval_seconds == 0.5
+    assert config.timeout_seconds == 20
+    assert config.anomaly_threshold_seconds == 30
+    assert config.prompt == "hi"
+    assert config.success == 2, "成功计数剔除热身样本"
+    assert config.failed == 1
+    assert config.anomaly == 1

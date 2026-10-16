@@ -3,257 +3,600 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>渠道评估对比报告 - {{ view.report.name }}</title>
+<title>{{ view.report.name }} · 渠道评估对比报告</title>
 <style>
-  :root {
-    --text: #1f2328; --muted: #6a737d; --border: #d9dde3; --bg: #f6f8fa;
-    --accent: #3b82f6; --baseline: #f59e0b; --danger: #dc2626; --ok: #16a34a;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; padding: 32px 24px; font: 14px/1.65 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--text); background: #fff; }
-  .container { max-width: 1080px; margin: 0 auto; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  h2 { font-size: 17px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
-  h3 { font-size: 15px; margin: 20px 0 8px; }
-  .muted { color: var(--muted); }
-  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--border); margin-left: 6px; vertical-align: 1px; }
-  .tag.baseline { color: var(--baseline); border-color: var(--baseline); }
-  .tag.success { color: var(--ok); border-color: var(--ok); }
-  .tag.failed, .tag.cancelled { color: var(--danger); border-color: var(--danger); }
-  .card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; background: var(--bg); }
-  .kpis { display: flex; flex-wrap: wrap; gap: 12px; }
-  .kpi { flex: 1 1 140px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-  .kpi .num { font-size: 22px; font-weight: 600; }
-  .kpi .label { color: var(--muted); font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 13px; }
-  th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
-  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  tr.baseline-row td { background: #fffbeb; }
-  .bar-wrap { background: #eef1f5; border-radius: 4px; height: 14px; position: relative; min-width: 120px; }
-  .bar { height: 100%; border-radius: 4px; background: var(--accent); }
-  .bar.baseline { background: var(--baseline); }
-  .legend { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 4px 0 12px; }
-  ul.plain { padding-left: 18px; margin: 6px 0; }
-  .conclusions li { margin: 4px 0; }
-  .note-box { white-space: pre-wrap; background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
-  footer { margin-top: 40px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+:root{--bg:#f5f7fb;--surface:#fff;--ink:#142139;--sub:#61708a;--muted:#8a96a9;--line:#e8edf4;--navy:#13263f;--a:#2a6bf2;--b:#e58434;--good:#0d936b;--bad:#cb5243;--caution:#b97421;--shadow:0 12px 36px rgba(20,40,70,.055);--radius:18px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+button,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible{outline:3px solid #85afff;outline-offset:3px}
+.container{width:min(1280px,calc(100% - 56px));margin:auto}
+.hero{color:#fff;background:linear-gradient(118deg,#10203b,#172c4f 70%,#213c62);padding:42px 0 58px;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;width:500px;height:500px;border:1px solid #ffffff14;border-radius:100%;top:-360px;right:-10px;box-shadow:0 0 0 80px #ffffff04,0 0 0 160px #ffffff04}
+.hero-inner{position:relative}
+.eyebrow{letter-spacing:.15em;text-transform:uppercase;color:#b5c6e1;font-size:11px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.eyebrow:before{content:"";width:26px;height:2px;background:#75a6ff;display:block}
+.hero h1{font-size:clamp(27px,3.4vw,39px);font-weight:760;letter-spacing:-.9px;line-height:1.26;margin:0}
+.hero .subtitle{color:#c5d1e2;font-size:14px;margin:14px 0 26px;max-width:850px}
+.hero-tags{display:flex;gap:9px;flex-wrap:wrap}
+.hero-tag{border:1px solid #ffffff2e;border-radius:999px;padding:6px 12px;color:#dae5f6;background:#ffffff08;font-size:12px}
+.top-actions{display:flex;gap:10px;margin-top:26px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;border-radius:10px;font-weight:650}
+.btn.dark{color:#e7edfa;background:#ffffff17;border-color:#ffffff39}
+.btn:hover{filter:brightness(.96)}
+main{position:relative;margin-top:-24px;padding-bottom:60px}
+.panel{background:var(--surface);border:1px solid #e9edf4;border-radius:var(--radius);box-shadow:var(--shadow);padding:25px 26px;margin-bottom:18px}
+.section-head{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;margin-bottom:19px;flex-wrap:wrap}
+.section-head h2{margin:0;font-size:19px;font-weight:760;letter-spacing:-.3px}
+.section-head p{margin:4px 0 0;font-size:12px;color:var(--sub)}
+.controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.selector{display:flex;align-items:center;gap:10px}
+.selector label{font-size:13px;color:var(--sub);white-space:nowrap;font-weight:650}
+.selector select{min-width:155px;max-width:260px;background:#f8faff;border:1px solid #dfe7f2;border-radius:10px;padding:9px 13px;color:#183050;cursor:pointer;font-weight:680}
+.seg{display:inline-flex;background:#f2f5fb;border:1px solid #e4eaf4;border-radius:11px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;color:var(--sub);font-weight:680}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(20,40,70,.08)}
+.scope-head{display:flex;gap:20px;justify-content:space-between;flex-wrap:wrap;align-items:flex-start}
+.scope-runs{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.channel-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #e2e9f4;background:#f8faff;border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:650;color:#26405f}
+.channel-pill.baseline{border-color:#f0cfa8;background:#fff7ec;color:#8a5a17}
+.channel-pill .dot{width:9px;height:9px;border-radius:50%;background:var(--a)}
+.channel-pill.baseline .dot{background:var(--b)}
+.meta{font-size:12px;color:var(--sub);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid #e9edf4;border-radius:16px;box-shadow:var(--shadow);padding:17px 18px}
+.kpi .small{font-size:12px;color:var(--sub);font-weight:650;display:flex;align-items:center;gap:6px}
+.kpi .value{font-size:26px;font-weight:770;letter-spacing:-.6px;margin-top:7px;font-variant-numeric:tabular-nums}
+.kpi .value .unit{font-size:12.5px;font-weight:650;color:var(--muted);margin-left:4px}
+.kpi .foot{font-size:11.5px;color:var(--muted);margin-top:5px}
+.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.insight{background:#f9fbff;border:1px solid #e9eff9;border-radius:14px;padding:16px 17px}
+.insight strong{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.insight .icon{width:21px;height:21px;border-radius:7px;background:#e6efff;color:#2a6bf2;display:inline-flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:760;flex:0 0 auto}
+.insight p{margin:9px 0 0;font-size:12.5px;color:#3c4f6b}
+.callout{border-radius:14px;padding:14px 16px;font-size:12.5px;margin-top:14px;border:1px solid}
+.callout.warning{background:#fffaf0;border-color:#f3ddb6;color:#7d5716}
+.callout.info{background:#f6f9ff;border-color:#dfe8f7;color:#2f4a70}
+.callout.warn{background:#fff5f3;border-color:#f6d3cb;color:#8e3a2c}
+.callout ul{margin:7px 0 0;padding-left:19px}
+.callout li{margin:3px 0}
+.callout .title{font-weight:730}
+.chart-row{display:grid;grid-template-columns:220px 1fr 168px;gap:14px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5fa}
+.chart-row:last-child{border-bottom:0}
+.chart-row.is-ref{background:#fbfcff}
+.model-title{font-weight:730;font-size:13.5px}
+.model-family{font-size:11.5px;color:var(--muted)}
+.model-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar-line{display:grid;grid-template-columns:132px 1fr;gap:10px;align-items:center}
+.bar-label{font-size:11.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{background:#eef2f8;border-radius:7px;height:17px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,#4d84f5,#2a6bf2)}
+.bar-fill.ref{background:linear-gradient(90deg,#f0a95e,#e58434)}
+.bar-fill.empty{background:repeating-linear-gradient(45deg,#eef2f8,#eef2f8 6px,#e3e9f2 6px,#e3e9f2 12px)}
+.readout{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.readout .big{font-weight:730}
+.delta{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:730;margin-left:7px}
+.delta.good{background:#e8f7f1;color:var(--good)}
+.delta.bad{background:#fdeeeb;color:var(--bad)}
+.delta.even{background:#eef1f6;color:var(--sub)}
+.tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700;border:1px solid}
+.tag.baseline{color:#8a5a17;border-color:#f0cfa8;background:#fff7ec}
+.tag.ok{color:var(--good);border-color:#bfe6d8;background:#f0fbf7}
+.tag.warn{color:var(--caution);border-color:#f0dcb4;background:#fffaf0}
+.tag.bad{color:var(--bad);border-color:#f6cfc7;background:#fff5f3}
+.tag.plain{color:var(--sub);border-color:#e2e9f4;background:#f8faff}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid #eef2f8;vertical-align:top}
+th{background:#f8faff;color:#3c5372;font-weight:730;white-space:nowrap;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.is-ref td{background:#fdfbff}
+.samples{margin-top:6px}
+.samples table{background:#fbfcff}
+.samples th,.samples td{font-size:11.5px;padding:5px 8px}
+.toggle{border:1px solid #dfe7f2;background:#fff;border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:680;color:#2f4a70}
+.toggle[aria-expanded="true"]{background:#eef4ff;border-color:#c9dcff}
+.config-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.config-card{border:1px solid #e9eff9;border-radius:14px;padding:16px 18px;background:#f9fbff}
+.config-card h3{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.config-card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12.5px}
+.config-card dt{color:var(--sub)}
+.config-card dd{margin:0;font-weight:650;text-align:right;font-variant-numeric:tabular-nums}
+.prompt-box{margin-top:12px;background:#fff;border:1px solid #e4eaf4;border-radius:10px;padding:10px 12px;font-size:12.5px;white-space:pre-wrap;word-break:break-word}
+.mapping-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.mapping{display:inline-flex;align-items:center;gap:7px;border:1px solid #e2e9f4;background:#f8faff;border-radius:9px;padding:5px 10px;font-size:11.5px;color:#26405f}
+.mapping code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+.mapping .arrow{color:var(--muted)}
+.conclusions{margin:0;padding-left:20px}
+.conclusions li{margin:5px 0;font-size:13px}
+.note-box{white-space:pre-wrap;background:#f8faff;border:1px solid #e4eaf4;border-radius:12px;padding:13px 15px;font-size:13px;margin-top:10px}
+.caliber{margin:0;padding-left:20px;color:#3c5372;font-size:12.5px}
+.caliber li{margin:6px 0}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+.footer{color:var(--muted);font-size:12px;text-align:center;padding:8px 0 0}
+@media(max-width:1020px){.kpis{grid-template-columns:repeat(2,1fr)}.insights,.config-grid{grid-template-columns:1fr}.chart-row{grid-template-columns:1fr}.readout{text-align:left}}
+@media print{body{background:#fff}.panel,.kpi{box-shadow:none}.top-actions{display:none}}
 </style>
 </head>
 <body>
-<div class="container">
+<header class="hero"><div class="container hero-inner">
+  <div class="eyebrow">CHANNEL EVALUATION / COMPARE REPORT</div>
+  <h1>{{ view.report.name }}</h1>
+  <p class="subtitle">按<b>规范模型</b>分组，把各渠道的同一个模型并列比较。指标分为客户端实测与平台后台日志两侧，延迟与生成速率分开判断。生成时间 {{ view.generated_at }}。</p>
+  <div class="hero-tags" id="heroTags"></div>
+  <div class="top-actions"><button class="btn dark" onclick="window.print()">打印 / 保存为 PDF</button></div>
+</div></header>
 
-  {# ── 报告头 ── #}
-  <h1>渠道评估对比报告</h1>
-  <div class="muted">{{ view.report.name }} · 生成时间 {{ view.generated_at }}</div>
-
-  <div class="card">
-    <b>所选测试运行：</b>
-    {% if view.runs %}
-      {% for run in view.runs %}
-        {% if not run.is_baseline %}
-          #{{ run.id }} {{ run.platform_name }}（{{ run.status }}）{% if not loop.last %}、{% endif %}
-        {% endif %}
-      {% endfor %}
-    {% else %}—{% endif %}
-    <br>
-    <b>基准运行：</b>
-    {% if view.baseline_run %}
-      #{{ view.baseline_run.id }} {{ view.baseline_run.platform_name }}（{{ view.baseline_run.status }}）
-    {% else %}未选择{% endif %}
-  </div>
-
-  {# ── 关键指标概览 ── #}
-  <h2>关键指标概览</h2>
-  {% set all_combos = view.models | map(attribute='combos') | sum(start=[]) %}
-  {% set combo_total = all_combos | length %}
-  {% set sample_total = all_combos | map(attribute='executed') | sum %}
-  <div class="kpis">
-    <div class="kpi"><div class="num">{{ view.models | length }}</div><div class="label">对比模型数</div></div>
-    <div class="kpi"><div class="num">{{ combo_total }}</div><div class="label">对比组合数</div></div>
-    <div class="kpi"><div class="num">{{ sample_total }}</div><div class="label">样本总数（非热身）</div></div>
-    <div class="kpi"><div class="num">{{ view.anomalies | length }}</div><div class="label">异常/失败条目</div></div>
-    <div class="kpi"><div class="num">{{ view.conclusions | length }}</div><div class="label">自动结论条数</div></div>
-  </div>
-
-  {# ── 跨渠道对比（按模型分组） ── #}
-  <h2>跨渠道对比（按模型分组）</h2>
-  {% if not view.models %}
-    <p class="muted">无数据</p>
-  {% endif %}
-  {% for group in view.models %}
-    <h3>模型：{{ group.model }}{% if not group.has_baseline %} <span class="tag">无基准数据</span>{% endif %}</h3>
-
-    {# 客户端首 Token 时延对比图（纯 CSS 条形） #}
-    {% set ttft_values = group.combos | map(attribute='ttft_avg_ms') | select('ne', none) | list %}
-    {% if group.baseline and group.baseline.ttft_avg_ms is not none %}
-      {% set ttft_values = ttft_values + [group.baseline.ttft_avg_ms] %}
-    {% endif %}
-    {% set max_ttft = (ttft_values | max) if ttft_values else 0 %}
-    {% if max_ttft %}
-    <div class="card">
-      <div class="legend" style="margin:0 0 8px"><b>客户端首 Token 时延均值（ms）</b></div>
-      {% if group.baseline and group.baseline.ttft_avg_ms is not none %}
-        <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-          <div style="width:220px; font-size:12px" class="muted">基准 · {{ group.baseline.channel_name }}</div>
-          <div class="bar-wrap"><div class="bar baseline" style="width: {{ (group.baseline.ttft_avg_ms / max_ttft * 100) | round(1) }}%"></div></div>
-          <div style="width:90px; font-size:12px">{{ group.baseline.ttft_avg_ms }} ms</div>
+<main class="container">
+  <section class="panel">
+    <div class="scope-head">
+      <div>
+        <div class="meta">比较范围</div>
+        <div class="scope-runs">
+          {% for run in view.runs %}
+          <span class="channel-pill{% if run.is_baseline %} baseline{% endif %}"><span class="dot"></span>#{{ run.id }} {{ run.platform_name or '未知平台' }} · {{ run.combo_count }} 组合 · {{ run.status }}{% if run.is_baseline %} · 基准渠道{% endif %}</span>
+          {% else %}
+          <span class="empty">未选择运行</span>
+          {% endfor %}
         </div>
-      {% endif %}
-      {% for combo in group.combos %}
-        <div style="display:flex; align-items:center; gap:8px; margin:4px 0">
-          <div style="width:220px; font-size:12px">#{{ combo.channel_id }} {{ combo.channel_name }}</div>
-          <div class="bar-wrap">
-            {% if combo.ttft_avg_ms is not none %}
-            <div class="bar" style="width: {{ (combo.ttft_avg_ms / max_ttft * 100) | round(1) }}%"></div>
-            {% endif %}
-          </div>
-          <div style="width:90px; font-size:12px">{% if combo.ttft_avg_ms is not none %}{{ combo.ttft_avg_ms }} ms{% else %}—{% endif %}</div>
-        </div>
-      {% endfor %}
-      <div class="legend"><span class="dot" style="background:var(--accent)"></span>待测渠道<span class="dot" style="background:var(--baseline)"></span>基准运行</div>
+      </div>
+      <div class="controls">
+        <div class="selector"><label for="refRun">基准渠道</label><select id="refRun"></select></div>
+      </div>
     </div>
-    {% endif %}
+  </section>
 
-    {# 明细表 #}
-    <table>
-      <thead>
-        <tr>
-          <th>渠道</th><th>平台</th><th class="num">样本数</th><th class="num">成功率</th><th class="num">异常数</th>
-          <th class="num">客户端首Token(ms)</th><th class="num">客户端总耗时(ms)</th>
-          <th class="num">含异常总耗时(ms)</th><th class="num">速率(tokens/s)</th>
-          <th class="num">后台首字(ms)</th><th class="num">后台总耗时(ms)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if group.baseline %}
-        <tr class="baseline-row">
-          <td>#{{ group.baseline.channel_id }} {{ group.baseline.channel_name }}<span class="tag baseline">基准</span></td>
-          <td>{{ group.baseline.platform_name }}</td>
-          <td class="num">{{ group.baseline.success }}/{{ group.baseline.planned }}</td>
-          <td class="num">{% if group.baseline.success_rate is not none %}{{ (group.baseline.success_rate * 100) | round(1) }}%{% else %}—{% endif %}</td>
-          <td class="num">{{ group.baseline.anomaly }}</td>
-          <td class="num">{{ group.baseline.ttft_avg_ms if group.baseline.ttft_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ group.baseline.total_avg_ms if group.baseline.total_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ group.baseline.total_with_anomaly_avg_ms if group.baseline.total_with_anomaly_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ group.baseline.tps_avg if group.baseline.tps_avg is not none else '—' }}</td>
-          <td class="num">{{ group.baseline.be_frt_avg_ms if group.baseline.be_frt_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ group.baseline.be_use_time_avg_ms if group.baseline.be_use_time_avg_ms is not none else '—' }}</td>
-        </tr>
-        {% endif %}
-        {% for combo in group.combos %}
-        <tr>
-          <td>#{{ combo.channel_id }} {{ combo.channel_name }}{% if combo.is_baseline %}<span class="tag baseline">基准</span>{% endif %}</td>
-          <td>{{ combo.platform_name }}</td>
-          <td class="num">{{ combo.success }}/{{ combo.planned }}</td>
-          <td class="num">{% if combo.success_rate is not none %}{{ (combo.success_rate * 100) | round(1) }}%{% else %}—{% endif %}</td>
-          <td class="num">{{ combo.anomaly }}</td>
-          <td class="num">{{ combo.ttft_avg_ms if combo.ttft_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.total_avg_ms if combo.total_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.total_with_anomaly_avg_ms if combo.total_with_anomaly_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.tps_avg if combo.tps_avg is not none else '—' }}</td>
-          <td class="num">{{ combo.be_frt_avg_ms if combo.be_frt_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.be_use_time_avg_ms if combo.be_use_time_avg_ms is not none else '—' }}</td>
-        </tr>
-        {% endfor %}
-        {% if not group.baseline %}
-        <tr><td colspan="11" class="muted">无基准数据</td></tr>
-        {% endif %}
-      </tbody>
-    </table>
-  {% endfor %}
+  <section class="panel" id="alignmentPanel" hidden></section>
 
-  {# ── 客户端实测与后台日志交叉对比 ── #}
-  <h2>客户端实测与后台日志交叉对比</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>模型</th><th>渠道</th><th>平台</th>
-        <th class="num">客户端首Token(ms)</th><th class="num">后台首字(ms)</th><th class="num">差值(ms)</th>
-        <th class="num">客户端总耗时(ms)</th><th class="num">后台总耗时(ms)</th><th class="num">差值(ms)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for group in view.models %}
-        {% for combo in group.combos %}
-        <tr>
-          <td>{{ group.model }}</td>
-          <td>#{{ combo.channel_id }} {{ combo.channel_name }}{% if combo.is_baseline %}<span class="tag baseline">基准</span>{% endif %}</td>
-          <td>{{ combo.platform_name }}</td>
-          <td class="num">{{ combo.ttft_avg_ms if combo.ttft_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.be_frt_avg_ms if combo.be_frt_avg_ms is not none else '—' }}</td>
-          <td class="num">{% if combo.cross_ttft_diff_ms is not none %}{{ '%+d' % combo.cross_ttft_diff_ms | round | int }}{% else %}—{% endif %}</td>
-          <td class="num">{{ combo.total_avg_ms if combo.total_avg_ms is not none else '—' }}</td>
-          <td class="num">{{ combo.be_use_time_avg_ms if combo.be_use_time_avg_ms is not none else '—' }}</td>
-          <td class="num">{% if combo.cross_total_diff_ms is not none %}{{ '%+d' % combo.cross_total_diff_ms | round | int }}{% else %}—{% endif %}</td>
-        </tr>
-        {% endfor %}
-      {% else %}
-        <tr><td colspan="9" class="muted">无数据</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="section-head" style="padding:0 4px"><div><h2>关键指标概览</h2><p>各模型先取组内均值，再对模型等权平均——不代表真实流量占比</p></div></div>
+  <div class="kpis" id="kpis"></div>
 
-  {# ── 异常清单 ── #}
-  <h2>异常清单</h2>
-  <table>
-    <thead>
-      <tr><th>类型</th><th>运行</th><th>渠道</th><th>模型</th><th class="num">序号</th><th class="num">首Token(ms)</th><th class="num">总耗时(ms)</th><th>状态</th><th>后台配对</th><th>错误信息</th></tr>
-    </thead>
-    <tbody>
-      {% for item in view.anomalies %}
-      <tr>
-        <td>{% if item.kind == 'anomaly' %}<span class="tag failed">延迟超阈值</span>{% else %}<span class="tag failed">请求失败</span>{% endif %}</td>
-        <td>#{{ item.run_id }} {{ item.platform_name }}</td>
-        <td>#{{ item.channel_id }} {{ item.channel_name }}</td>
-        <td>{{ item.model }}</td>
-        <td class="num">{{ item.seq }}</td>
-        <td class="num">{{ item.ttft_ms if item.ttft_ms is not none else '—' }}</td>
-        <td class="num">{{ item.total_ms if item.total_ms is not none else '—' }}</td>
-        <td>{{ item.status }}</td>
-        <td>{% if item.be_matched %}已配对{% else %}后台无记录{% endif %}</td>
-        <td class="muted">{{ item.error or '—' }}</td>
-      </tr>
-      {% else %}
-        <tr><td colspan="10" class="muted">无异常样本</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <section class="panel">
+    <div class="section-head"><div><h2>核心结论</h2><p>延迟与生成速率分开判断，不将成功与异常混为一谈</p></div></div>
+    <div class="insights" id="insights"></div>
+    <div id="comparableNotes"></div>
+  </section>
 
-  {# ── 自动结论与管理员备注 ── #}
-  <h2>自动结论与管理员备注</h2>
-  <ul class="plain conclusions">
-    {% for conclusion in view.conclusions %}
-      <li>{{ conclusion.content }}</li>
-    {% else %}
-      <li class="muted">无阈值性事实陈述</li>
-    {% endfor %}
-  </ul>
-  {% if view.report.note %}
-    <h3>管理员备注</h3>
-    <div class="note-box">{{ view.report.note }}</div>
-  {% endif %}
+  <section class="panel">
+    <div class="section-head">
+      <div><h2>逐模型性能可视化</h2><p id="chartNote">首 Token 与总耗时越低越好，生成速率越高越好；差异百分比相对所选基准渠道</p></div>
+      <div class="controls">
+        <div class="seg" id="metricSeg" role="group" aria-label="指标"></div>
+        <div class="seg" id="familySeg" role="group" aria-label="系列"></div>
+      </div>
+    </div>
+    <div id="chart"></div>
+  </section>
 
-  {# ── 指标口径说明 ── #}
-  <h2>指标口径说明</h2>
-  <ul class="plain muted">
-    <li>客户端实测：评估系统以真实流式请求（stream + include_usage）向平台发起测得；首 Token 时延 = 发出请求到收到第一个内容分片；总耗时 = 至流式结束；速率 = 输出 tokens ÷（总耗时 − 首 Token 时延）。</li>
-    <li>后台日志：平台侧 new-api 记录的每请求数据（other.frt 首字毫秒 / use_time 秒），运行结束后按请求标识 1:1 配对写回；未配对样本标注「后台无记录」，不凭空填值。</li>
-    <li>聚合口径：任何均值基于剔除热身与异常（延迟超过异常阈值，默认 30 秒）后的成功样本；并列给出含异常参考均值；失败样本只计入成功率。</li>
-    <li>成功率 = 成功样本数 ÷ 计划请求次数（热身不计入统计）。</li>
-    <li>基准对比：基准数据取管理员选定的基准渠道运行快照；基准未覆盖的模型显示「无基准数据」。</li>
-    <li>自动结论仅陈述阈值性事实（客户端指标高于基准 2 秒及以上、出现异常样本、成功率非 100%），不含评价性措辞。</li>
-    <li>本文件为导出时刻的数据快照，之后运行数据或基准选择的变化不影响本文件内容。</li>
-  </ul>
+  <section class="panel">
+    <div class="section-head"><div><h2>详细指标对比</h2><p>差异百分比 =（该渠道 − 基准渠道）÷ 基准渠道 × 100%；点「样本」查看原始单次数据</p></div></div>
+    <div style="overflow-x:auto"><table id="detailTable"></table></div>
+  </section>
 
-  <footer>
-    渠道评估对比报告 · 由 FastapiAdmin 渠道评估模块生成 · 自包含 HTML（离线可打开，无外部依赖）
-  </footer>
-</div>
+  <section class="panel">
+    <div class="section-head"><div><h2>客户端实测与后台日志交叉对比</h2><p>差值为客户端实测均值 − 平台后台日志均值；任一侧无数据时显示「—」</p></div></div>
+    <div style="overflow-x:auto"><table id="crossTable"></table></div>
+  </section>
 
-<script type="application/json" id="report-data">
-{{ view | tojson }}
+  <section class="panel">
+    <div class="section-head"><div><h2>异常清单</h2><p>延迟超过异常阈值的成功样本，以及请求失败的样本</p></div></div>
+    <div style="overflow-x:auto"><table id="anomalyTable"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><div><h2>测试配置与执行信息</h2><p>各次运行的参数快照与执行结果，用于判断两次运行是否可比</p></div></div>
+    <div class="config-grid" id="configGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><div><h2>自动结论与管理员备注</h2><p>自动结论仅陈述阈值性事实，不含评价性或建议性措辞</p></div></div>
+    <ul class="conclusions" id="conclusions"></ul>
+    <div id="noteBox"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><div><h2>指标口径说明</h2><p>确保差异百分比与原始运行数据一致</p></div></div>
+    <ul class="caliber" id="caliber"></ul>
+  </section>
+
+  <div class="footer">渠道评估对比报告 · 由 FastapiAdmin 渠道评估模块生成 · 自包含 HTML，离线可打开，无外部依赖</div>
+</main>
+
+<script type="application/json" id="report-data">{{ view | json_safe }}</script>
+<script>
+'use strict';
+const DATA = JSON.parse(document.getElementById('report-data').textContent);
+const METRICS = {
+  ttft:  { key: 'ttft_avg_ms', name: '首 Token 延迟', unit: 'ms',       lowerBetter: true,  decimals: 0 },
+  total: { key: 'total_avg_ms', name: '请求总耗时',   unit: 'ms',       lowerBetter: true,  decimals: 0 },
+  speed: { key: 'tps_avg',      name: '输出速度',     unit: 'tokens/s', lowerBetter: false, decimals: 1 },
+};
+const ALIGN_LABELS = { aligned: '已对齐', unmapped: '待确认', singleton: '未发现同族' };
+const $ = (sel) => document.querySelector(sel);
+const num = (value, decimals) => (value === null || value === undefined) ? '—'
+  : Number(value).toLocaleString('zh-CN', { minimumFractionDigits: decimals || 0, maximumFractionDigits: decimals || 0 });
+const esc = (text) => String(text === null || text === undefined ? '' : text)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const RUNS = DATA.runs || [];
+const MODELS = DATA.models || [];
+let refRunId = DATA.baseline_run ? DATA.baseline_run.id : (RUNS[0] ? RUNS[0].id : null);
+let metric = 'ttft';
+let family = 'all';
+
+/* 组内的组合行：基准 + 各对比组合，按 运行/渠道 去重（基准运行也可能被列进所选运行） */
+function rowsOf(group) {
+  const seen = new Set();
+  const rows = [];
+  for (const combo of [group.baseline].concat(group.combos || [])) {
+    if (!combo) continue;
+    const key = combo.run_id + ':' + combo.channel_id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(combo);
+  }
+  rows.sort((left, right) => (left.run_id === refRunId ? -1 : 0) - (right.run_id === refRunId ? -1 : 0));
+  return rows;
+}
+const refRowOf = (group) => rowsOf(group).find((combo) => combo.run_id === refRunId) || null;
+const runName = (runId) => {
+  const run = RUNS.find((item) => item.id === runId);
+  return run ? ('运行 #' + run.id + ' ' + (run.platform_name || '')) : ('运行 #' + runId);
+};
+const comboLabel = (combo) => '#' + combo.channel_id + ' ' + combo.channel_name;
+function change(value, base) {
+  if (value === null || value === undefined || base === null || base === undefined || !base) return null;
+  return 100 * (value / base - 1);
+}
+function deltaClass(info, percent) {
+  if (percent === null || Math.abs(percent) < 0.05) return 'even';
+  return (info.lowerBetter ? percent < 0 : percent > 0) ? 'good' : 'bad';
+}
+function deltaBadge(info, percent) {
+  if (percent === null) return '<span class="delta even">—</span>';
+  return '<span class="delta ' + deltaClass(info, percent) + '">' + (percent > 0 ? '+' : '') + percent.toFixed(1) + '%</span>';
+}
+/* 每个模型先取组内均值，再对各模型等权平均——不代表真实流量占比 */
+function overallMean(key) {
+  const perModel = [];
+  for (const group of MODELS) {
+    const values = rowsOf(group).map((combo) => combo[key]).filter((value) => value !== null && value !== undefined);
+    if (values.length) perModel.push(values.reduce((sum, value) => sum + value, 0) / values.length);
+  }
+  if (!perModel.length) return null;
+  return perModel.reduce((sum, value) => sum + value, 0) / perModel.length;
+}
+function modelMean(group, key) {
+  const values = rowsOf(group).map((combo) => combo[key]).filter((value) => value !== null && value !== undefined);
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function renderHero() {
+  const tags = [];
+  tags.push(MODELS.length + ' 个模型组');
+  tags.push(RUNS.length + ' 次运行');
+  if (DATA.baseline_run) tags.push('基准 ' + (DATA.baseline_run.platform_name || ('运行 #' + DATA.baseline_run.id)));
+  if (DATA.alignment && DATA.alignment.mappings.length) tags.push(DATA.alignment.mappings.length + ' 条模型映射生效');
+  if (DATA.alignment && DATA.alignment.unmapped_count) tags.push(DATA.alignment.unmapped_count + ' 个模型疑似同族待确认');
+  $('#heroTags').innerHTML = tags.map((text) => '<span class="hero-tag">' + esc(text) + '</span>').join('');
+}
+
+function renderScope() {
+  /* 比较范围由服务端渲染（无 JS 也能看）；这里只填基准下拉 */
+  $('#refRun').innerHTML = RUNS.map((run) =>
+    '<option value="' + run.id + '"' + (run.id === refRunId ? ' selected' : '') + '>' +
+    esc('#' + run.id + ' ' + (run.platform_name || '未知平台')) + (run.is_baseline ? '（原定基准）' : '') + '</option>'
+  ).join('');
+}
+
+function renderAlignment() {
+  const info = DATA.alignment;
+  if (!info) return;
+  const hasContent = info.unmapped_count || info.mappings.length || info.notes.length;
+  $('#alignmentPanel').hidden = !hasContent;
+  if (!hasContent) return;
+  const mappings = info.mappings.map((item) =>
+    '<span class="mapping"><code>' + esc(item.alias) + '</code><span class="arrow">→</span>' + esc(item.canonical) + '</span>'
+  ).join('');
+  const warnings = info.notes.map((note) => '<li>' + esc(note) + '</li>').join('');
+  $('#alignmentPanel').innerHTML =
+    '<div class="section-head"><div><h2>模型对齐</h2><p>不同渠道的同一个模型必须落在同一行，比较才成立；未确认归属的模型独立成行</p></div></div>' +
+    (info.unmapped_count
+      ? '<div class="callout warning"><span class="title">有 ' + info.unmapped_count + ' 个模型疑似同族但未确认归属。</span>它们已独立成行并标记，未与其它模型合并，也未隐藏。' +
+        (warnings ? '<ul>' + warnings + '</ul>' : '') + '</div>'
+      : '<div class="callout info">本次报告的模型组均无待确认的同族候选。</div>') +
+    (mappings
+      ? '<div class="meta" style="margin-top:16px">本次生效的模型映射</div><div class="mapping-list">' + mappings + '</div>'
+      : '<div class="meta" style="margin-top:16px">本次生效的模型映射</div><div class="empty">未使用任何已确认的别名</div>');
+}
+
+function renderKpis() {
+  const sampleTotal = MODELS.reduce((sum, group) => sum + rowsOf(group).reduce((inner, combo) => inner + (combo.executed || 0), 0), 0);
+  const combos = MODELS.reduce((sum, group) => sum + rowsOf(group).length, 0);
+  const success = MODELS.reduce((sum, group) => sum + rowsOf(group).reduce((inner, combo) => inner + (combo.success || 0), 0), 0);
+  const planned = MODELS.reduce((sum, group) => sum + rowsOf(group).reduce((inner, combo) => inner + (combo.planned || 0), 0), 0);
+  const anomaly = MODELS.reduce((sum, group) => sum + rowsOf(group).reduce((inner, combo) => inner + (combo.anomaly || 0), 0), 0);
+  const failed = MODELS.reduce((sum, group) => sum + rowsOf(group).reduce((inner, combo) => inner + (combo.failed || 0), 0), 0);
+  const cards = [
+    { label: '模型组数', value: MODELS.length, unit: '组', foot: DATA.alignment && DATA.alignment.unmapped_count ? DATA.alignment.unmapped_count + ' 组疑似同族待确认' : '无待确认的同族候选' },
+    { label: '对比组合数', value: combos, unit: '条', foot: '渠道 × 模型' },
+    { label: '样本总数', value: sampleTotal, unit: '条', foot: '非热身正式样本' },
+    { label: '成功率', value: planned ? (100 * success / planned).toFixed(1) : '—', unit: '%', foot: success + ' / ' + planned + ' 次计划请求' },
+    { label: '异常 / 失败', value: anomaly + ' / ' + failed, unit: '条', foot: anomaly + ' 条超阈值，' + failed + ' 条失败' },
+  ];
+  $('#kpis').innerHTML = cards.map((card) =>
+    '<div class="kpi"><div class="small">' + esc(card.label) + '</div>' +
+    '<div class="value">' + esc(card.value) + '<span class="unit">' + esc(card.unit) + '</span></div>' +
+    '<div class="foot">' + esc(card.foot) + '</div></div>'
+  ).join('');
+}
+
+function renderInsights() {
+  const cards = [];
+  for (const key of ['ttft', 'total', 'speed']) {
+    const info = METRICS[key];
+    let ahead = 0;
+    let behind = 0;
+    let compared = 0;
+    for (const group of MODELS) {
+      const ref = refRowOf(group);
+      if (!ref || ref[info.key] === null || ref[info.key] === undefined) continue;
+      for (const combo of rowsOf(group)) {
+        if (combo.run_id === refRunId || combo[info.key] === null || combo[info.key] === undefined) continue;
+        compared += 1;
+        const percent = change(combo[info.key], ref[info.key]);
+        if (percent === null || Math.abs(percent) < 0.05) continue;
+        if (info.lowerBetter ? percent < 0 : percent > 0) ahead += 1;
+        else behind += 1;
+      }
+    }
+    const direction = info.lowerBetter ? '更低' : '更高';
+    const text = compared
+      ? '以 <b>' + esc(runName(refRunId)) + '</b> 为基准，' + compared + ' 条对比组合中 ' + ahead + ' 条' + direction + '、' + behind + ' 条相反。'
+      : '本次没有可比对的数据。';
+    cards.push('<div class="insight"><strong><span class="icon">' + (cards.length + 1) + '</span>' + esc(info.name) + '</strong><p>' + text + '</p></div>');
+  }
+  const unmapped = DATA.alignment ? DATA.alignment.unmapped_count : 0;
+  cards.push('<div class="insight"><strong><span class="icon">4</span>异常与对齐</strong><p>' +
+    (DATA.anomalies.length ? '本次共 ' + DATA.anomalies.length + ' 条异常或失败样本，逐条列在下方异常清单。' : '本次没有异常或失败样本。') +
+    (unmapped ? ' 另有 ' + unmapped + ' 个模型疑似同族但未确认归属，未与其它模型合并。' : ' 无待确认的同族候选。') + '</p></div>');
+  $('#insights').innerHTML = cards.join('');
+}
+
+function renderComparableNotes() {
+  const notes = DATA.comparable_notes || [];
+  if (!notes.length) {
+    $('#comparableNotes').innerHTML = '<div class="callout info"><span class="title">可比性：</span>所引用运行的运行参数一致，未发现影响可比性的差异。</div>';
+    return;
+  }
+  const warnings = notes.filter((note) => note.level === 'warning');
+  const infos = notes.filter((note) => note.level !== 'warning');
+  let html = '';
+  if (warnings.length) {
+    html += '<div class="callout warning"><span class="title">可比性提醒（影响可比性的参数差异）</span><ul>' +
+      warnings.map((note) => '<li>' + esc(note.content) + '</li>').join('') + '</ul></div>';
+  }
+  if (infos.length) {
+    html += '<div class="callout info"><span class="title">其它差异（仅作提示）</span><ul>' +
+      infos.map((note) => '<li>' + esc(note.content) + '</li>').join('') + '</ul></div>';
+  }
+  $('#comparableNotes').innerHTML = html;
+}
+
+function renderMetricSeg() {
+  $('#metricSeg').innerHTML = Object.keys(METRICS).map((key) =>
+    '<button type="button" data-metric="' + key + '" aria-pressed="' + (key === metric) + '">' + esc(METRICS[key].name) + '</button>'
+  ).join('');
+  const families = Array.from(new Set(MODELS.map((group) => group.family).filter(Boolean))).sort();
+  $('#familySeg').innerHTML = ['all'].concat(families).map((item) =>
+    '<button type="button" data-family="' + esc(item) + '" aria-pressed="' + (item === family) + '">' +
+    esc(item === 'all' ? '全部 ' + MODELS.length : item) + '</button>'
+  ).join('');
+}
+
+function renderChart() {
+  const info = METRICS[metric];
+  const shown = MODELS.filter((group) => family === 'all' || group.family === family);
+  $('#chartNote').innerHTML = esc(info.name) + '（' + esc(info.unit) + '）' + (info.lowerBetter ? '越低越好' : '越高越好') +
+    '；差异百分比相对 <b>' + esc(runName(refRunId)) + '</b>';
+  if (!shown.length) {
+    $('#chart').innerHTML = '<div class="empty">当前筛选下没有模型。</div>';
+    return;
+  }
+  $('#chart').innerHTML = shown.map((group) => {
+    const rows = rowsOf(group);
+    const values = rows.map((combo) => combo[info.key]).filter((value) => value !== null && value !== undefined);
+    const max = values.length ? Math.max.apply(null, values) : 0;
+    const bars = rows.map((combo) => {
+      const value = combo[info.key];
+      const percent = combo.run_id === refRunId ? null : change(value, (refRowOf(group) || {})[info.key]);
+      const width = (value !== null && value !== undefined && max) ? Math.max(2, 100 * value / max) : 0;
+      const isRef = combo.run_id === refRunId;
+      return '<div class="bar-line"><div class="bar-label" title="' + esc(comboLabel(combo)) + '">' + esc(comboLabel(combo)) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill' + (isRef ? ' ref' : '') + (width ? '' : ' empty') + '" style="width:' + width.toFixed(1) + '%"></div></div></div>';
+    }).join('');
+    const readouts = rows.map((combo) => {
+      const value = combo[info.key];
+      const percent = combo.run_id === refRunId ? null : change(value, (refRowOf(group) || {})[info.key]);
+      return '<div>' + num(value, info.decimals) + ' <span style="color:var(--muted)">' + esc(info.unit) + '</span>' +
+        (combo.run_id === refRunId ? '<span class="delta even">基准</span>' : deltaBadge(info, percent)) + '</div>';
+    }).join('');
+    const flags = [];
+    flags.push('<span class="tag ' + (group.alignment === 'aligned' ? 'ok' : 'warn') + '">' + esc(ALIGN_LABELS[group.alignment] || group.alignment) + '</span>');
+    if (!group.has_baseline) flags.push('<span class="tag plain">原定基准无数据</span>');
+    if (group.raw_models.length > 1) flags.push('<span class="tag plain">命名差异</span>');
+    const note = group.alignment_note ? '<div class="model-family" title="' + esc(group.alignment_note) + '">' + esc(group.alignment_note) + '</div>' : '';
+    return '<div class="chart-row' + (rows.some((combo) => combo.run_id === refRunId) ? ' is-ref' : '') + '">' +
+      '<div><div class="model-title">' + esc(group.model) + '</div>' +
+      '<div class="model-family">' + esc(group.family || '未声明系列') + ' · 组内均值 ' + num(modelMean(group, info.key), info.decimals) + ' ' + esc(info.unit) + '</div>' +
+      '<div class="model-flags">' + flags.join('') + '</div>' + note + '</div>' +
+      '<div class="bars">' + bars + '</div>' +
+      '<div class="readout">' + readouts + '</div></div>';
+  }).join('');
+}
+
+function renderDetailTable() {
+  const info = METRICS[metric];
+  const head = '<thead><tr><th>模型</th><th>渠道</th><th>平台</th><th class="num">样本数</th><th class="num">成功率</th><th class="num">异常</th>' +
+    '<th class="num">首Token(ms)</th><th class="num">总耗时(ms)</th><th class="num">速率(tokens/s)</th>' +
+    '<th class="num">后台首字(ms)</th><th class="num">后台总耗时(ms)</th><th class="num">首Token差异</th><th class="num">总耗时差异</th><th>原始数据</th></tr></thead>';
+  const body = MODELS.map((group) => {
+    const rows = rowsOf(group);
+    const ref = refRowOf(group);
+    const cells = rows.map((combo) => {
+      const isRef = combo.run_id === refRunId;
+      const flags = [];
+      if (combo.is_baseline) flags.push('<span class="tag baseline">原定基准</span>');
+      if (isRef) flags.push('<span class="tag ok">当前基准</span>');
+      if (combo.anomaly > 0) flags.push('<span class="tag warn">异常 ' + combo.anomaly + '</span>');
+      if (combo.failed > 0) flags.push('<span class="tag bad">失败 ' + combo.failed + '</span>');
+      const ttftPercent = isRef ? null : change(combo.ttft_avg_ms, ref ? ref.ttft_avg_ms : null);
+      const totalPercent = isRef ? null : change(combo.total_avg_ms, ref ? ref.total_avg_ms : null);
+      const samples = combo.samples || [];
+      const sampleRows = samples.map((sample) =>
+        '<tr><td>' + (sample.is_warmup ? '热身' : sample.seq) + '</td><td>' + esc(sample.status) + '</td>' +
+        '<td class="num">' + num(sample.ttft_ms) + '</td><td class="num">' + num(sample.total_ms) + '</td>' +
+        '<td class="num">' + num(sample.tps, 1) + '</td><td class="num">' + num(sample.tokens_out) + '</td>' +
+        '<td>' + (sample.be_matched ? '已配对' : '后台无记录') + '</td>' +
+        '<td class="num">' + num(sample.be_frt_ms) + '</td><td class="num">' + num(sample.be_use_time_ms) + '</td>' +
+        '<td>' + esc(sample.error || '—') + '</td></tr>'
+      ).join('');
+      const sampleBlock = '<div class="samples" id="samples-' + group.model_key.replace(/[^a-zA-Z0-9]/g, '_') + '-' + combo.run_id + '-' + combo.channel_id + '" hidden>' +
+        '<table><thead><tr><th>序号</th><th>状态</th><th class="num">首Token(ms)</th><th class="num">总耗时(ms)</th><th class="num">速率</th><th class="num">输出tokens</th><th>后台配对</th><th class="num">后台首字(ms)</th><th class="num">后台总耗时(ms)</th><th>错误</th></tr></thead>' +
+        '<tbody>' + (sampleRows || '<tr><td colspan="10">无样本</td></tr>') + '</tbody></table></div>';
+      return '<tr class="' + (isRef ? 'is-ref' : '') + '"><td>' + esc(group.model) + '</td>' +
+        '<td>#' + combo.channel_id + ' ' + esc(combo.channel_name) + (flags.length ? '<br>' + flags.join(' ') : '') + '</td>' +
+        '<td>' + esc(combo.platform_name || '—') + '</td>' +
+        '<td class="num">' + combo.success + '/' + (combo.planned || combo.executed) + '</td>' +
+        '<td class="num">' + (combo.success_rate === null || combo.success_rate === undefined ? '—' : (100 * combo.success_rate).toFixed(1) + '%') + '</td>' +
+        '<td class="num">' + combo.anomaly + '</td>' +
+        '<td class="num">' + num(combo.ttft_avg_ms) + '</td>' +
+        '<td class="num">' + num(combo.total_avg_ms) + '</td>' +
+        '<td class="num">' + num(combo.tps_avg, 1) + '</td>' +
+        '<td class="num">' + num(combo.be_frt_avg_ms) + '</td>' +
+        '<td class="num">' + num(combo.be_use_time_avg_ms) + '</td>' +
+        '<td class="num">' + deltaBadge(METRICS.ttft, ttftPercent) + '</td>' +
+        '<td class="num">' + deltaBadge(METRICS.total, totalPercent) + '</td>' +
+        '<td><button class="toggle" type="button" aria-expanded="false" data-target="samples-' + group.model_key.replace(/[^a-zA-Z0-9]/g, '_') + '-' + combo.run_id + '-' + combo.channel_id + '">样本</button>' + sampleBlock + '</td></tr>';
+    }).join('');
+    const note = group.alignment_note ? '<tr><td colspan="14" style="color:var(--sub)">' + esc(group.alignment_note) + '</td></tr>' : '';
+    return cells + note;
+  }).join('');
+  $('#detailTable').innerHTML = head + '<tbody>' + (body || '<tr><td colspan="14">无数据</td></tr>') + '</tbody>';
+}
+
+function renderCrossTable() {
+  const head = '<thead><tr><th>模型</th><th>渠道</th><th>平台</th><th class="num">样本数</th>' +
+    '<th class="num">客户端首Token(ms)</th><th class="num">后台首字(ms)</th><th class="num">差值(ms)</th>' +
+    '<th class="num">客户端总耗时(ms)</th><th class="num">后台总耗时(ms)</th><th class="num">差值(ms)</th><th class="num">后台输出tokens</th></tr></thead>';
+  const body = MODELS.map((group) => rowsOf(group).map((combo) =>
+    '<tr><td>' + esc(group.model) + '</td><td>#' + combo.channel_id + ' ' + esc(combo.channel_name) + (combo.run_id === refRunId ? ' <span class="tag ok">当前基准</span>' : '') + '</td>' +
+    '<td>' + esc(combo.platform_name || '—') + '</td>' +
+    '<td class="num">' + combo.be_matched_count + '/' + combo.executed + '</td>' +
+    '<td class="num">' + num(combo.ttft_avg_ms) + '</td><td class="num">' + num(combo.be_frt_avg_ms) + '</td>' +
+    '<td class="num">' + (combo.cross_ttft_diff_ms === null || combo.cross_ttft_diff_ms === undefined ? '—' : (combo.cross_ttft_diff_ms > 0 ? '+' : '') + num(combo.cross_ttft_diff_ms)) + '</td>' +
+    '<td class="num">' + num(combo.total_avg_ms) + '</td><td class="num">' + num(combo.be_use_time_avg_ms) + '</td>' +
+    '<td class="num">' + (combo.cross_total_diff_ms === null || combo.cross_total_diff_ms === undefined ? '—' : (combo.cross_total_diff_ms > 0 ? '+' : '') + num(combo.cross_total_diff_ms)) + '</td>' +
+    '<td class="num">' + num(combo.be_tokens_out_avg, 1) + '</td></tr>'
+  ).join('')).join('');
+  $('#crossTable').innerHTML = head + '<tbody>' + (body || '<tr><td colspan="11">无数据</td></tr>') + '</tbody>';
+}
+
+function renderAnomalyTable() {
+  const head = '<thead><tr><th>类型</th><th>运行</th><th>平台</th><th>渠道</th><th>渠道模型串</th><th class="num">序号</th><th class="num">首Token(ms)</th><th class="num">总耗时(ms)</th><th>状态</th><th>后台配对</th><th>错误信息</th></tr></thead>';
+  const body = (DATA.anomalies || []).map((item) =>
+    '<tr><td>' + (item.kind === 'anomaly' ? '<span class="tag warn">延迟超阈值</span>' : '<span class="tag bad">请求失败</span>') + '</td>' +
+    '<td>#' + item.run_id + '</td><td>' + esc(item.platform_name || '—') + '</td>' +
+    '<td>#' + item.channel_id + ' ' + esc(item.channel_name) + '</td><td>' + esc(item.model) + '</td>' +
+    '<td class="num">' + item.seq + '</td><td class="num">' + num(item.ttft_ms) + '</td><td class="num">' + num(item.total_ms) + '</td>' +
+    '<td>' + esc(item.status) + '</td><td>' + (item.be_matched ? '已配对' : '后台无记录') + '</td>' +
+    '<td style="color:var(--sub)">' + esc(item.error || '—') + '</td></tr>'
+  ).join('');
+  $('#anomalyTable').innerHTML = head + '<tbody>' + (body || '<tr><td colspan="11">无异常样本</td></tr>') + '</tbody>';
+}
+
+function renderConfigs() {
+  $('#configGrid').innerHTML = (DATA.run_configs || []).map((config) => {
+    const warmup = config.warmup === null || config.warmup === undefined ? '未记录' : (config.warmup ? '开启' : '关闭');
+    const rows = [
+      ['运行起止', (config.started_at || '—') + ' 至 ' + (config.finished_at || '—')],
+      ['组合数 × 正式次数', config.combo_count + ' × ' + (config.request_count === null || config.request_count === undefined ? '—' : config.request_count)],
+      ['热身', warmup],
+      ['请求间隔 / 超时', (config.interval_seconds === null || config.interval_seconds === undefined ? '—' : config.interval_seconds + ' 秒') + ' / ' + (config.timeout_seconds === null || config.timeout_seconds === undefined ? '—' : config.timeout_seconds + ' 秒')],
+      ['异常阈值', config.anomaly_threshold_seconds === null || config.anomaly_threshold_seconds === undefined ? '—' : config.anomaly_threshold_seconds + ' 秒'],
+      ['执行结果', config.success + ' 成功 / ' + config.failed + ' 失败 / ' + config.anomaly + ' 异常'],
+    ];
+    return '<div class="config-card"><h3>#' + config.run_id + ' ' + esc(config.platform_name || '未知平台') +
+      (config.is_baseline ? ' <span class="tag baseline">基准渠道</span>' : '') +
+      ' <span class="tag ' + (config.status === 'success' ? 'ok' : 'warn') + '">' + esc(config.status) + '</span></h3>' +
+      '<dl>' + rows.map((row) => '<dt>' + esc(row[0]) + '</dt><dd>' + esc(row[1]) + '</dd>').join('') + '</dl>' +
+      (config.prompt ? '<div class="meta" style="margin-top:12px">请求模板原文</div><div class="prompt-box">' + esc(config.prompt) + '</div>' : '') +
+      '</div>';
+  }).join('') || '<div class="empty">无运行配置信息</div>';
+}
+
+function renderConclusions() {
+  const items = (DATA.conclusions || []).map((item) => '<li>' + esc(item.content) + '</li>').join('');
+  $('#conclusions').innerHTML = items || '<li style="color:var(--muted)">无阈值性事实陈述</li>';
+  $('#noteBox').innerHTML = (DATA.report && DATA.report.note)
+    ? '<div class="meta" style="margin-top:16px">管理员备注</div><div class="note-box">' + esc(DATA.report.note) + '</div>'
+    : '';
+}
+
+function renderCaliber() {
+  $('#caliber').innerHTML = (DATA.caliber_notes || []).map((note) => '<li>' + esc(note) + '</li>').join('');
+}
+
+function render() {
+  renderScope();
+  renderAlignment();
+  renderKpis();
+  renderInsights();
+  renderComparableNotes();
+  renderMetricSeg();
+  renderChart();
+  renderDetailTable();
+  renderCrossTable();
+  renderAnomalyTable();
+  renderConfigs();
+  renderConclusions();
+  renderCaliber();
+}
+
+document.addEventListener('click', (event) => {
+  const metricButton = event.target.closest('[data-metric]');
+  if (metricButton) {
+    metric = metricButton.dataset.metric;
+    renderMetricSeg();
+    renderChart();
+    renderDetailTable();
+    return;
+  }
+  const familyButton = event.target.closest('[data-family]');
+  if (familyButton) {
+    family = familyButton.dataset.family;
+    renderMetricSeg();
+    renderChart();
+    return;
+  }
+  const toggle = event.target.closest('.toggle');
+  if (toggle) {
+    const target = document.getElementById(toggle.dataset.target);
+    if (target) {
+      target.hidden = !target.hidden;
+      toggle.setAttribute('aria-expanded', String(!target.hidden));
+    }
+  }
+});
+$('#refRun').addEventListener('change', (event) => {
+  refRunId = Number(event.target.value);
+  render();
+});
+renderHero();
+render();
 </script>
 </body>
 </html>
