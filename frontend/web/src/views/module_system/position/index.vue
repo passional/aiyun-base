@@ -43,7 +43,80 @@
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="data.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="allCardsSelected"
+            :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+            @change="toggleAllCards"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+
+        <div v-if="!data.length" class="py-12">
+          <FaEmptyState
+            icon="ri:briefcase-line"
+            title="暂无岗位"
+            description="新增第一个岗位后在这里展示"
+          />
+        </div>
+
+        <div
+          v-for="row in data"
+          :key="row.id"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <ElCheckbox
+              class="mt-0.5 shrink-0"
+              :model-value="isCardSelected(row)"
+              @change="(val) => toggleCardRow(row, val)"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium truncate">{{ row.name }}</div>
+              <div class="mt-0.5 text-xs text-g-600">
+                {{ $t("common.sort") }}：{{ row.order ?? "—" }}
+              </div>
+            </div>
+            <FaStatusTag
+              :type="row.status === 0 ? 'success' : 'danger'"
+              :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+            />
+          </div>
+          <div class="mt-3 text-xs text-g-600 line-clamp-2">{{ row.description || "—" }}</div>
+          <div class="mt-1 text-xs text-g-600">
+            {{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="opCtx.onDetail(row.id!)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="opCtx.onEdit(row.id!)">
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton
+              link
+              type="danger"
+              size="small"
+              @click="opCtx.onDelete(row.id!, row.name ?? '')"
+            >
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+        <ElPagination
+          v-if="data.length"
+          class="justify-center mt-1"
+          layout="prev, pager, next"
+          :current-page="pagination.current"
+          :page-size="pagination.size"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+        />
+      </div>
       <FaTable
+        v-else
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -58,7 +131,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="640px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -66,6 +138,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="md"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -85,7 +158,7 @@
           :items="positionDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -108,6 +181,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import PositionAPI, {
   type PositionForm,
   type PositionPageQuery,
@@ -122,6 +196,7 @@ import FaForm from "@/components/forms/fa-form/index.vue";
 import { ElMessage } from "element-plus";
 import FaTableHeader from "@/components/tables/fa-table-header/index.vue";
 import {
+  formatDateTime,
   renderTableOperationCell,
   resolveStatusColumns,
   stripPaginationParams,
@@ -254,6 +329,29 @@ const { selectedRows, selectedIds, batchDeleting, onTableSelectionChange } =
 const createLoading = ref(false);
 const moreLoading = ref(false);
 
+const { width: viewportWidth } = useWindowSize();
+
+const allCardsSelected = computed(
+  () => data.value.length > 0 && selectedRows.value.length === data.value.length
+);
+
+function isCardSelected(row: PositionTable) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: PositionTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...data.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
 const opCtx = {
   onDetail: (id: number) => void handleOpenDialog("detail", id),
   onEdit: (id: number) => void handleOpenDialog("update", id),
@@ -301,14 +399,18 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "updated_time",
         label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.updated_time),
         sortable: true,
         showOverflowTooltip: true,
       },

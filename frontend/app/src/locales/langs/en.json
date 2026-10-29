@@ -50,7 +50,11 @@
     "subscribeTitle": "Enable Message Notifications",
     "subscribeContent": "You have disabled message notifications. Go to settings to enable?",
     "subscribeGoSetting": "Go to Settings",
-    "tab": { "home": "Home", "work": "Workbench", "mine": "Me" },
+    "tab": {
+      "home": "Home",
+      "work": "Workbench",
+      "mine": "Me"
+    },
     "nav": {
       "notices": "Notices",
       "tickets": "Tickets",
@@ -114,7 +118,8 @@
     "brandSubtitle": "Efficient enterprise management mobile platform",
     "wxOnly": "This feature is only available in the WeChat Mini Program",
     "wxAuthFailed": "WeChat login authorization failed",
-    "phoneCodeFailed": "Failed to get phone number authorization code"
+    "phoneCodeFailed": "Failed to get phone number authorization code",
+    "puzzleText": "Drag the slider to fit the piece into the gap"
   },
   "register": {
     "navTitle": "Register",

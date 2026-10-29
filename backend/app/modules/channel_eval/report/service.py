@@ -168,16 +168,16 @@ class ChannelEvalReportService:
         for run_id in data.run_ids:
             run = await self.db.get(ChannelEvalRunModel, run_id)
             if run is None:
-                raise CustomException(msg=f"测试运行 {run_id} 不存在", code=400, status_code=400)
+                raise CustomException(msg=f"测试运行 {run_id} 不存在", code=400)
         if data.baseline_run_id is not None:
             run = await self.db.get(ChannelEvalRunModel, data.baseline_run_id)
             if run is None:
-                raise CustomException(msg="基准运行不存在", code=400, status_code=400)
+                raise CustomException(msg="基准运行不存在", code=400)
             platform = await self.db.get(ChannelEvalPlatformModel, run.platform_id)
             if platform is None or not platform.is_baseline:
-                raise CustomException(msg="基准运行须来自基准渠道", code=400, status_code=400)
+                raise CustomException(msg="基准运行须来自基准渠道", code=400)
             if run.status != "success":
-                raise CustomException(msg="基准运行须为成功完成的运行", code=400, status_code=400)
+                raise CustomException(msg="基准运行须为成功完成的运行", code=400)
 
     # ─────────────────────── 视图聚合 ───────────────────────
 

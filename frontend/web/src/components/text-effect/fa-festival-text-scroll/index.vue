@@ -1,6 +1,6 @@
 <!-- 节日 / 公告顶栏：文案来自 festival 配置（占位符 {{version}}） -->
 <template>
-  <div :class="{ 'mb-5': showFestivalStrip }">
+  <div :class="{ 'mb-4': showFestivalStrip }">
     <Transition name="festival-strip">
       <FaTextScroll
         v-if="showFestivalStrip"

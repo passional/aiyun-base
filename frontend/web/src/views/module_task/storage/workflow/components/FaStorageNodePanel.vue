@@ -5,7 +5,7 @@
     >
       <span>节点信息</span>
       <ElButton type="text" class="p-1" @click="handleClose">
-        <ElIcon><Close /></ElIcon>
+        <ElIcon><FaSvgIcon icon="ri:close-line" /></ElIcon>
       </ElButton>
     </div>
 
@@ -13,7 +13,7 @@
       <div
         class="mb-3 flex items-center gap-2.5 rounded-lg border border-(--el-border-color-lighter) bg-(--el-fill-color-light) px-3 py-2.5"
       >
-        <ElIcon :size="20" :color="color"><Folder /></ElIcon>
+        <ElIcon :size="20" :color="color"><FaSvgIcon icon="ri:folder-2-line" /></ElIcon>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="truncate text-xs font-semibold text-(--el-text-color-primary)">{{
             node?.data?.label || "存储节点"
@@ -24,7 +24,7 @@
         </div>
       </div>
 
-      <ElDescriptions :column="1" size="small" border label-width="88px" class="node-info-desc">
+      <ElDescriptions :column="1" size="small" border label-width="96px" class="node-info-desc">
         <ElDescriptionsItem label="存储源ID">{{ node?.data?.source_id ?? "—" }}</ElDescriptionsItem>
         <ElDescriptionsItem label="协议">{{ protocolLabel }}</ElDescriptionsItem>
         <ElDescriptionsItem label="地址">
@@ -42,6 +42,7 @@
             class="flex-1"
             :placeholder="pathHint"
             @keyup.enter="handleSave"
+            aria-label="pathHint"
           />
           <ElButton :icon="FolderOpened" size="small" title="选择目录" @click="openPicker" />
         </div>
@@ -83,7 +84,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
-import { Close, Folder, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened } from "@element-plus/icons-vue";
 import NodeAPI from "@/api/module_storage/node.ts";
 import {
   protocolColor,

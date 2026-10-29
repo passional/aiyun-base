@@ -1,6 +1,6 @@
 <template>
   <div>
-    <FaSectionTitle :title="$t('setting.color.title')" class="mt-10" />
+    <FaSectionTitle :title="$t('setting.color.title')" />
     <div class="-mr-4">
       <div class="flex flex-wrap">
         <div

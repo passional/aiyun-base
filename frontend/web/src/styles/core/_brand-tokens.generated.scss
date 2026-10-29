@@ -1,0 +1,62 @@
+// 由 design/tokens.json 生成，请勿手改。
+:root {
+  --fa-brand-blue: #4F6BFF;
+  --fa-brand-violet: #6D5BFF;
+  --fa-brand-gradient: linear-gradient(135deg, #4F6BFF 0%, #6D5BFF 100%);
+  --fa-canvas: #F5F6F8;
+  --fa-radius-xs: 6px;
+  --fa-radius-sm: 8px;
+  --fa-radius-md: 12px;
+  --fa-radius-lg: 16px;
+  --fa-radius-pill: 999px;
+  --fa-space-1: 4px;
+  --fa-space-2: 8px;
+  --fa-space-3: 12px;
+  --fa-space-4: 16px;
+  --fa-space-5: 20px;
+  --fa-space-6: 24px;
+  --fa-font-xs: 12px;
+  --fa-font-sm: 13px;
+  --fa-font-md: 14px;
+  --fa-font-lg: 16px;
+  --fa-font-xl: 20px;
+  --fa-font-xxl: 24px;
+  --fa-control-h-sm: 24px;
+  --fa-control-h-md: 32px;
+  --fa-control-h-lg: 40px;
+  --fa-table-row-h: 40px;
+  --fa-table-header-h: 44px;
+  --fa-page-padding: 16px;
+  --fa-header-h: 56px;
+  --fa-shadow-card: 0 1px 2px rgb(16 24 40 / 4%);
+  --fa-shadow-pop: 0 4px 16px rgb(16 24 40 / 8%), 0 2px 8px rgb(16 24 40 / 4%);
+  --fa-shadow-modal: 0 24px 64px rgb(16 24 40 / 18%);
+  --fa-font-sans: inter, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --fa-table-header-bg: #F9FAFB;
+  --fa-input-bg: #FFF;
+  --fa-dialog-bg: #FFF;
+  --fa-popover-bg: #FFF;
+  --fa-overlay-bg: rgb(0 0 0 / 50%);
+  --el-fill-color-blank: var(--fa-input-bg);
+  --el-dialog-bg-color: var(--fa-dialog-bg);
+  --el-bg-color-overlay: var(--fa-popover-bg);
+  --el-overlay-color-lighter: var(--fa-overlay-bg);
+}
+
+html.dark {
+  --fa-canvas: #15181E;
+  --fa-surface: #15181E;
+  --fa-surface-2: #191D24;
+  --fa-border: #262B34;
+  --fa-text-1: #E5E7EB;
+  --fa-text-2: #A3AAB8;
+  --fa-text-3: #8B93A1;
+  --fa-shadow-card: 0 1px 2px rgb(0 0 0 / 35%);
+  --fa-shadow-pop: 0 4px 16px rgb(0 0 0 / 35%), 0 2px 8px rgb(0 0 0 / 25%);
+  --fa-shadow-modal: 0 24px 64px rgb(0 0 0 / 45%);
+  --fa-table-header-bg: #1B1E24;
+  --fa-input-bg: #1B1E24;
+  --fa-dialog-bg: #1B1E24;
+  --fa-popover-bg: #23262E;
+  --fa-overlay-bg: rgb(0 0 0 / 65%);
+}

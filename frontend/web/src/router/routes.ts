@@ -95,6 +95,7 @@ export class IframeRouteManager {
 // ──────── 壳层常量 ────────
 
 /** 首页菜单配置（图标、缓存、固定标签） */
+
 export const HOME_MENU_META: RouteMeta = {
   title: "menus.home.title",
   icon: "ri:home-smile-2-line",

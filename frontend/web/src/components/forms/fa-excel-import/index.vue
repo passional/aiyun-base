@@ -85,7 +85,7 @@ const handleFileChange = async (uploadFile: UploadFile) => {
 <!-- <template>
   <div class="page-content">
     <FaExcelImport @import-success="handleImportSuccess" @import-error="handleImportError">
-      <template #import-text>上传 Excel</template>
+      <template #import-text>{{ $t("common.uploadExcel") }}</template>
     </FaExcelImport>
 
     <FaExcelExport
@@ -104,7 +104,7 @@ const handleFileChange = async (uploadFile: UploadFile) => {
       导出 Excel
     </FaExcelExport>
 
-    <ElButton type="danger" @click="handleClear" v-ripple>清除数据</ElButton>
+    <ElButton type="danger" @click="handleClear" v-ripple>{{ $t("common.clearData") }}</ElButton>
 
     <FaTable :data="tableData" :style="'margin-top: 10px'">
       <ElTableColumn type="index" label="序号" width="60" />

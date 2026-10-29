@@ -9,8 +9,8 @@
     @opened="handleDrawerOpened"
   >
     <ElContainer class="workflow-create-content flex flex-col h-full">
-      <ElSplitter direction="horizontal" :style="'height: 100%'">
-        <ElSplitterPanel size="250px" :min="200" :max="400">
+      <div class="workflow-create-split flex min-h-0 flex-1">
+        <div class="workflow-side-panel h-full w-[250px] shrink-0 overflow-hidden">
           <ElScrollbar :style="'height: 100%'">
             <div class="p-3">
               <div class="mb-3 text-sm font-bold">基础信息</div>
@@ -43,9 +43,10 @@
                 clearable
                 size="small"
                 class="mb-3"
+                aria-label="搜索存储源名称"
               >
                 <template #prefix>
-                  <ElIcon><Search /></ElIcon>
+                  <ElIcon><FaSvgIcon icon="ri:search-line" /></ElIcon>
                 </template>
               </ElInput>
               <div
@@ -63,7 +64,9 @@
                 draggable="true"
                 @dragstart="onDragStart($event, item)"
               >
-                <ElIcon :size="15" :color="protocolColor(item.protocol)"><Folder /></ElIcon>
+                <ElIcon :size="15" :color="protocolColor(item.protocol)"
+                  ><FaSvgIcon icon="ri:folder-2-line"
+                /></ElIcon>
                 <div class="flex flex-col min-w-0 leading-tight">
                   <span class="truncate text-xs font-medium text-(--el-text-color-primary)">{{
                     item.name
@@ -80,9 +83,9 @@
               </div>
             </div>
           </ElScrollbar>
-        </ElSplitterPanel>
+        </div>
 
-        <ElSplitterPanel>
+        <div class="workflow-canvas-panel h-full min-w-0 flex-1 overflow-hidden">
           <div class="canvas-main relative flex flex-col h-full p-0">
             <div
               v-if="canvasReady"
@@ -180,9 +183,12 @@
               </div>
             </div>
           </div>
-        </ElSplitterPanel>
+        </div>
 
-        <ElSplitterPanel v-if="updateState" size="320px" :min="280" :max="400">
+        <div
+          v-if="updateState"
+          class="workflow-config-panel h-full w-[320px] shrink-0 overflow-hidden"
+        >
           <FaStorageNodePanel
             v-if="updateState === 'node'"
             :node="selectedNode"
@@ -198,8 +204,8 @@
             @save="handleSaveEdge"
             @delete="handleDeleteEdge"
           />
-        </ElSplitterPanel>
-      </ElSplitter>
+        </div>
+      </div>
     </ElContainer>
 
     <FaFileBrowserDialog
@@ -234,16 +240,7 @@ import type {
   NodeMouseEvent,
   EdgeMouseEvent,
 } from "@vue-flow/core";
-import {
-  Folder,
-  FolderOpened,
-  Grid,
-  Rank,
-  Search,
-  VideoPlay,
-  VideoPause,
-  Check,
-} from "@element-plus/icons-vue";
+import { FolderOpened, Grid, Rank, VideoPlay, VideoPause, Check } from "@element-plus/icons-vue";
 
 import dagre from "dagre";
 import "@vue-flow/core/dist/style.css";
@@ -520,6 +517,8 @@ watch(
   [() => props.visible, () => props.flow],
   ([visible, flow]) => {
     if (!visible) return;
+    // 节点可能在另一个页面刚创建；每次打开设计器都重新拉取存储源，避免使用旧列表
+    void loadSources();
     if (flow) {
       formData.value = { name: flow.name || "", description: flow.description || "" };
       // 节点/连线数据由后端详情接口补全存储源字段，直接回显
@@ -852,12 +851,9 @@ const handleClose = () => {
   }
 }
 
-:deep(.el-splitter) {
+.workflow-create-split {
   flex: 1;
-}
-
-:deep(.el-splitter-panel) {
-  overflow: hidden;
+  min-height: 0;
 }
 
 .canvas-container :deep(.vue-flow) {
@@ -923,5 +919,35 @@ const handleClose = () => {
 
 .workflow-base-art-form :deep(section) {
   padding: 0;
+}
+
+@media (width <= 900px) {
+  .workflow-create-split {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .workflow-side-panel {
+    width: 100%;
+    height: auto;
+    max-height: 45%;
+  }
+
+  .workflow-canvas-panel {
+    flex: 1 1 auto;
+    min-height: 420px;
+    width: 100%;
+  }
+
+  .workflow-config-panel {
+    width: 100% !important;
+    height: auto;
+    max-height: 50%;
+  }
+
+  :deep(.vue-flow__controls),
+  :deep(.vue-flow__minimap) {
+    display: none;
+  }
 }
 </style>

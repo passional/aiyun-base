@@ -60,7 +60,7 @@ async function loadSessions() {
   loading.value = true
   try {
     const res = await ChatAPI.getSessions()
-    sessions.value = res.list || []
+    sessions.value = res.items || []
   }
   catch {
     sessions.value = []

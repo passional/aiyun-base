@@ -48,7 +48,7 @@
                     underline="never"
                     @click="handleDownloadTemplate"
                   >
-                    <ElIcon class="text-base"><Download /></ElIcon>
+                    <ElIcon class="text-base"><FaSvgIcon icon="ri:download-2-line" /></ElIcon>
                     <span>{{ props.templateDownloadText || "下载模板" }}</span>
                   </ElLink>
                 </div>
@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Download, UploadFilled } from "@element-plus/icons-vue";
+import { UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import FaDialog from "@/components/modal/fa-dialog/index.vue";
 import type { UploadUserFile } from "element-plus";

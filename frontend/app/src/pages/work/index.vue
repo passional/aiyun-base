@@ -36,8 +36,8 @@ useTabbarActive('pages/work/index', 'work', loadTicketStats)
 const groups = [
   {
     titleKey: 'work.businessCenter',
-    color: 'var(--wot-orange-6)',
-    bg: 'wot-bg-orange-1',
+    color: 'var(--fa-brand-blue)',
+    bg: 'wot-bg-primary-1',
     items: [
       { icon: 'notification', titleKey: 'common.nav.notices', name: 'work-notices' },
       { icon: 'message', titleKey: 'common.nav.tickets', name: 'work-tickets' },
@@ -69,7 +69,7 @@ const filteredGroups = computed(() => {
 <template>
   <view class="tabbar-wraper py-3">
     <!-- 用户信息卡（品牌渐变 + 极光装饰圆环） -->
-    <view class="user-info-card mx-3 mb-4 flex items-center gap-4 rounded-3 px-5 py-6">
+    <view class="user-info-card mx-4 mb-4 flex items-center gap-4 rounded-3 px-5 py-6">
       <wd-avatar
         size="64px"
         round
@@ -87,8 +87,8 @@ const filteredGroups = computed(() => {
     </view>
 
     <!-- 模块搜索 -->
-    <view class="mx-3 mb-4">
-      <wd-search v-model="keyword" :placeholder="t('work.searchPlaceholder')" variant="light" hide-cancel />
+    <view class="mx-4 mb-4">
+      <wd-search class="work-search" v-model="keyword" :placeholder="t('work.searchPlaceholder')" variant="light" hide-cancel />
     </view>
 
     <!-- 模块分组 -->
@@ -98,7 +98,7 @@ const filteredGroups = computed(() => {
         <wd-text class="wot-text-text-main text-3.5" :text="t(group.titleKey)" bold />
         <wd-text class="wot-text-text-auxiliary text-2.5" :text="group.items.length" />
       </view>
-      <wd-cell-group border custom-class="mx-3 rounded-2! overflow-hidden">
+      <wd-cell-group border custom-class="mx-4 rounded-3! overflow-hidden">
         <wd-cell
           v-for="item in group.items"
           :key="item.name"
@@ -127,3 +127,15 @@ const filteredGroups = computed(() => {
     <wd-empty v-if="filteredGroups.length === 0" :tip="t('work.emptyTip')" />
   </view>
 </template>
+
+<style lang="scss">
+/* global work search：暗色下与卡片表面一致 */
+.work-search {
+  --wot-search-bg: #191d24;
+  --wot-search-light-bg: #191d24;
+  --wot-search-light-block-bg: #191d24;
+  overflow: hidden;
+  border: 2rpx solid #262b34;
+  border-radius: 16rpx;
+}
+</style>

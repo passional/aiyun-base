@@ -1,15 +1,15 @@
 ---
 layout: doc
-title: Why Choose FastApiAdmin?
-description: Why FastApiAdmin? Comparison with other admin frameworks — async backend, full-stack fusion.
+title: Why Choose FastapiAdmin?
+description: Why FastapiAdmin? Comparison with other admin frameworks — async backend, full-stack fusion.
 outline: "deep"
 ---
 
-If you're evaluating a rapid development platform for admin/dashboard systems, here's how FastApiAdmin compares.
+If you're evaluating a rapid development platform for admin/dashboard systems, here's how FastapiAdmin compares.
 
 ## How We Compare
 
-| Dimension | FastApiAdmin | Django Admin / Flask-Admin | Frontend-only Templates |
+| Dimension | FastapiAdmin | Django Admin / Flask-Admin | Frontend-only Templates |
 |-----------|-------------|---------------------------|------------------------|
 | **Backend** | FastAPI async, Pydantic type-safe | Django/Flask sync-first | None, build yourself |
 | **Frontend** | Vue3 + TypeScript + Element Plus, ready-to-use | Jinja templates | Vue3 + Element Plus |
@@ -71,9 +71,9 @@ We chose vertical slicing to **prioritize team parallelism and decoupling**. For
 
 ## What You Get Out of the Box
 
-Features FastApiAdmin provides that raw frameworks or frontend-only templates **don't**:
+Features FastapiAdmin provides that raw frameworks or frontend-only templates **don't**:
 
-| Feature | FastApiAdmin | Django Admin | Frontend Template |
+| Feature | FastapiAdmin | Django Admin | Frontend Template |
 |---------|:-----------:|:-----------:|:-----------------:|
 | RBAC (menu/button/data level) | ✅ | ⚠️ Basic | ❌ |
 | Code generator (table → CRUD) | ✅ | ❌ | ❌ |
@@ -85,7 +85,7 @@ Features FastApiAdmin provides that raw frameworks or frontend-only templates **
 
 ## Summary
 
-FastApiAdmin is the **best fit** if you need:
+FastapiAdmin is the **best fit** if you need:
 - ✅ Python stack, want FastAPI's async performance
 - ✅ Vue3 frontend team, need production-ready admin template
 - ✅ Mobile support (H5/Mini Program)
@@ -103,8 +103,8 @@ If you've decided to give it a try, follow this path:
 | 3 | [Frontend Guide](/en/guide/frontend) | 15 min | Add your first page |
 | 4 | [Deployment Guide](/en/guide/deployment) | 20 min | Push from local to production |
 
-Or just [clone the repo](https://github.com/fastapiadmin/FastApiAdmin) and explore the code alongside the docs.
+Or just [clone the repo](https://github.com/fastapiadmin/FastapiAdmin) and explore the code alongside the docs.
 
 ::: tip Stuck somewhere?
-[Common Issues](/en/guide/why#common-issues)  ·  [GitHub Issues](https://github.com/fastapiadmin/FastApiAdmin/issues)  ·  [Gitee Issues](https://gitee.com/fastapiadmin/FastapiAdmin/issues)
+[Common Issues](/en/guide/why#common-issues)  ·  [GitHub Issues](https://github.com/fastapiadmin/FastapiAdmin/issues)  ·  [Gitee Issues](https://gitee.com/fastapiadmin/FastapiAdmin/issues)
 :::

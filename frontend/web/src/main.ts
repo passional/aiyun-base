@@ -13,6 +13,8 @@ import App from "./App.vue";
 import { createApp } from "vue";
 import { printConsoleBanner } from "@utils";
 import { initPlugins } from "@/plugins";
+import { initIconifyAsync } from "./plugins/iconify";
+import { router } from "@/router";
 
 /**
  * iOS Safari 中 touch 事件默认是 passive 的，导致 `:active` CSS 伪类不生效。
@@ -30,5 +32,9 @@ document.addEventListener("touchstart", function () {}, { passive: false });
   const app = createApp(App);
   printConsoleBanner();
   await initPlugins(app);
+  // 等首帧路由（含动态路由注册）就绪再挂载，避免深链先渲染首页
+  await router.isReady();
+  // 图标集必须在首帧前就绪，否则刷新时顶部按钮/侧栏图标会短暂或持续空白
+  await initIconifyAsync();
   app.mount("#app");
 })();

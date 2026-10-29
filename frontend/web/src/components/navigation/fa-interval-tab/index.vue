@@ -2,7 +2,7 @@
   <ElForm
     ref="formRef"
     :model="crontabValueObj"
-    label-width="100px"
+    label-width="96px"
     label-suffix=":"
     :inline="true"
     class="interval-tab-form"

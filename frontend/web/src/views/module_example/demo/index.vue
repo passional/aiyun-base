@@ -46,6 +46,7 @@
       </FaTableHeader>
 
       <FaTable
+        mobile-cards
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -60,7 +61,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="920px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -68,6 +68,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="xl"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -91,7 +92,7 @@
           :items="demoDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="12"
           :gutter="16"
@@ -155,6 +156,7 @@
 <script setup lang="ts">
 import { Plus, Delete } from "@element-plus/icons-vue";
 import {
+  formatDateTime,
   renderTableOperationCell,
   resolveStatusColumns,
   stripPaginationParams,
@@ -308,14 +310,18 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "updated_time",
         label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.updated_time),
         sortable: true,
         showOverflowTooltip: true,
       },

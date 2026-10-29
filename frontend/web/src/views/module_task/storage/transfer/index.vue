@@ -24,7 +24,7 @@
       >
         <template #left>
           <div class="flex items-center gap-2.5">
-            <span class="text-base font-semibold">传输任务列表</span>
+            <span class="text-base font-semibold">{{ $t("common.transferList") }}</span>
             <span
               class="inline-flex items-center gap-1.25 text-xs"
               :class="sseConnected ? 'text-(--el-color-success)' : 'text-(--el-color-info)'"
@@ -38,13 +38,95 @@
               v-hasPerm="['module_task:storage:transfer:create']"
               type="primary"
               @click="openCreate"
-              >新建传输任务</ElButton
+              >{{ $t("common.newTransfer") }}</ElButton
+            >
             >
           </div>
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="!tasks.length" class="py-12">
+          <FaEmptyState
+            icon="ri:exchange-box-line"
+            title="暂无传输任务"
+            description="创建第一个传输任务后在这里展示"
+          />
+        </div>
+        <div
+          v-for="row in tasks"
+          :key="row.id"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-sm font-medium truncate">{{ row.name }}</div>
+              <div class="flex items-center gap-1 mt-1">
+                <FaStatusTag
+                  :type="row.task_type === 'chain' ? 'warning' : 'primary'"
+                  :label="row.task_type === 'chain' ? '链式' : '多目标'"
+                />
+                <FaStatusTag
+                  type="info"
+                  :label="
+                    row.source_type === 'local' ? '本地' : protoText(sourceById(row.source_id))
+                  "
+                />
+              </div>
+            </div>
+            <FaStatusTag
+              :type="statusTypeMap[row.status as TransferStatus] || 'info'"
+              :label="statusText[row.status as TransferStatus] || row.status"
+            />
+          </div>
+          <div class="mt-2 text-xs text-g-600 truncate">
+            {{ row.source_name || row.source_path || "—" }}
+          </div>
+          <div class="mt-1 text-xs text-g-600 truncate">
+            {{ $t("common.target") }}：{{ targetShortText(row) }}
+          </div>
+          <ElProgress
+            class="mt-2"
+            :percentage="row.progress || 0"
+            :status="row.status === 'failed' ? 'exception' : undefined"
+          />
+          <div class="flex justify-between mt-1 text-xs text-g-600">
+            <span>{{ formatSize(row.transferred_size) }} / {{ formatSize(row.total_size) }}</span>
+            <span v-if="row.speed > 0">{{ formatSpeed(row.speed) }}</span>
+          </div>
+          <div v-if="row.error_msg" class="mt-1 text-xs text-(--el-color-danger)">
+            {{ row.error_msg }}
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="openDetail(row)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton
+              v-if="row.status === 'running' || row.status === 'pending'"
+              link
+              type="warning"
+              size="small"
+              @click="cancelTask(row)"
+            >
+              取消
+            </ElButton>
+            <ElButton link type="danger" size="small" @click="removeTask(row)">{{
+              $t("common.delete")
+            }}</ElButton>
+          </div>
+        </div>
+        <ElPagination
+          v-if="tasks.length"
+          class="justify-center mt-1"
+          layout="prev, pager, next"
+          :current-page="page"
+          :page-size="pageSize"
+          :total="total"
+          @current-change="onPageChange"
+        />
+      </div>
       <FaTable
+        v-else
         :data="tasks"
         :columns="columns"
         :pagination="{ current: page, size: pageSize, total }"
@@ -59,7 +141,9 @@
         <template #source="{ row }">
           <div class="min-w-0">
             <div>
-              <ElTag v-if="row.source_type === 'local'" size="small" type="success">本地</ElTag>
+              <ElTag v-if="row.source_type === 'local'" size="small" type="success">{{
+                $t("common.local")
+              }}</ElTag>
               <ElTag v-else size="small" type="info">{{
                 protoText(sourceById(row.source_id))
               }}</ElTag>
@@ -140,6 +224,18 @@
         <template #actions="{ row }">
           <span v-html="formatTransferOperationCell(row as TransferTaskItem)" />
         </template>
+        <template #empty>
+          <FaEmptyState
+            icon="ri:exchange-line"
+            title="暂无传输任务"
+            description="创建第一个传输任务，把文件从源存储同步到目标存储"
+          >
+            <ElButton type="primary" size="small" @click="openCreate">{{
+              $t("common.newTransfer")
+            }}</ElButton
+            >>
+          </FaEmptyState>
+        </template>
       </FaTable>
     </ElCard>
 
@@ -147,19 +243,19 @@
     <FaDialog
       v-model="createVisible"
       title="新建传输任务"
-      width="640px"
       form-mode="create"
       confirm-text="开始传输"
       :confirm-loading="submitting"
       @cancel="createVisible = false"
       @confirm="submit"
+      size="md"
     >
       <FaForm
         ref="formRef"
         v-model="form"
         :items="createFormItems"
         :rules="formRules"
-        label-width="86px"
+        label-width="96px"
         :span="24"
         scrollbar
         max-height="70vh"
@@ -194,7 +290,9 @@
             :on-remove="onFileRemove"
             style="width: 100%"
           >
-            <div class="el-upload__text">将文件拖到此处，或 <em>点击选择文件</em></div>
+            <div class="el-upload__text">
+              {{ $t("common.dragUpload") }} <em>{{ $t("common.clickSelect") }}</em>
+            </div>
           </ElUpload>
         </template>
 
@@ -231,8 +329,13 @@
                     : '目标路径（对象存储填 Key 前缀）'
                 "
                 style="flex: 1"
+                aria-label="selectedFlowId && !t.target_path
+                    ? '目标节点未配置默认源目录，请填写目标路径'
+                    : '目标路径（对象存储填 Key 前缀）'"
               />
-              <ElButton link type="danger" @click="removeTarget(idx)">删除</ElButton>
+              <ElButton link type="danger" @click="removeTarget(idx)">{{
+                $t("common.delete")
+              }}</ElButton>
             </div>
             <div class="flex items-center gap-3">
               <ElButton type="primary" plain size="small" @click="addTarget">＋ 添加目标</ElButton>
@@ -252,9 +355,9 @@
     <FaDialog
       v-model="detailVisible"
       title="传输任务详情"
-      width="920px"
       form-mode="detail"
       @close="detailVisible = false"
+      size="xl"
     >
       <template v-if="detailRow">
         <FaDescriptions
@@ -315,7 +418,7 @@
               <div class="mt-1.5 break-all text-xs text-(--el-text-color-regular)">
                 <span
                   class="mr-1.5 inline-block rounded-[3px] bg-(--el-color-info) px-1.25 py-0.5 text-[11px] leading-none text-white"
-                  >源</span
+                  >{{ $t("common.source") }}</span
                 >{{ sourceName(step.source_id) }} · {{ step.source_path || "—" }}
               </div>
               <div
@@ -341,13 +444,14 @@
             </div>
           </template>
         </div>
-        <ElEmpty v-else description="暂无步骤" :image-size="60" />
+        <FaEmptyState icon="ri:inbox-line" title="暂无步骤" compact />
       </template>
     </FaDialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import TransferAPI, {
   TransferStream,
   type TransferPushMessage,
@@ -384,6 +488,9 @@ const sourceMap = computed<Record<number, SourceTable>>(() => {
 const enabledSources = computed(() => sources.value.filter((s) => s.status !== 1));
 const sourceById = (id?: number | null) => (id ? sourceMap.value[id] : undefined);
 const sourceName = (id?: number | null) => (id ? sourceMap.value[id]?.name || `#${id}` : "—");
+const { width: viewportWidth } = useWindowSize();
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
 const protoText = (s?: SourceTable) => s?.protocol || "?";
 
 async function loadSources() {
@@ -476,8 +583,8 @@ const columnChecks = ref<ColumnOption[]>([
   { prop: "source", label: "来源", minWidth: 180, showOverflowTooltip: true, useSlot: true },
   { prop: "target", label: "目标", minWidth: 190, useSlot: true },
   { prop: "status", label: "状态", width: 92, useSlot: true },
-  { prop: "progress", label: "进度", minWidth: 240, useSlot: true },
-  { prop: "info", label: "信息", minWidth: 180, useSlot: true },
+  { prop: "progress", label: "进度", minWidth: 200, useSlot: true },
+  { prop: "info", label: "信息", minWidth: 160, useSlot: true },
   {
     prop: "actions",
     label: "操作",
@@ -537,13 +644,14 @@ const statusText: Record<TransferStatus, string> = {
   failed: "失败",
   canceled: "已取消",
 };
-const statusTypeMap: Record<TransferStatus, "info" | "warning" | "success" | "danger"> = {
-  pending: "info",
-  running: "warning",
-  success: "success",
-  failed: "danger",
-  canceled: "info",
-};
+const statusTypeMap: Record<TransferStatus, "info" | "primary" | "warning" | "success" | "danger"> =
+  {
+    pending: "info",
+    running: "primary",
+    success: "success",
+    failed: "danger",
+    canceled: "info",
+  };
 
 function formatSize(bytes?: number | null): string {
   if (!bytes || bytes <= 0) return "0 B";

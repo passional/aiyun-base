@@ -40,6 +40,11 @@
                 </ElDescriptionsItem>
               </ElDescriptions>
             </div>
+            <div class="server-legend">
+              <span class="server-legend__item"><i class="ok"></i>正常 &lt;60%</span>
+              <span class="server-legend__item"><i class="warn"></i>警告 60–80%</span>
+              <span class="server-legend__item"><i class="danger"></i>危险 &gt;80%</span>
+            </div>
           </div>
         </ElCard>
       </ElCol>
@@ -82,6 +87,11 @@
                   {{ server.py?.memory_usage ? server.py.memory_usage.toFixed(1) + "%" : "-" }}
                 </ElDescriptionsItem>
               </ElDescriptions>
+            </div>
+            <div class="server-legend">
+              <span class="server-legend__item"><i class="ok"></i>正常 &lt;60%</span>
+              <span class="server-legend__item"><i class="warn"></i>警告 60–80%</span>
+              <span class="server-legend__item"><i class="danger"></i>危险 &gt;80%</span>
             </div>
           </div>
         </ElCard>
@@ -160,19 +170,25 @@
           </template>
           <ElTable :data="server.disks" stripe>
             <template #empty>
-              <ElEmpty :image-size="80" description="暂无数据" />
+              <FaEmptyState icon="ri:inbox-line" title="暂无数据" compact />
             </template>
             <ElTableColumn label="盘符路径" prop="dir_name" show-overflow-tooltip />
             <ElTableColumn label="文件系统" prop="sys_type_name" align="center" width="100" />
             <ElTableColumn label="盘符名称" prop="type_name" show-overflow-tooltip />
             <ElTableColumn label="使用率" align="center" width="200">
               <template #default="{ row }">
-                <ElProgress
-                  :percentage="Number(row.usage)"
-                  :status="row.usage > 80 ? 'exception' : row.usage > 60 ? 'warning' : 'success'"
-                  :stroke-width="16"
-                  text-inside
-                />
+                <div class="flex items-center gap-2">
+                  <ElProgress
+                    class="flex-1"
+                    :percentage="Number(row.usage)"
+                    :status="row.usage > 80 ? 'exception' : row.usage > 60 ? 'warning' : 'success'"
+                    :stroke-width="16"
+                    :show-text="false"
+                  />
+                  <span class="w-11 text-right text-xs fa-tnum">
+                    {{ Number(row.usage).toFixed(1) }}%
+                  </span>
+                </div>
               </template>
             </ElTableColumn>
             <ElTableColumn label="总大小" prop="total" align="center" width="100" />
@@ -222,3 +238,33 @@ async function fetchServerInfo() {
 
 onMounted(fetchServerInfo);
 </script>
+
+<style scoped>
+.server-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.server-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.server-legend__item i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.server-legend__item .ok {
+  background: var(--el-color-success);
+}
+.server-legend__item .warn {
+  background: var(--el-color-warning);
+}
+.server-legend__item .danger {
+  background: var(--el-color-danger);
+}
+</style>

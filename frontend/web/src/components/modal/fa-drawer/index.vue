@@ -5,7 +5,6 @@
     :direction="direction"
     :show-close="false"
     :class="drawerClassMerged"
-    resizable
     destroy-on-close
     v-bind="drawerAttrs"
     @close="emit('close')"

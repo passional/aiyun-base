@@ -38,6 +38,7 @@
       </FaTableHeader>
 
       <FaTable
+        mobile-cards
         row-key="session_id"
         :loading="loading"
         :data="data"
@@ -58,7 +59,7 @@ defineOptions({
 });
 
 import OnlineAPI, { type OnlineUserTable } from "@/api/module_monitor/online";
-import { renderTableOperationCell, type TableOperationAction } from "@utils";
+import { formatDateTime, renderTableOperationCell, type TableOperationAction } from "@utils";
 import type FaSearchBar from "@/components/forms/fa-search-bar/index.vue";
 import type { SearchFormItem } from "@/components/forms/fa-search-bar/index.vue";
 import FaCopyButton from "@/components/actions/fa-copy-button/index.vue";
@@ -170,7 +171,7 @@ const {
       {
         prop: "session_id",
         label: "会话编号",
-        minWidth: 250,
+        minWidth: 200,
         showOverflowTooltip: true,
       },
       {
@@ -209,7 +210,7 @@ const {
       {
         prop: "login_location",
         label: "登录位置",
-        minWidth: 220,
+        minWidth: 200,
         showOverflowTooltip: true,
       },
       {
@@ -223,6 +224,7 @@ const {
         label: "登录时间",
         width: 180,
         showOverflowTooltip: true,
+        formatter: (row: OnlineUserTable) => formatDateTime(row.login_time),
       },
       {
         prop: "operation",

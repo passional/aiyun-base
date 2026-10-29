@@ -1,52 +1,52 @@
 <template>
   <div class="fa-full-height">
-    <ElSplitter :style="'height: 100%'">
-      <ElSplitterPanel :size="isSidebarCollapsed ? 64 : 200" :min="64" :max="400">
-        <div class="sidebar-container h-full" :class="{ collapsed: isSidebarCollapsed }">
-          <FaSidebar
-            ref="sidebarRef"
-            :current-session-id="currentSessionId"
-            :is-collapsed="isSidebarCollapsed"
-            @select-session="handleSelectSession"
-            @new-session="handleNewSession"
-            @open-config="configDrawerVisible = true"
+    <div class="chat-shell">
+      <div
+        class="sidebar-container h-full"
+        :class="{ collapsed: isSidebarCollapsed }"
+        :style="{ width: isSidebarCollapsed ? '64px' : '220px' }"
+      >
+        <FaSidebar
+          ref="sidebarRef"
+          :current-session-id="currentSessionId"
+          :is-collapsed="isSidebarCollapsed"
+          @select-session="handleSelectSession"
+          @new-session="handleNewSession"
+          @open-config="configDrawerVisible = true"
+        />
+      </div>
+      <div class="chat-container flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div class="chat-header">
+          <FaChatNavbar
+            :connection-status="connectionStatus"
+            :is-connected="isConnected"
+            :message-count="messages.length"
+            :is-sidebar-collapsed="isSidebarCollapsed"
+            @clear-chat="handleClearChat"
+            @toggle-connection="toggleConnection"
+            @toggle-sidebar="toggleSidebar"
           />
         </div>
-      </ElSplitterPanel>
-      <ElSplitterPanel :min="300">
-        <div class="chat-container flex flex-col h-full overflow-hidden">
-          <div class="chat-header">
-            <FaChatNavbar
-              :connection-status="connectionStatus"
-              :is-connected="isConnected"
-              :message-count="messages.length"
-              :is-sidebar-collapsed="isSidebarCollapsed"
-              @clear-chat="handleClearChat"
-              @toggle-connection="toggleConnection"
-              @toggle-sidebar="toggleSidebar"
-            />
-          </div>
-          <div class="chat-main flex-1 overflow-hidden">
-            <FaChatMessages
-              ref="chatMessagesRef"
-              :messages="messages"
-              :error="error"
-              @prompt-click="handleSendMessage"
-              @error-close="error = ''"
-            />
-          </div>
-          <div class="chat-footer">
-            <FaChatInput
-              :disabled="!isConnected"
-              :sending="sending"
-              :is-connected="isConnected"
-              @send="handleSendMessage"
-              @stop="handleStopMessage"
-            />
-          </div>
+        <div class="chat-main flex-1 overflow-hidden">
+          <FaChatMessages
+            ref="chatMessagesRef"
+            :messages="messages"
+            :error="error"
+            @prompt-click="handleSendMessage"
+            @error-close="error = ''"
+          />
         </div>
-      </ElSplitterPanel>
-    </ElSplitter>
+        <div class="chat-footer">
+          <FaChatInput
+            :disabled="!isConnected"
+            :sending="sending"
+            :is-connected="isConnected"
+            @send="handleSendMessage"
+            @stop="handleStopMessage"
+          />
+        </div>
+      </div>
+    </div>
 
     <FaAiModelConfigPanel v-model="configDrawerVisible" />
   </div>
@@ -71,11 +71,18 @@ import FaAiModelConfigPanel from "./components/FaAiModelConfigPanel.vue";
 // 状态
 const messages = ref<ChatMessage[]>([]);
 const sending = ref(false);
+// 是否启用 AI 只读工具（默认关闭：不改变原有对话行为）
 const isConnected = ref(false);
 const connectionStatus = ref<"connected" | "connecting" | "disconnected">("disconnected");
 const error = ref("");
 const currentSessionId = ref<string | null>(null);
 const isSidebarCollapsed = ref(false);
+const MOBILE_BREAKPOINT = 800;
+
+/** 窄屏默认收起会话侧栏，给聊天区留出空间 */
+function syncSidebarForViewport() {
+  if (window.innerWidth <= MOBILE_BREAKPOINT) isSidebarCollapsed.value = true;
+}
 const configDrawerVisible = ref(false);
 
 // Refs
@@ -342,7 +349,15 @@ const toggleSidebar = () => {
 };
 
 // ============ 生命周期 ============
-onMounted(connectWebSocket);
+onMounted(() => {
+  syncSidebarForViewport();
+  window.addEventListener("resize", syncSidebarForViewport);
+  connectWebSocket();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", syncSidebarForViewport);
+});
 onUnmounted(disconnectWebSocket);
 
 // KeepAlive 缓存切换：离开视图即断开，回到视图按需重连。
@@ -354,26 +369,36 @@ onDeactivated(disconnectWebSocket);
 </script>
 
 <style lang="scss" scoped>
-/* 拆分条容器样式 */
-:deep(.el-splitter) {
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
-}
-
-:deep(.el-splitter-panel) {
-  overflow: hidden;
+/* 固定双栏，无分割线、无拖拽 */
+.chat-shell {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
 }
 
 .sidebar-container {
-  background: transparent;
+  flex: 0 0 auto;
+  height: 100%;
+  overflow: hidden;
+  background: var(--default-box-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--fa-radius-md, 12px);
+  box-shadow: var(--fa-shadow-card, 0 1px 2px rgb(16 24 40 / 4%));
   transition: width 0.3s ease;
+}
+
+.chat-container {
+  overflow: hidden;
+  background: var(--default-box-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--fa-radius-md, 12px);
+  box-shadow: var(--fa-shadow-card, 0 1px 2px rgb(16 24 40 / 4%));
 }
 
 .chat-header {
   height: auto;
   padding: 0;
-  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .chat-main {
@@ -381,10 +406,19 @@ onDeactivated(disconnectWebSocket);
   overflow: hidden;
 }
 
+@media (width <= 800px) {
+  .chat-shell {
+    gap: 0;
+  }
+
+  .sidebar-container {
+    display: none;
+  }
+}
+
 .chat-footer {
   height: auto;
   min-height: 80px;
   padding: 0;
-  border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>

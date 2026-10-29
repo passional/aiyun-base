@@ -20,7 +20,7 @@
     />
 
     <ElSegmented
-      class="mt-3"
+      class="mt-3 self-start"
       v-model="menuClientTab"
       :options="menuSegmentedOptions"
       @change="handleMenuClientTabChange"
@@ -55,7 +55,90 @@
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="mobileMenuRows.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="allCardsSelected"
+            :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+            @change="toggleAllCards"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+        <div v-if="!mobileMenuRows.length" class="py-12">
+          <FaEmptyState
+            icon="ri:menu-line"
+            title="暂无菜单"
+            description="新增第一个菜单后在这里展示"
+          />
+        </div>
+        <div
+          v-for="{ row, depth } in mobileMenuRows"
+          :key="row.id"
+          class="p-3 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+          :style="{ marginLeft: `${depth * 12}px` }"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-1 min-w-0">
+              <ElCheckbox
+                class="shrink-0"
+                :model-value="isCardSelected(row)"
+                @change="(val) => toggleCardRow(row, val)"
+              />
+              <button
+                v-if="row.children?.length"
+                type="button"
+                class="flex items-center justify-center shrink-0 size-5 text-g-600"
+                @click="toggleMobileMenu(row.id!)"
+              >
+                <FaSvgIcon
+                  :icon="
+                    expandedMenuIds.has(row.id!) ? 'ri:arrow-down-s-line' : 'ri:arrow-right-s-line'
+                  "
+                />
+              </button>
+              <span class="text-sm font-medium truncate">{{ row.title || row.name }}</span>
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <FaStatusTag :type="menuTypeTag(row.type)" :label="menuTypeText(row.type)" />
+              <FaStatusTag
+                :type="row.status === 0 ? 'success' : 'danger'"
+                :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+              />
+            </div>
+          </div>
+          <div class="mt-1 text-xs text-g-600 truncate">
+            {{ row.route_path || row.component_path || "—" }}
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton
+              v-if="row.type === 1 || row.type === 2"
+              link
+              type="primary"
+              size="small"
+              @click="opCtx.onAdd(row)"
+            >
+              {{ $t("common.addChild") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="opCtx.onDetail(row.id!)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="opCtx.onEdit(row.id!)">
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton
+              link
+              type="danger"
+              size="small"
+              @click="opCtx.onDelete(row.id!, row.title ?? row.name ?? '')"
+            >
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+      </div>
       <FaTable
+        v-else
         ref="tableRef"
         row-key="id"
         :loading="loading"
@@ -87,10 +170,10 @@
           :scrollbar="false"
         >
           <template #type="{ row }">
-            <FaStatusTag v-if="row?.type === MenuTypeEnum.CATALOG" type="warning" label="目录" />
+            <FaStatusTag v-if="row?.type === MenuTypeEnum.CATALOG" type="primary" label="目录" />
             <FaStatusTag v-if="row?.type === MenuTypeEnum.MENU" type="success" label="菜单" />
-            <FaStatusTag v-if="row?.type === MenuTypeEnum.BUTTON" type="danger" label="按钮" />
-            <FaStatusTag v-if="row?.type === MenuTypeEnum.EXTLINK" type="info" label="外链" />
+            <FaStatusTag v-if="row?.type === MenuTypeEnum.BUTTON" type="info" label="按钮" />
+            <FaStatusTag v-if="row?.type === MenuTypeEnum.EXTLINK" type="warning" label="外链" />
           </template>
           <template #scope="{ row }">
             <FaStatusTag v-if="row?.scope === MenuClientEnum.PC" type="primary" label="PC" />
@@ -114,7 +197,7 @@
           :items="menuDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="12"
           :gutter="16"
@@ -191,6 +274,7 @@
               v-model="formData.component_path"
               placeholder="请输入组件路径，如system/user/index"
               :style="'width: 95%'"
+              aria-label="组件路径，如system/user/index"
             >
               <template #prepend>src/views/</template>
               <template #append>.vue</template>
@@ -210,9 +294,19 @@
             </template>
             <template v-else>
               <div v-for="item in formData.params" :key="item.key">
-                <ElInput v-model="item.key" placeholder="参数名" :style="'width: 100px'" />
+                <ElInput
+                  v-model="item.key"
+                  placeholder="参数名"
+                  :style="'width: 100px'"
+                  aria-label="参数名"
+                />
                 <span class="mx-1">=</span>
-                <ElInput v-model="item.value" placeholder="参数值" :style="'width: 100px'" />
+                <ElInput
+                  v-model="item.value"
+                  placeholder="参数值"
+                  :style="'width: 100px'"
+                  aria-label="参数值"
+                />
                 <ElIcon
                   v-if="formData.params.indexOf(item) === formData.params.length - 1"
                   class="ml-2 cursor-pointer color-[var(--el-color-success)]"
@@ -245,6 +339,9 @@
                   ? '目录必填，一般为默认子路由 path，如 /system/user'
                   : '可选，请输入重定向路由'
               "
+              aria-label="formData.type === MenuTypeEnum.CATALOG
+                  ? '目录必填，一般为默认子路由 path，如 /system/user'
+                  : '可选，重定向路由'"
             />
           </template>
         </FaForm>
@@ -254,6 +351,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 defineOptions({
   // 与菜单 route_name 一致：KeepAlive 的 include/exclude 按组件 name 匹配
   // eslint-disable-next-line vue/no-reserved-component-names -- 须与后端菜单 route_name 对齐；本组件仅由路由加载，不作为模板标签使用
@@ -272,7 +370,12 @@ import MenuAPI, {
 } from "@/api/module_system/menu";
 import { MenuClientEnum, MenuTypeEnum } from "@/enums/system/menu.enum";
 import { formatTree } from "@utils/common";
-import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
+import {
+  formatDateTime,
+  renderTableOperationCell,
+  resolveStatusColumns,
+  type TableOperationAction,
+} from "@utils";
 import type { SearchFormItem } from "@/components/forms/fa-search-bar/index.vue";
 import type FaSearchBar from "@/components/forms/fa-search-bar/index.vue";
 import type { FormItem } from "@/components/forms/fa-form/index.vue";
@@ -426,7 +529,7 @@ const menuDetailItems: import("@/components/display/fa-descriptions/index.vue").
     { label: "路由名称", prop: "route_name" },
     { label: "路由路径", prop: "route_path" },
     { label: "组件路径", prop: "component_path" },
-    { label: "激活菜单路径", prop: "active_path" },
+    { label: "激活路径", prop: "active_path" },
     { label: "重定向", prop: "redirect" },
     { label: "外链地址", prop: "link" },
     { label: "父级编号", prop: "parent_id" },
@@ -476,13 +579,13 @@ const menuDetailItems: import("@/components/display/fa-descriptions/index.vue").
       },
     },
     {
-      label: "显示红点角标",
+      label: "红点角标",
       prop: "show_badge",
       tag: {
         map: { true: { type: "success", text: "是" }, false: { type: "danger", text: "否" } },
       },
     },
-    { label: "文字角标内容", prop: "show_text_badge" },
+    { label: "角标文字", prop: "show_text_badge" },
     {
       label: "状态",
       prop: "status",
@@ -546,10 +649,10 @@ const menuDialogFormItems = computed<FormItem[]>(() => {
     },
     {
       key: "active_path",
-      label: "激活菜单路径",
+      label: "激活路径",
       type: "input",
       hidden: t !== MenuTypeEnum.CATALOG && t !== MenuTypeEnum.MENU,
-      props: { placeholder: "请输入激活菜单路径，用于高亮父级菜单" },
+      props: { placeholder: "请输入激活路径，用于高亮父级菜单" },
     },
     {
       key: "redirect",
@@ -644,7 +747,7 @@ const menuDialogFormItems = computed<FormItem[]>(() => {
     },
     {
       key: "show_badge",
-      label: "显示红点角标",
+      label: "红点角标",
       type: "radiogroup",
       hidden: t === MenuTypeEnum.BUTTON,
       props: {
@@ -656,7 +759,7 @@ const menuDialogFormItems = computed<FormItem[]>(() => {
     },
     {
       key: "show_text_badge",
-      label: "文字角标内容",
+      label: "角标文字",
       type: "input",
       hidden: t === MenuTypeEnum.BUTTON || !formData.value.show_badge,
       props: { placeholder: "请输入文字角标内容" },
@@ -846,6 +949,70 @@ async function handleOpenMenuDetail(id: number) {
   dialogVisible.visible = true;
 }
 
+const { width: viewportWidth } = useWindowSize();
+
+const visibleMobileRows = computed(() => mobileMenuRows.value.map((item) => item.row));
+
+const allCardsSelected = computed(
+  () =>
+    visibleMobileRows.value.length > 0 &&
+    visibleMobileRows.value.every((row) => selectedRows.value.some((item) => item.id === row.id))
+);
+
+function isCardSelected(row: MenuTable) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: MenuTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...visibleMobileRows.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
+const expandedMenuIds = ref<Set<number>>(new Set());
+
+const mobileMenuRows = computed(() => {
+  const rows: Array<{ row: MenuTable; depth: number }> = [];
+  const walk = (nodes: MenuTable[], depth: number) => {
+    nodes.forEach((node) => {
+      rows.push({ row: node, depth });
+      if (node.children?.length && expandedMenuIds.value.has(node.id!)) {
+        walk(node.children, depth + 1);
+      }
+    });
+  };
+  walk(tableData.value ?? [], 0);
+  return rows;
+});
+
+function toggleMobileMenu(id: number) {
+  const next = new Set(expandedMenuIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expandedMenuIds.value = next;
+}
+
+function menuTypeText(type?: number) {
+  return (
+    ({ 1: "目录", 2: "菜单", 3: "按钮", 4: "外链" } as Record<number, string>)[Number(type)] ?? "—"
+  );
+}
+
+function menuTypeTag(type?: number): "primary" | "success" | "warning" | "info" {
+  return (
+    ({ 1: "primary", 2: "success", 3: "info", 4: "warning" } as const)[
+      Number(type) as 1 | 2 | 3 | 4
+    ] ?? "info"
+  );
+}
+
 const opCtx = {
   onAdd: (r: MenuTable) => void handleOpenDialog("create", undefined, r),
   onDetail: (id: number) => void handleOpenMenuDetail(id),
@@ -861,7 +1028,7 @@ const { columnChecks, columns } = useTableColumns<MenuTable>(
     {
       prop: "name",
       label: "菜单名称",
-      minWidth: 220,
+      minWidth: 180,
       showOverflowTooltip: true,
       formatter: (row: MenuTable) => {
         const isButton = row.type === MenuTypeEnum.BUTTON;
@@ -879,14 +1046,14 @@ const { columnChecks, columns } = useTableColumns<MenuTable>(
       width: 80,
       align: "center",
       status: {
-        1: { type: "warning", text: "目录" },
+        1: { type: "primary", text: "目录" },
         2: { type: "success", text: "菜单" },
-        3: { type: "danger", text: "按钮" },
-        4: { type: "info", text: "外链" },
+        3: { type: "info", text: "按钮" },
+        4: { type: "warning", text: "外链" },
       },
     },
     { prop: "title", label: "菜单标题", minWidth: 120, showOverflowTooltip: true },
-    { prop: "permission", label: "权限标识", minWidth: 160, showOverflowTooltip: true },
+    { prop: "permission", label: "权限标识", minWidth: 130, showOverflowTooltip: true },
     {
       prop: "scope",
       label: "终端",
@@ -1035,7 +1202,9 @@ const { columnChecks, columns } = useTableColumns<MenuTable>(
     {
       prop: "created_time",
       label: "创建时间",
-      width: 168,
+      width: 190,
+      formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+        formatDateTime(row.created_time),
       sortable: true,
       showOverflowTooltip: true,
       visible: false,
@@ -1043,7 +1212,9 @@ const { columnChecks, columns } = useTableColumns<MenuTable>(
     {
       prop: "updated_time",
       label: "更新时间",
-      width: 168,
+      width: 190,
+      formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+        formatDateTime(row.updated_time),
       sortable: true,
       showOverflowTooltip: true,
       visible: false,
@@ -1052,7 +1223,7 @@ const { columnChecks, columns } = useTableColumns<MenuTable>(
     {
       prop: "operation",
       label: "操作",
-      width: 220,
+      width: 200,
       fixed: "right",
       align: "center",
       formatter: (row: MenuTable) => formatMenuOperationCell(row, opCtx),

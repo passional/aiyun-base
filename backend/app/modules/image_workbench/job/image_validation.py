@@ -110,19 +110,19 @@ def detect_alpha_file(path: str | Path) -> bool:
 def validate_reference_image_bytes(content: bytes, filename: str | None = None) -> str:
     """确认内容是受支持且大小合规的参考图，返回识别出的格式。"""
     if not content:
-        raise CustomException(msg="参考图内容为空", code=400, status_code=400)
+        raise CustomException(msg="参考图内容为空", code=400)
     if len(content) > settings.MAX_FILE_SIZE:
         limit_mb = settings.MAX_FILE_SIZE // (1024 * 1024)
-        raise CustomException(msg=f"参考图大小超过限制，最大允许 {limit_mb}MB", code=400, status_code=400)
+        raise CustomException(msg=f"参考图大小超过限制，最大允许 {limit_mb}MB", code=400)
 
     image_format = detect_image_format(content)
     if image_format is None:
-        raise CustomException(msg=f"参考文件不是受支持的图片，仅支持 {_SUPPORTED_LABEL}", code=400, status_code=400)
+        raise CustomException(msg=f"参考文件不是受支持的图片，仅支持 {_SUPPORTED_LABEL}", code=400)
 
     if filename:
         suffix = Path(filename).suffix.lower()
         if suffix not in _FORMAT_EXTENSIONS[image_format]:
-            raise CustomException(msg=f"参考图扩展名与图片内容不一致，仅支持 {_SUPPORTED_LABEL}", code=400, status_code=400)
+            raise CustomException(msg=f"参考图扩展名与图片内容不一致，仅支持 {_SUPPORTED_LABEL}", code=400)
     return image_format
 
 
@@ -132,14 +132,14 @@ def validate_reference_image_file(path: str | Path) -> None:
     try:
         size = file_path.stat().st_size
     except OSError as exc:
-        raise CustomException(msg=f"参考图不存在或无法读取: {file_path}", code=400, status_code=400) from exc
+        raise CustomException(msg=f"参考图不存在或无法读取: {file_path}", code=400) from exc
     if size > settings.MAX_FILE_SIZE:
         limit_mb = settings.MAX_FILE_SIZE // (1024 * 1024)
-        raise CustomException(msg=f"参考图大小超过限制，最大允许 {limit_mb}MB", code=400, status_code=400)
+        raise CustomException(msg=f"参考图大小超过限制，最大允许 {limit_mb}MB", code=400)
     try:
         content = file_path.read_bytes()
     except OSError as exc:
-        raise CustomException(msg=f"参考图不存在或无法读取: {file_path}", code=400, status_code=400) from exc
+        raise CustomException(msg=f"参考图不存在或无法读取: {file_path}", code=400) from exc
     validate_reference_image_bytes(content, file_path.name)
 
 

@@ -15,15 +15,20 @@
 
 /* 滚动条的滑块按钮 */
 ::-webkit-scrollbar-thumb {
-  background-color: var(--theme-color) !important;
+  background-color: var(--fa-scrollbar-thumb, #c9ced8) !important;
   background-clip: content-box;
   border: 1px solid transparent;
   border-radius: 6px;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in srgb, var(--theme-color) 80%, black) !important;
+  background-color: var(--fa-scrollbar-thumb-hover, #aab2c0) !important;
 }
 
 /* 滚动条的上下两端的按钮 */

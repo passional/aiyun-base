@@ -2,12 +2,17 @@
   <div class="fa-card-list">
     <slot name="header" />
     <div v-loading="loading">
-      <ElEmpty v-if="!loading && items.length === 0" :description="emptyText" />
+      <FaEmptyState
+        v-if="!loading && items.length === 0"
+        icon="ri:inbox-line"
+        :title="emptyText"
+        compact
+      />
       <div v-else :class="gridClass">
         <div
           v-for="(item, index) in items"
           :key="item[keyField] ?? index"
-          class="fa-card-item border border-g-300/60 dark:border-g-700 rounded-xl overflow-hidden bg-white dark:bg-g-800 hover:shadow-lg transition-all duration-300"
+          class="fa-card-item border border-line/60 dark:border-line rounded-xl overflow-hidden bg-white dark:bg-g-800 hover:shadow-lg transition-all duration-300"
           @click="$emit('itemClick', item)"
         >
           <slot name="card" :item="item" :index="index" />

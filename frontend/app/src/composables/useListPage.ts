@@ -48,8 +48,8 @@ export function useListPage<T, AG extends AlovaGenerics = AlovaGenerics>(options
       watchingStates: [],
       preloadNextPage: false,
       preloadPreviousPage: false,
-      // 响应已由 http 层 responded 解包为业务结构 { list, total }
-      data: res => (res as PageResult<T>).list ?? [],
+      // 响应已由 http 层 responded 解包为业务结构 { items, total }
+      data: res => (res as PageResult<T>).items ?? [],
       total: res => (res as PageResult<T>).total ?? 0,
     },
   )

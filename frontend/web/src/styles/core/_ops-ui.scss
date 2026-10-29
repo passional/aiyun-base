@@ -1,0 +1,150 @@
+// ─────────────────────────────────────────────────────────────────────
+// 运维类页面共用小组件（SQL 控制台 / SSH 运维 / 文件浏览）
+// 目标：布局可以不同，但列表项、状态点、终端、提示文字、卡片块、等宽输入
+// 的圆角 / 字号 / 颜色统一走同一套 token，避免各页面各写一套。
+// ─────────────────────────────────────────────────────────────────────
+
+:root {
+  --fa-font-size-sm: var(--fa-font-sm, 12px);
+  --fa-font-size-md: var(--fa-font-md, 14px);
+  --fa-font-size-title: var(--fa-font-md, 14px);
+}
+
+// 面板头（左右栏卡片顶部那一行）
+.fa-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.fa-panel-title {
+  font-size: var(--fa-font-size-title);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--el-text-color-primary);
+}
+
+// 次要说明文字
+.fa-hint {
+  font-size: var(--fa-font-size-sm);
+  color: var(--el-text-color-secondary);
+}
+
+// 面板内分隔线（如「库 / 表」）
+.fa-panel-sep {
+  padding: 8px 12px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+// 列表项（连接 / 主机 / 表名），统一样式与交互
+.fa-list-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  border-radius: var(--fa-radius-sm);
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--el-fill-color-light);
+  }
+
+  &.is-active {
+    background: var(--el-color-primary-light-9);
+  }
+}
+
+.fa-list-item--sm {
+  padding: 5px 10px;
+}
+
+.fa-list-item__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--fa-font-size-md);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.fa-list-item__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--fa-font-size-sm);
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+
+// 行内悬浮操作（「更多」等）
+.fa-list-item__action {
+  flex-shrink: 0;
+  color: var(--el-text-color-secondary);
+  opacity: 0;
+  transition: opacity 0.15s;
+
+  .fa-list-item:hover & {
+    opacity: 1;
+  }
+}
+
+// 状态点
+.fa-status-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+// 等宽文本 / 等宽输入框
+.fa-mono,
+.fa-mono-textarea .el-textarea__inner {
+  font-family: var(--fa-font-mono);
+  font-size: var(--fa-font-size-md);
+  line-height: 1.6;
+}
+
+// 终端输出区
+.fa-terminal {
+  padding: 12px;
+  margin: 0;
+  font-family: var(--fa-font-mono);
+  font-size: var(--fa-font-size-sm);
+  line-height: 1.55;
+  color: var(--fa-terminal-fg);
+  white-space: pre-wrap;
+  background: var(--fa-terminal-bg);
+  border-radius: var(--fa-radius-md);
+}
+
+// 卡片块（批量执行结果 / 命令片段等）
+.fa-block-card {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--fa-radius-sm);
+}
+
+.fa-block-card__output {
+  max-height: 208px;
+  padding: 8px;
+  margin: 6px 0 0;
+  overflow: auto;
+  font-family: var(--fa-font-mono);
+  font-size: var(--fa-font-size-sm);
+  line-height: 1.5;
+  color: var(--fa-terminal-fg);
+  white-space: pre-wrap;
+  background: var(--fa-terminal-bg);
+  border-radius: var(--fa-radius-xs, 6px);
+}
+
+// 工具栏里的短标签不换行（窄屏时整块折行，而不是逐字竖排）
+.fa-panel-header .fa-hint,
+.fa-panel-header .fa-panel-title {
+  white-space: nowrap;
+}

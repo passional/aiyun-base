@@ -155,18 +155,18 @@ function handleNavigate(url: string) {
 
 <template>
   <view class="page-wraper box-border py-3">
-    <view class="wot-bg-filled-oppo mx-3 box-border rounded-3 px-4 py-6 text-center">
-      <text class="wot-text-text-main mb-3 block text-left text-5 font-bold">
+    <view class="wot-bg-filled-oppo mx-4 box-border rounded-3 px-4 py-6 text-center">
+      <text class="wot-text-text-main mb-4 block text-left text-5 font-bold">
         {{ brandTitle }}
       </text>
-      <wd-text class="wot-text-text-secondary mb-3 block text-left" size="30rpx" line-height="1.6" :text="brandDesc" />
+      <wd-text class="wot-text-text-secondary mb-4 block text-left" size="30rpx" line-height="1.6" :text="brandDesc" />
     </view>
 
-    <view class="mx-3 mb-3 mt-3">
+    <view class="mx-4 mb-4 mt-3">
       <view class="wot-text-text-main mb-2 px-1 text-3.5 font-bold">
         {{ t('setting.basic') }}
       </view>
-      <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+      <wd-cell-group border custom-class="rounded-3! overflow-hidden">
         <wd-cell :title="t('setting.darkMode')">
           <wd-switch v-model="isDark" size="18px" />
         </wd-cell>
@@ -197,21 +197,21 @@ function handleNavigate(url: string) {
       </wd-cell-group>
     </view>
 
-    <view class="mx-3">
+    <view class="mx-4">
       <view class="wot-text-text-main mb-2 px-1 text-3.5 font-bold">
         {{ t('setting.links') }}
       </view>
-      <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+      <wd-cell-group border custom-class="rounded-3! overflow-hidden">
         <wd-cell :title="t('common.docs')" is-link @click="handleNavigate(helpDoc)" />
         <wd-cell :title="t('common.github')" is-link @click="handleNavigate(gitCode)" />
       </wd-cell-group>
     </view>
 
-    <view class="mx-3 mt-3">
+    <view class="mx-4 mt-3">
       <view class="wot-text-text-main mb-2 px-1 text-3.5 font-bold">
         {{ t('setting.general') }}
       </view>
-      <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+      <wd-cell-group border custom-class="rounded-3! overflow-hidden">
         <wd-cell :title="t('setting.version')" :is-link="false">
           <wd-text class="wot-text-text-secondary text-3" :text="`v${version || '--'}`" />
         </wd-cell>

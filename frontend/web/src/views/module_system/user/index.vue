@@ -1,26 +1,19 @@
 <!-- 用户管理：左部门树 + 右 Art 表格 -->
 <template>
   <div class="fa-full-height user-manage-page">
-    <ElSplitter :style="'height: 100%'">
-      <ElSplitterPanel size="260px" :min="200" :max="400">
-        <div class="user-dept-panel h-full pr-2">
-          <ElCard class="tree-card fa-card-xs flex flex-col h-full mt-0" shadow="hover">
-            <template #header>
-              <b>部门</b>
-            </template>
-            <ElScrollbar class="dept-tree-scroll min-h-0 flex-1">
-              <FaDeptTree
-                v-model="deptFilterId"
-                class="dept-tree-inner"
-                @node-click="handleDeptNodeClick"
-              />
-            </ElScrollbar>
-          </ElCard>
-        </div>
-      </ElSplitterPanel>
+    <FaWorkbench :side-width="260">
+      <template #side>
+        <FaSidePanel title="部门" class="user-dept-side">
+          <FaDeptTree
+            v-model="deptFilterId"
+            class="dept-tree-inner"
+            @node-click="handleDeptNodeClick"
+          />
+        </FaSidePanel>
+      </template>
 
-      <ElSplitterPanel :min="400">
-        <div class="user-main-panel flex flex-col h-full min-w-0 min-h-0 pl-2">
+      <div class="fa-card user-main-card">
+        <div class="user-main-panel flex flex-col h-full min-w-0 min-h-0">
           <FaSearchBar
             v-show="showSearchBar"
             ref="searchBarRef"
@@ -66,7 +59,108 @@
               </template>
             </FaTableHeader>
 
+            <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+              <div v-if="data.length" class="flex items-center gap-2 px-1">
+                <ElCheckbox
+                  :model-value="allCardsSelected"
+                  :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+                  @change="toggleAllCards"
+                >
+                  {{ $t("common.selectAll") }}
+                </ElCheckbox>
+              </div>
+
+              <div v-if="!data.length" class="py-12">
+                <FaEmptyState
+                  icon="ri:user-3-line"
+                  title="暂无用户"
+                  description="新增用户或调整筛选条件后重试"
+                />
+              </div>
+
+              <div
+                v-for="row in data"
+                :key="row.id"
+                class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+              >
+                <div class="flex items-center gap-3">
+                  <ElCheckbox
+                    class="shrink-0"
+                    :model-value="isCardSelected(row)"
+                    @change="(val) => toggleCardRow(row, val)"
+                  />
+                  <ElAvatar :size="40" :src="row.avatar || undefined" />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-medium truncate">{{ row.name || row.username }}</span>
+                      <FaStatusTag
+                        :type="row.status === 0 ? 'success' : 'danger'"
+                        :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+                      />
+                    </div>
+                    <div class="mt-0.5 text-xs text-g-600">{{ row.username }}</div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+                  <span class="col-span-2"
+                    >{{ $t("common.dept") }}：{{ row.dept_name || "—" }}</span
+                  >
+                  <span class="col-span-2 truncate">
+                    {{ $t("common.role") }}：{{ resolveLabels(row.role_ids, roleOptions) || "—" }}
+                  </span>
+                  <span
+                    >{{ $t("common.gender") }}：{{
+                      row.gender === "1" ? $t("common.female") : $t("common.male")
+                    }}</span
+                  >
+                  <span class="col-span-2"
+                    >{{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}</span
+                  >
+                </div>
+                <div class="mobile-card-actions">
+                  <ElButton link type="primary" size="small" @click="opCtx.onDetail(row.id!)">
+                    {{ $t("common.detail") }}
+                  </ElButton>
+                  <ElButton
+                    link
+                    type="primary"
+                    size="small"
+                    :disabled="row.is_superuser === true"
+                    @click="opCtx.onEdit(row.id!)"
+                  >
+                    {{ $t("common.edit") }}
+                  </ElButton>
+                  <ElButton
+                    link
+                    type="primary"
+                    size="small"
+                    :disabled="row.is_superuser === true"
+                    @click="opCtx.onResetPwd(row)"
+                  >
+                    {{ $t("common.resetPassword") }}
+                  </ElButton>
+                  <ElButton
+                    link
+                    type="danger"
+                    size="small"
+                    :disabled="row.is_superuser === true"
+                    @click="opCtx.onDelete(row.id!, row.name ?? row.username ?? '')"
+                  >
+                    {{ $t("common.delete") }}
+                  </ElButton>
+                </div>
+              </div>
+              <ElPagination
+                class="justify-center mt-1"
+                layout="prev, pager, next"
+                :current-page="pagination.current"
+                :page-size="pagination.size"
+                :total="pagination.total"
+                @current-change="handleCurrentChange"
+              />
+            </div>
             <FaTable
+              v-else
               ref="faTableRef"
               row-key="id"
               :loading="loading"
@@ -79,8 +173,8 @@
             />
           </ElCard>
         </div>
-      </ElSplitterPanel>
-    </ElSplitter>
+      </div>
+    </FaWorkbench>
 
     <FaDrawer
       v-model="dialogVisible.visible"
@@ -107,8 +201,8 @@
           </template>
           <!-- 性别 → 三种状态 Tag -->
           <template #gender="{ row }">
-            <FaStatusTag v-if="row?.gender === '0'" type="success" label="男" />
-            <FaStatusTag v-else-if="row?.gender === '1'" type="warning" label="女" />
+            <FaStatusTag v-if="row?.gender === '0'" type="info" label="男" />
+            <FaStatusTag v-else-if="row?.gender === '1'" type="info" label="女" />
             <FaStatusTag v-else type="info" label="未知" />
           </template>
           <!-- 角色 → 根据 IDs 从选项解析名称 -->
@@ -129,7 +223,7 @@
           :items="userDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -200,6 +294,7 @@ defineOptions({
 
 import { UserFilled } from "@element-plus/icons-vue";
 
+import { useWindowSize } from "@vueuse/core";
 import { useAppStore } from "@stores";
 import { DeviceEnum } from "@/enums/settings/device.enum";
 import { confirmToggleStatus } from "@/hooks/core/useConfirm";
@@ -210,6 +305,7 @@ import UserAPI, {
   type UserPageQuery,
 } from "@/api/module_system/user";
 import {
+  formatDateTime,
   formatTree,
   renderTableOperationCell,
   resolveStatusColumns,
@@ -345,6 +441,29 @@ const moreLoading = ref(false);
 const deptFilterId = ref<string | number | undefined>(undefined);
 
 const appStore = useAppStore();
+const { width: viewportWidth } = useWindowSize();
+
+const allCardsSelected = computed(
+  () => data.value.length > 0 && selectedRows.value.length === data.value.length
+);
+
+function isCardSelected(row: UserInfo) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: UserInfo, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...data.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
 const drawerSize = computed(() => (appStore.device === DeviceEnum.DESKTOP ? "450px" : "90%"));
 const deptOptions = ref<OptionType[]>();
 const roleOptions = ref<Array<{ value: number; label: string; disabled?: boolean }>>();
@@ -618,7 +737,7 @@ const {
       {
         prop: "status",
         label: "状态",
-        width: 88,
+        width: 80,
         status: {
           0: { type: "success", text: "启用" },
           1: { type: "danger", text: "停用" },
@@ -633,30 +752,25 @@ const {
       {
         prop: "gender",
         label: "性别",
-        width: 88,
+        width: 70,
         status: {
-          "0": { type: "success", text: "男" },
-          "1": { type: "warning", text: "女" },
+          "0": { type: "info", text: "男" },
+          "1": { type: "info", text: "女" },
         },
       },
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
-        sortable: true,
-        showOverflowTooltip: true,
-      },
-      {
-        prop: "updated_time",
-        label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "operation",
         label: "操作",
-        width: 280,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: UserInfo) => formatUserOperationCell(row, opCtx),
@@ -957,12 +1071,27 @@ async function handleMoreClick(value: "enable" | "disable") {
 </script>
 
 <style lang="scss" scoped>
-/* 左侧部门树内容区：card body 纵向 flex + 滚动条占满剩余高度（布局在 index，内边距在 DeptTree） */
-.tree-card :deep(.el-card__body) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0;
+/* 左侧部门栏：与字典/浏览一致的侧栏面板 */
+.user-dept-side {
+  width: 100%;
+  height: 100%;
+}
+
+.user-main-card {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 12px 16px;
+}
+
+/* 窄屏：隐藏部门栏，把宽度让给用户表格 */
+@media (width <= 800px) {
+  .user-dept-side {
+    display: none;
+  }
+
+  /* 部门栏隐藏后，工作区左槽位也要收起，避免留下 320px 空白 */
+  :deep(.fa-workbench__side) {
+    display: none;
+  }
 }
 </style>

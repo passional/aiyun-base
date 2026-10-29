@@ -211,7 +211,7 @@ class ChannelEvalModelMapService:
             stmt = stmt.where(ChannelEvalCanonicalModel.id != exclude_id)
         found = (await self.db.execute(stmt)).scalars().first()
         if found is not None:
-            raise CustomException(msg=f"显示名「{display_name}」已被规范模型 #{found.id} 使用", code=400, status_code=400)
+            raise CustomException(msg=f"显示名「{display_name}」已被规范模型 #{found.id} 使用", code=400)
 
     async def _ensure_aliases_free(self, aliases: list[str], exclude_id: int | None = None) -> None:
         """一个渠道模型串至多属于一个规范模型。"""
@@ -231,7 +231,7 @@ class ChannelEvalModelMapService:
             for obj in (await self.db.execute(select(ChannelEvalCanonicalModel).where(ChannelEvalCanonicalModel.id.in_({canonical_id for _, canonical_id in rows})))).scalars().all()
         }
         detail = "、".join(f"{alias}（已属于「{owners.get(canonical_id, canonical_id)}」）" for alias, canonical_id in rows)
-        raise CustomException(msg=f"以下渠道模型串已属于其它规范模型：{detail}", code=400, status_code=400)
+        raise CustomException(msg=f"以下渠道模型串已属于其它规范模型：{detail}", code=400)
 
     async def _aliases_of(self, canonical_ids: Sequence[int]) -> dict[int, list[ChannelEvalModelAlias]]:
         if not canonical_ids:

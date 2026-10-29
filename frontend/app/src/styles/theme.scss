@@ -7,20 +7,20 @@
   --drop-pos-b: 88% 10%;
   --drop-pos-c: 82% 74%;
   --drop-pos-d: 10% 84%;
-  --drop-blob-a: rgba(28, 100, 253, 0.2);
-  --drop-blob-b: rgba(125, 211, 252, 0.18);
-  --drop-blob-c: rgba(124, 164, 255, 0.16);
-  --drop-blob-d: rgba(68, 128, 255, 0.12);
-  --drop-glow-a: rgba(147, 197, 253, 0.22);
-  --drop-glow-b: rgba(125, 211, 252, 0.18);
-  --drop-base-a: #E3F1FF;
-  --drop-base-b: #EBF7FF;
-  --drop-base-c: #F2FAFF;
-  --drop-base-d: #F0F2FF;
-  --drop-base-e: #EDEFFF;
-  --drop-base-f: #F9F7FF;
-  /* tabbar 背景跟随渐变最底部色，与页面底部无缝衔接 */
-  --wot-tabbar-bg: var(--drop-base-f);
+  --drop-blob-a: rgba(79, 107, 255, 0.05);
+  --drop-blob-b: rgba(109, 91, 255, 0.04);
+  --drop-blob-c: rgba(79, 107, 255, 0.03);
+  --drop-blob-d: rgba(109, 91, 255, 0.03);
+  --drop-glow-a: rgba(79, 107, 255, 0.04);
+  --drop-glow-b: rgba(109, 91, 255, 0.03);
+  --drop-base-a: #F5F6F8;
+  --drop-base-b: #F5F6F8;
+  --drop-base-c: #F5F6F8;
+  --drop-base-d: #F5F6F8;
+  --drop-base-e: #F5F6F8;
+  --drop-base-f: #F7F8FA;
+  /* tabbar 与 Web 卡片一致：白底 */
+  --wot-tabbar-bg: #FFFFFF;
   /* 静态层背景（远景色晕 + 基底渐变），页面容器与登录页共用；亮斑层走 ::before 呼吸动效 */
   --drop-bg:
     radial-gradient(circle at var(--drop-pos-a), var(--drop-blob-a) 0%, transparent 50%),
@@ -128,4 +128,19 @@
   --drop-base-d: #FEF2F3;
   --drop-base-e: #FCEEEF;
   --drop-base-f: #FFFCFC;
+}
+
+
+/* 可选主题统一中性画布：只改变主色/光晕，不再改变页面底色；与 Web 主题色行为一致 */
+.theme-orange,
+.theme-green,
+.theme-pink,
+.theme-purple {
+  --drop-base-a: #F5F6F8;
+  --drop-base-b: #F5F6F8;
+  --drop-base-c: #F5F6F8;
+  --drop-base-d: #F5F6F8;
+  --drop-base-e: #F5F6F8;
+  --drop-base-f: #F7F8FA;
+  --wot-tabbar-bg: #FFFFFF;
 }

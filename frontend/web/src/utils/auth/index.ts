@@ -90,7 +90,10 @@ export async function redirectToLogin(message: string = "请重新登录"): Prom
       await useUserStore().resetAllState();
 
       const currentPath = router.currentRoute.value.fullPath;
-      await router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      const redirectQuery = currentPath.startsWith("/login")
+        ? ""
+        : `?redirect=${encodeURIComponent(currentPath)}`;
+      await router.push(`/login${redirectQuery}`);
     } catch (error: any) {
       ElMessage.error(error?.message ?? String(error));
     } finally {

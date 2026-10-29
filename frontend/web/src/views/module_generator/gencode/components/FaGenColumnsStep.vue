@@ -84,7 +84,7 @@
         stripe
       >
         <template #empty>
-          <ElEmpty :image-size="80" description="暂无数据" />
+          <FaEmptyState icon="ri:inbox-line" title="暂无数据" compact />
         </template>
         <ElTableColumn label="拖拽" width="56" fixed align="center">
           <template #default>

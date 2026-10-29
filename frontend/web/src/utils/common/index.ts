@@ -273,6 +273,13 @@ export function formatToDateTime(
   return dayjs(date).format(format);
 }
 
+/** 安全格式化到秒；空值或非法时间返回 fallback，避免出现 Invalid Date */
+export function formatDateTime(value?: dayjs.ConfigType, fallback = "-"): string {
+  if (!value) return fallback;
+  const date = dayjs(value);
+  return date.isValid() ? date.format(DATE_TIME_FORMAT) : fallback;
+}
+
 export function formatToDate(date?: dayjs.ConfigType, format: string = DATE_FORMAT): string {
   return dayjs(date).format(format);
 }
@@ -699,3 +706,13 @@ class QuickStartManager {
  * ```
  */
 export const quickStartManager = new QuickStartManager();
+
+/**
+ * 品牌名规范：后端默认值「FastapiAdmin系统」统一显示为 FastapiAdmin。
+ * 自定义名称保持原样。
+ */
+export function normalizeBrandName(name?: string | null): string {
+  const value = (name ?? "").trim();
+  if (!value) return "FastapiAdmin";
+  return /^fastapiadmin\s*系统$/i.test(value) ? "FastapiAdmin" : value;
+}

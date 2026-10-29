@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, shallowRef } from "vue";
-import { Search, Switch as SwitchIcon } from "@element-plus/icons-vue";
+import { Search } from "@element-plus/icons-vue";
 import FaMenuRouteIcon from "@/components/navigation/fa-menu-route-icon/index.vue";
 
 defineOptions({ name: "FaMenuTreeTable" });

@@ -1,7 +1,7 @@
 ---
 layout: doc
 title: 后端开发指南
-description: FastApiAdmin 后端开发指南,涵盖 FastAPI 路由、SQLAlchemy 2.0 ORM、Alembic 迁移、Redis 缓存、APScheduler 定时任务、日期序列化约定等核心模块使用方法。
+description: FastapiAdmin 后端开发指南,涵盖 FastAPI 路由、SQLAlchemy 2.0 ORM、Alembic 迁移、Redis 缓存、APScheduler 定时任务、日期序列化约定等核心模块使用方法。
 outline: "deep"
 ---
 

@@ -182,12 +182,11 @@ class ImageWorkbenchJobService:
                     "status": STATUS_PENDING,
                 }
             )
-        except CustomException as exc:
+        except (CustomException, IntegrityError) as exc:
             if self._is_active_slot_conflict(exc):
                 raise CustomException(
                     msg="您有正在进行的绘图任务，请等待其结束或取消后再提交",
                     code=400,
-                    status_code=400,
                 ) from exc
             raise
         await self.db.flush()
@@ -220,7 +219,7 @@ class ImageWorkbenchJobService:
         sources: set[int] = set()
         for item in selections:
             if item.index in seen:
-                raise CustomException(msg=f"选区序号 #{item.index} 重复，每个选区必须有不同的序号", code=400, status_code=400)
+                raise CustomException(msg=f"选区序号 #{item.index} 重复，每个选区必须有不同的序号", code=400)
             seen.add(item.index)
 
             bbox = item.bbox
@@ -237,7 +236,7 @@ class ImageWorkbenchJobService:
         """取该模型声明的坐标标记语法；没有即「不支持交互编辑」。"""
         mode = capability.coordinate_mode
         if mode is None or mode.marker is None:
-            raise CustomException(msg="所选绘图模型不支持交互编辑，无法提交选区，请改为不带选区的提交", code=400, status_code=400)
+            raise CustomException(msg="所选绘图模型不支持交互编辑，无法提交选区，请改为不带选区的提交", code=400)
         return mode.marker
 
     def _render_final_prompt(
@@ -257,13 +256,11 @@ class ImageWorkbenchJobService:
             raise CustomException(
                 msg=f"提示词引用了选区 {'、'.join(f'#{index}' for index in missing)}，但没有对应的坐标，请为该选区指定位置或删掉这段引用",
                 code=400,
-                status_code=400,
             )
         if unused:
             raise CustomException(
                 msg=f"选区 {'、'.join(f'#{index}' for index in unused)} 已指定位置，但提示词里没有引用它，请在提示词里写入对应的区域占位符或删除该选区",
                 code=400,
-                status_code=400,
             )
         return final
 
@@ -291,7 +288,6 @@ class ImageWorkbenchJobService:
             raise CustomException(
                 msg=f"选区 #{index} 所选的图层没有归一化位置框，无法作为选区，请改为自行划框",
                 code=400,
-                status_code=400,
             )
         return [int(value) for value in normalized]
 
@@ -307,12 +303,11 @@ class ImageWorkbenchJobService:
             raise CustomException(
                 msg=f"选区 #{index} 的坐标超出该模型允许的区间（0–{marker.range - 1}），当前为 {x1}, {y1}, {x2}, {y2}",
                 code=400,
-                status_code=400,
             )
         if x1 == x2 or y1 == y2:
-            raise CustomException(msg=f"选区 #{index} 的面积为零，请重新指定范围", code=400, status_code=400)
+            raise CustomException(msg=f"选区 #{index} 的面积为零，请重新指定范围", code=400)
         if x1 > x2 or y1 > y2:
-            raise CustomException(msg=f"选区 #{index} 的左上点必须小于右下点，当前为 {x1}, {y1} → {x2}, {y2}", code=400, status_code=400)
+            raise CustomException(msg=f"选区 #{index} 的左上点必须小于右下点，当前为 {x1}, {y1} → {x2}, {y2}", code=400)
 
     async def require_visible_artifact(self, artifact_id: int) -> ImageWorkbenchArtifactModel:
         """按**可见范围**取产物：产物归属的任务不可见即拒绝（spec: 交互编辑与选区）。
@@ -322,7 +317,7 @@ class ImageWorkbenchJobService:
         """
         artifact = await self.db.get(ImageWorkbenchArtifactModel, artifact_id)
         if artifact is None:
-            raise CustomException(msg="所选产物不存在或不在您的可见范围内", code=400, status_code=404)
+            raise CustomException(msg="所选产物不存在或不在您的可见范围内", code=404)
         await self.require_job(artifact.job_id)
         return artifact
 
@@ -343,7 +338,8 @@ class ImageWorkbenchJobService:
 
         其他完整性错误仍原样上抛，避免把外键或必填字段问题误报成并发冲突。
         """
-        cause = exc.__cause__
+        # IntegrityError 可能被 CRUD 包装成 CustomException（带 __cause__），也可能直接抛出
+        cause = exc if isinstance(exc, IntegrityError) else exc.__cause__
         if not isinstance(cause, IntegrityError):
             return False
         detail = str(cause.orig or cause).lower()
@@ -360,12 +356,12 @@ class ImageWorkbenchJobService:
         """模型可用性：模型启用 且 所属服务启用 且 服务已配置凭证（design D8）。"""
         model = await self.db.get(ImageWorkbenchModelModel, model_pk)
         if model is None or model.is_deleted or model.status != 0:
-            raise CustomException(msg="该绘图模型不存在或已停用，请重新选择", code=400, status_code=400)
+            raise CustomException(msg="该绘图模型不存在或已停用，请重新选择", code=400)
         service = await self.db.get(ImageWorkbenchServiceModel, model.service_id)
         if service is None or service.is_deleted or service.status != 0:
-            raise CustomException(msg="该绘图模型所属的绘图服务已停用，请重新选择", code=400, status_code=400)
+            raise CustomException(msg="该绘图模型所属的绘图服务已停用，请重新选择", code=400)
         if not service.api_key_enc:
-            raise CustomException(msg="该绘图服务尚未配置调用凭证，请联系管理员", code=400, status_code=400)
+            raise CustomException(msg="该绘图服务尚未配置调用凭证，请联系管理员", code=400)
         return model, service
 
     @staticmethod
@@ -381,12 +377,11 @@ class ImageWorkbenchJobService:
         if not reference_images:
             return [], {"reference_count": 0, "reference_has_alpha": False}
         if not reference.supported:
-            raise CustomException(msg="该绘图模型不支持参考图，请移除参考图后重试", code=400, status_code=400)
+            raise CustomException(msg="该绘图模型不支持参考图，请移除参考图后重试", code=400)
         if len(reference_images) > reference.max_images:
             raise CustomException(
                 msg=f"参考图最多 {reference.max_images} 张，当前 {len(reference_images)} 张",
                 code=400,
-                status_code=400,
             )
         # 存在性与越界校验（越界即拒绝，避免借参考图字段读取服务器上的任意文件）
         resolved = resolve_reference_files(reference_images)
@@ -404,7 +399,7 @@ class ImageWorkbenchJobService:
             return
         active = await self.crud.count_active_by_user(user_id)
         if active >= 1:
-            raise CustomException(msg="您有正在进行的绘图任务，请等待其结束或取消后再提交", code=400, status_code=400)
+            raise CustomException(msg="您有正在进行的绘图任务，请等待其结束或取消后再提交", code=400)
 
     # ─────────────────────────── 查询 ───────────────────────────
 
@@ -412,7 +407,7 @@ class ImageWorkbenchJobService:
         """按可见范围取任务；不可见与不存在同答复（不泄露他人任务的存在性）。"""
         job = await self.crud.get(id=id)
         if job is None:
-            raise CustomException(msg="绘图任务不存在或不在您的可见范围内", code=400, status_code=404)
+            raise CustomException(msg="绘图任务不存在或不在您的可见范围内", code=404)
         return job
 
     async def page(
@@ -465,7 +460,7 @@ class ImageWorkbenchJobService:
         await self.require_job(job_id)
         artifact = await self.db.get(ImageWorkbenchArtifactModel, artifact_id)
         if artifact is None or artifact.job_id != job_id:
-            raise CustomException(msg="该产物不存在或不属于此绘图任务", code=400, status_code=404)
+            raise CustomException(msg="该产物不存在或不属于此绘图任务", code=404)
         return artifact
 
     async def _out_context(self, jobs: list[ImageWorkbenchJobModel] | None = None) -> dict[str, Any]:
@@ -530,7 +525,7 @@ class ImageWorkbenchJobService:
         """
         job = await self.require_job(id)
         if job.status not in ACTIVE_STATUSES:
-            raise CustomException(msg=f"当前状态（{status_label(job.status)}）不可取消", code=400, status_code=400)
+            raise CustomException(msg=f"当前状态（{status_label(job.status)}）不可取消", code=400)
         job.status = STATUS_CANCELLED
         job.active_owner_id = None
         job.finished_at = datetime.now(UTC)
@@ -559,7 +554,7 @@ class ImageWorkbenchJobService:
         """
         job = await self.require_job(id)
         if job.status not in TERMINAL_STATUSES:
-            raise CustomException(msg="仅已结束的任务可重试，进行中的任务请先取消", code=400, status_code=400)
+            raise CustomException(msg="仅已结束的任务可重试，进行中的任务请先取消", code=400)
         model, service = await self._require_usable_model(job.model_pk)
         return await self._create(
             model=model,
@@ -617,11 +612,11 @@ class ImageWorkbenchJobService:
         删不掉一组彼此关联的任务。
         """
         if not ids:
-            raise CustomException(msg="删除失败，删除对象不能为空", code=400, status_code=400)
+            raise CustomException(msg="删除失败，删除对象不能为空", code=400)
         for id_ in ids:
             job = await self.require_job(id_)
             if job.status not in TERMINAL_STATUSES:
-                raise CustomException(msg=f"任务 #{id_} 正在进行中，请先取消后再删除", code=400, status_code=400)
+                raise CustomException(msg=f"任务 #{id_} 正在进行中，请先取消后再删除", code=400)
         artifacts = await self.artifacts_of(ids)
         artifact_ids = [artifact.id for items in artifacts.values() for artifact in items]
         referencing = await self.referencing_jobs(artifact_ids, exclude_job_ids=set(ids))
@@ -630,7 +625,6 @@ class ImageWorkbenchJobService:
             raise CustomException(
                 msg=f"删除被拒绝：这些任务的产物正被其它绘图任务作为来源引用（{refs}），请先删除引用它们的任务",
                 code=400,
-                status_code=400,
             )
         for items in artifacts.values():
             for artifact in items:

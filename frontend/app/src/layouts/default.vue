@@ -20,7 +20,7 @@ export default {
     :color="watermarkColor"
     :width="130"
     :height="140"
-    :opacity="0.4"
+    :opacity="0.08"
     layout="grid"
   />
 </template>

@@ -73,6 +73,12 @@
           </div>
         </template>
         <div>
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs font-medium text-g-600">{{ t("table.toolbar.columns") }}</span>
+            <ElButton link type="primary" size="small" @click="resetColumns">
+              {{ t("table.toolbar.reset") }}
+            </ElButton>
+          </div>
           <ElScrollbar max-height="380px">
             <VueDraggable
               v-model="columns"
@@ -111,13 +117,19 @@
       </ElPopover>
 
       <!-- 表格设置 -->
-      <ElPopover v-if="shouldShow('settings')" placement="bottom" trigger="click">
+      <ElPopover v-if="shouldShow('settings')" placement="bottom" trigger="click" :width="200">
         <template #reference>
           <div class="button">
             <FaSvgIcon icon="ri:settings-line" />
           </div>
         </template>
-        <div class="flex min-w-50 flex-col gap-2">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-g-600">{{ t("table.toolbar.settings") }}</span>
+            <ElButton link type="primary" size="small" @click="resetTableSettings">
+              {{ t("table.toolbar.reset") }}
+            </ElButton>
+          </div>
           <ElCheckbox v-model="isZebra" :value="true">
             {{ t("table.zebra") }}
           </ElCheckbox>
@@ -218,6 +230,45 @@ const updateColumnVisibility = (col: ColumnOption, value: boolean | string | num
   col.checked = boolValue;
   col.visible = boolValue;
 };
+
+/** 首次渲染时的列状态，用于“重置” */
+const initialColumnState = ref<Array<{ key: string; visible: boolean }>>([]);
+
+watch(
+  columns,
+  (cols) => {
+    if (!initialColumnState.value.length && cols?.length) {
+      initialColumnState.value = cols.map((col) => ({
+        key: col.prop || col.type || "",
+        visible: getColumnVisibility(col),
+      }));
+    }
+  },
+  { immediate: true }
+);
+
+function resetColumns(): void {
+  if (!initialColumnState.value.length) return;
+
+  // 只恢复显隐，不改动当前顺序：避免与拖拽排序互相干扰
+  columns.value.forEach((col) => {
+    const initial = initialColumnState.value.find(
+      (state) => state.key === (col.prop || col.type || "")
+    );
+    const visible = initial ? initial.visible : true;
+    col.visible = visible;
+    col.checked = visible;
+  });
+}
+
+function resetTableSettings(): void {
+  tableStore.setTableSize(TableSizeEnum.DEFAULT);
+  tableStore.setIsZebra(false);
+  tableStore.setIsBorder(false);
+  tableStore.setIsHeaderBackground(false);
+  tableStore.setHighlightCurrentRow(false);
+  tableStore.setIsRowDrag(false);
+}
 
 /** 表格大小选项配置 */
 const tableSizeOptions = computed(() => [

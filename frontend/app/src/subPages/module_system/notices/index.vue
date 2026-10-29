@@ -131,15 +131,15 @@ onLoad(() => loadData())
     />
 
     <!-- 列表头部：总数 -->
-    <view class="mx-3 mb-2 mt-3 flex items-center justify-between px-1">
+    <view class="mx-4 mb-2 mt-3 flex items-center justify-between px-1">
       <wd-text class="wot-text-text-secondary text-3" :text="t('notices.count', { count: total })" />
     </view>
 
     <SkeletonPage v-if="loading && list.length === 0" :rows="5" search />
     <template v-else>
-      <view class="mx-3">
+      <view class="mx-4">
         <wd-empty v-if="!loading && list.length === 0" :tip="searchTitle ? t('notices.emptyWithFilter') : t('notices.empty')" />
-        <wd-cell-group v-else border custom-class="rounded-2! overflow-hidden">
+        <wd-cell-group v-else border custom-class="rounded-3! overflow-hidden">
           <wd-cell v-for="item in list" :key="item.id" center is-link @click="openEdit(item.id!)">
             <template #title>
               <view class="min-w-0 flex-1">

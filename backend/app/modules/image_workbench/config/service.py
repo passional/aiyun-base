@@ -107,7 +107,7 @@ class ImageWorkbenchServiceService:
         if exists:
             from app.core.exceptions import CustomException
 
-            raise CustomException(msg=f"创建失败，绘图服务名称「{data.name}」已存在", code=400, status_code=400)
+            raise CustomException(msg=f"创建失败，绘图服务名称「{data.name}」已存在", code=400)
         obj = await self.crud.create(
             {
                 "name": data.name,
@@ -127,7 +127,7 @@ class ImageWorkbenchServiceService:
         obj = await self.crud.get_or_404(id=id, msg="绘图服务不存在")
         exists = await self.crud.get(name=data.name)
         if exists and exists.id != id:
-            raise CustomException(msg=f"更新失败，绘图服务名称「{data.name}」已存在", code=400, status_code=400)
+            raise CustomException(msg=f"更新失败，绘图服务名称「{data.name}」已存在", code=400)
         update_dict: dict[str, Any] = {
             "name": data.name,
             "dialect": data.dialect,
@@ -156,7 +156,6 @@ class ImageWorkbenchServiceService:
                 raise CustomException(
                     msg=f"绘图服务「{name}」存在历史绘图任务，禁止删除；如需停用其对外可用性，请改为「停用」",
                     code=400,
-                    status_code=400,
                 )
         await self.crud.delete(ids=ids)
 
@@ -287,7 +286,7 @@ class ImageWorkbenchModelService:
 
         obj = await self.service_crud.get(id=service_id)
         if obj is None:
-            raise CustomException(msg="所属绘图服务不存在", code=400, status_code=400)
+            raise CustomException(msg="所属绘图服务不存在", code=400)
         return obj
 
     async def detail(self, id: int) -> ImageWorkbenchModelOutSchema:
@@ -322,7 +321,7 @@ class ImageWorkbenchModelService:
         await self._ensure_service(data.service_id)
         dup = await self.crud.get(service_id=data.service_id, model_id=data.model_id)
         if dup:
-            raise CustomException(msg=f"创建失败，该绘图服务下已存在模型「{data.model_id}」", code=400, status_code=400)
+            raise CustomException(msg=f"创建失败，该绘图服务下已存在模型「{data.model_id}」", code=400)
         obj = await self.crud.create(
             {
                 "service_id": data.service_id,
@@ -342,7 +341,7 @@ class ImageWorkbenchModelService:
         await self._ensure_service(data.service_id)
         dup = await self.crud.get(service_id=data.service_id, model_id=data.model_id)
         if dup and dup.id != id:
-            raise CustomException(msg=f"更新失败，该绘图服务下已存在模型「{data.model_id}」", code=400, status_code=400)
+            raise CustomException(msg=f"更新失败，该绘图服务下已存在模型「{data.model_id}」", code=400)
         for key, value in {
             "service_id": data.service_id,
             "model_id": data.model_id,
@@ -368,7 +367,6 @@ class ImageWorkbenchModelService:
                 raise CustomException(
                     msg=f"绘图模型「{name}」存在历史绘图任务，禁止删除；如需停用其对外可用性，请改为「停用」",
                     code=400,
-                    status_code=400,
                 )
         await self.crud.delete(ids=ids)
 

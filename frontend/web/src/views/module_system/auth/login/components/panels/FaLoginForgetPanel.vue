@@ -16,9 +16,10 @@
           clearable
           :placeholder="$t('login.placeholder.username')"
           @keyup.enter="$emit('submit')"
+          :aria-label="$t('login.placeholder.username')"
         >
           <template #prefix>
-            <ElIcon><User /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:user-3-line" /></ElIcon>
           </template>
         </ElInput>
       </ElFormItem>
@@ -44,7 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import { User } from "@element-plus/icons-vue";
 import type { ForgetPasswordForm } from "@/api/module_system/user";
 import type { FormRules } from "element-plus";
 

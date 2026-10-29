@@ -506,9 +506,9 @@ function iconForOperation(a: TableOperationAction): string {
 
 const ART_TYPE_ICON_COLORS: Record<TableOperationAction["artType"], string> = {
   add: "var(--el-color-primary)",
-  edit: "var(--el-color-success)",
+  edit: "var(--el-text-color-regular)",
   delete: "var(--el-color-danger)",
-  view: "var(--el-color-info)",
+  view: "var(--el-text-color-regular)",
   more: "var(--el-text-color-regular)",
 };
 

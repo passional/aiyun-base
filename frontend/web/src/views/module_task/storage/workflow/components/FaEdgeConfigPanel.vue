@@ -5,7 +5,7 @@
     >
       <span>传输配置</span>
       <ElButton type="text" class="p-1" @click="handleClose">
-        <ElIcon><Close /></ElIcon>
+        <ElIcon><FaSvgIcon icon="ri:close-line" /></ElIcon>
       </ElButton>
     </div>
 
@@ -20,7 +20,7 @@
       <FaForm
         v-model="formData"
         :items="edgeFormItems"
-        label-width="80px"
+        label-width="96px"
         size="small"
         label-position="right"
         :span="24"
@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { Close, Share } from "@element-plus/icons-vue";
+import { Share } from "@element-plus/icons-vue";
 import FaForm from "@/components/forms/fa-form/index.vue";
 
 interface Props {

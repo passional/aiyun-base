@@ -70,10 +70,10 @@ def form_value(value: Any) -> str:
 class ImageUpstreamError(Exception):
     """上游调用失败（网络 / HTTP 非 2xx / 业务错误）"""
 
-    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+    def __init__(self, message: str, *, upstream_status: int | None = None) -> None:
         super().__init__(message)
         self.message = message
-        self.status_code = status_code
+        self.status_code = upstream_status
 
 
 class ImageArtifact:
@@ -247,7 +247,7 @@ class ImageUpstreamClient:
         if resp.status_code != 200:
             raise ImageUpstreamError(
                 f"HTTP {resp.status_code}: {_snippet(resp.content)}",
-                status_code=resp.status_code,
+                upstream_status=resp.status_code,
             )
         try:
             payload = resp.json()
@@ -377,7 +377,7 @@ class ImageUpstreamClient:
     @staticmethod
     def _parse_json_response(resp: httpx.Response) -> dict[str, Any]:
         if resp.status_code != 200:
-            raise ImageUpstreamError(describe_http_error(resp), status_code=resp.status_code)
+            raise ImageUpstreamError(describe_http_error(resp), upstream_status=resp.status_code)
         try:
             body = resp.json()
         except ValueError as e:
@@ -538,7 +538,7 @@ class ImageUpstreamClient:
         except httpx.HTTPError as e:
             raise ImageUpstreamError(f"下载上游图片失败: {e}") from e
         if resp.status_code != 200:
-            raise ImageUpstreamError(f"下载上游图片失败: HTTP {resp.status_code}: {_snippet(resp.content)}", status_code=resp.status_code)
+            raise ImageUpstreamError(f"下载上游图片失败: HTTP {resp.status_code}: {_snippet(resp.content)}", upstream_status=resp.status_code)
         if not resp.content:
             raise ImageUpstreamError("下载上游图片失败: 响应体为空")
         return resp.content

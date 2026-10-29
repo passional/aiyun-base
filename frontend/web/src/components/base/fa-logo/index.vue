@@ -30,10 +30,18 @@ const props = withDefaults(defineProps<Props>(), {
 
 const fallbackTriggered = ref(false);
 
+// 官方默认 logo（含官方服务地址）统一用内置新品牌标识替代；
+// 管理员自定义上传的 logo 仍优先生效。
+const OFFICIAL_LOGO_HOST = "service.fastapiadmin.com";
+
 const resolvedSrc = computed(() => {
   if (fallbackTriggered.value) return defaultLogoUrl;
   const custom = props.src?.trim();
-  return custom || defaultLogoUrl;
+  if (!custom) return defaultLogoUrl;
+  if (custom.includes(OFFICIAL_LOGO_HOST)) {
+    return defaultLogoUrl;
+  }
+  return custom;
 });
 
 function onImgError() {

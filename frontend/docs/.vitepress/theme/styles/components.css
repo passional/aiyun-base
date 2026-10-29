@@ -29,14 +29,14 @@
 /* 代码块增强 */
 .dark :deep(.vp-doc div[class*='language-']) {
   border-radius: var(--vp-radius-md);
-  border: 1px solid rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(79, 107, 255, 0.1);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dark :deep(.vp-doc div[class*='language-']:hover) {
-  border-color: rgba(99, 102, 241, 0.2);
-  box-shadow: 0 4px 40px rgba(99, 102, 241, 0.08);
+  border-color: rgba(79, 107, 255, 0.2);
+  box-shadow: 0 4px 40px rgba(79, 107, 255, 0.08);
 }
 
 /* ============================================================================
@@ -56,9 +56,9 @@
   inset: -20% -15% auto -15%;
   height: 90%;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(99, 102, 241, 0.14), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 30% 60%, rgba(139, 92, 246, 0.08), transparent 75%),
-    radial-gradient(ellipse 50% 45% at 70% 60%, rgba(236, 72, 153, 0.06), transparent 75%);
+    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(79, 107, 255, 0.14), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 30% 60%, rgba(109, 91, 255, 0.08), transparent 75%),
+    radial-gradient(ellipse 50% 45% at 70% 60%, rgba(109, 91, 255, 0.06), transparent 75%);
   z-index: -1;
   pointer-events: none;
 }
@@ -81,7 +81,7 @@
 /* 暗色模式加强 — 紫粉渐变更显眼 */
 .dark .VPHomeHero::before {
   background:
-    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(91, 108, 247, 0.20), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 30% 60%, rgba(139, 92, 246, 0.12), transparent 75%),
-    radial-gradient(ellipse 50% 45% at 70% 60%, rgba(236, 72, 153, 0.10), transparent 75%);
+    radial-gradient(ellipse 60% 55% at 50% 30%, rgba(79, 107, 255, 0.20), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 30% 60%, rgba(109, 91, 255, 0.12), transparent 75%),
+    radial-gradient(ellipse 50% 45% at 70% 60%, rgba(109, 91, 255, 0.10), transparent 75%);
 }

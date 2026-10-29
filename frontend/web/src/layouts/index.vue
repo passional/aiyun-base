@@ -11,8 +11,19 @@
     <!-- 水印覆盖层（FaWatermark 组件，内含 ElWatermark，通过 store watermarkVisible 控制显隐） -->
     <FaWatermark :content="userStore.basicInfo?.username || AppConfig.systemInfo.name" />
 
+    <!-- 移动端侧栏遮罩 -->
+    <div
+      v-if="isMobile && menuOpen"
+      class="mobile-sidebar-backdrop"
+      @click="settingStore.setMenuOpen(false)"
+    />
+
     <!-- 左侧菜单导航 -->
-    <aside id="app-sidebar" aria-label="主菜单导航">
+    <aside
+      id="app-sidebar"
+      aria-label="主菜单导航"
+      :class="{ 'sidebar-hidden': isMobile && !menuOpen }"
+    >
       <FaSidebarMenu />
     </aside>
 
@@ -49,7 +60,8 @@
  *   首次访问 → guideVisible=true → 用户完成/跳过指引 → onGuideFinished()
  *   → settingStore.showGuide=false → 后续不再显示
  */
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useAppStore, useSettingsStore, useUserStore } from "@stores";
 import AppConfig from "@/config";
 
@@ -57,6 +69,29 @@ defineOptions({ name: "AppLayout" });
 
 const appStore = useAppStore();
 const settingStore = useSettingsStore();
+const isMobile = ref(window.innerWidth <= 800);
+const { menuOpen } = storeToRefs(settingStore);
+
+const handleResize = () => {
+  isMobile.value = window.innerWidth <= 800;
+};
+
+watch(
+  isMobile,
+  (mobile) => {
+    if (mobile && menuOpen.value) settingStore.setMenuOpen(false);
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  window.addEventListener("resize", handleResize);
+  if (isMobile.value) settingStore.setMenuOpen(false);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleResize);
+});
 const userStore = useUserStore();
 
 // ── AI 助手 ──

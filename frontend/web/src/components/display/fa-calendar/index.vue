@@ -7,7 +7,7 @@
           :class="{ 'is-selected': data.isSelected }"
           @click="handleCellClick(data.day)"
         >
-          <p class="absolute right-0.5 top-0.5 text-[11px] leading-none opacity-80">
+          <p class="absolute right-0.5 top-0.5 text-[12px] leading-none opacity-80">
             {{ formatDate(data.day) }}
           </p>
           <div class="mt-4 flex max-h-12 w-full flex-col gap-px overflow-y-auto pr-0.5">
@@ -17,7 +17,7 @@
               @click.stop="handleEventClick(event)"
             >
               <div
-                class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-px text-[10px] leading-snug font-medium hover:opacity-80"
+                class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-px text-[12px] leading-snug font-medium hover:opacity-80"
                 :class="[event.bgClass, event.textClass]"
               >
                 {{ event.content }}
@@ -29,7 +29,7 @@
     </ElCalendar>
 
     <ElDialog v-model="dialogVisible" :title="dialogTitle" width="600px" @closed="resetForm">
-      <ElForm :model="eventForm" label-width="80px">
+      <ElForm :model="eventForm" label-width="96px">
         <ElFormItem label="活动标题" required>
           <ElInput v-model="eventForm.content" placeholder="请输入活动标题" />
         </ElFormItem>
@@ -225,7 +225,7 @@ const handleDeleteEvent = () => {
 
 :deep(.el-calendar-table thead th) {
   padding: 4px 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 

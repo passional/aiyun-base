@@ -14,10 +14,11 @@
           <div class="relative z-10 mt-30 mx-auto">
             <div class="relative inline-block">
               <img
-                v-if="infoFormState.avatar"
+                v-if="infoFormState.avatar && !avatarLoadFailed"
                 class="w-20 h-20 object-cover border-2 border-white rounded-full"
                 :src="infoFormState.avatar"
                 alt=""
+                @error="avatarLoadFailed = true"
               />
               <img
                 v-else
@@ -102,7 +103,7 @@
               <div
                 v-for="item in roleTagList"
                 :key="item"
-                class="py-1 px-1.5 mr-2.5 mb-2.5 text-xs border border-g-300 rounded"
+                class="py-1 px-1.5 mr-2.5 mb-2.5 text-xs border border-line rounded"
               >
                 {{ item }}
               </div>
@@ -136,9 +137,9 @@
       <FaDialog
         v-model="avatarCropVisible"
         title="裁剪头像"
-        width="960px"
         :draggable="false"
         @closed="onAvatarCropDialogClosed"
+        size="xl"
       >
         <FaCutterImg
           v-if="avatarCropVisible && avatarCropSrc"
@@ -162,14 +163,14 @@
       <!-- 右侧表单 -->
       <div class="flex-1 overflow-hidden max-md:w-full max-md:mt-3.5">
         <div class="fa-card-sm">
-          <h1 class="p-4 text-xl font-normal border-b border-g-300">基本设置</h1>
+          <h1 class="p-4 text-xl font-normal border-b border-line">基本设置</h1>
 
           <ElForm
             ref="infoFormRef"
             :model="infoFormState"
             class="box-border p-5 [&>.el-row_.el-form-item]:w-[calc(50%-10px)] [&>.el-row_.el-input]:w-full [&>.el-row_.el-select]:w-full"
             :rules="rules"
-            label-width="86px"
+            label-width="96px"
             label-position="top"
           >
             <ElRow>
@@ -241,7 +242,7 @@
         </div>
 
         <div class="fa-card-sm my-5">
-          <h1 class="p-4 text-xl font-normal border-b border-g-300">登录会话</h1>
+          <h1 class="p-4 text-xl font-normal border-b border-line">登录会话</h1>
 
           <div v-if="loadingSessions" class="flex justify-center py-6">
             <ElIcon class="is-loading" :size="20">
@@ -253,23 +254,35 @@
             暂无活跃会话
           </div>
 
-          <ElTable v-else :data="currentSessions" stripe class="p-4" size="small">
+          <ElTable
+            v-else
+            :data="currentSessions"
+            stripe
+            table-layout="fixed"
+            class="w-full p-4"
+            size="small"
+          >
             <ElTableColumn type="index" label="#" width="50" />
-            <ElTableColumn label="浏览器" min-width="110">
+            <ElTableColumn label="浏览器" min-width="110" show-overflow-tooltip>
               <template #default="{ row }">
                 <FaSvgIcon :icon="getBrowserIcon(row.browser)" class="mr-1" />{{
                   row.browser || "—"
                 }}
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作系统" min-width="110">
+            <ElTableColumn label="操作系统" min-width="110" show-overflow-tooltip>
               <template #default="{ row }">
                 <FaSvgIcon :icon="getOsIcon(row.os)" class="mr-1" />{{ row.os || "—" }}
               </template>
             </ElTableColumn>
-            <ElTableColumn prop="ipaddr" label="IP 地址" min-width="130" />
-            <ElTableColumn prop="login_location" label="登录位置" min-width="120" />
-            <ElTableColumn label="登录时间" min-width="160">
+            <ElTableColumn prop="ipaddr" label="IP 地址" min-width="120" show-overflow-tooltip />
+            <ElTableColumn
+              prop="login_location"
+              label="登录位置"
+              min-width="110"
+              show-overflow-tooltip
+            />
+            <ElTableColumn label="登录时间" min-width="160" show-overflow-tooltip>
               <template #default="{ row }">
                 {{ row.login_time ? formatDate(row.login_time) : "—" }}
               </template>
@@ -278,14 +291,14 @@
         </div>
 
         <div class="fa-card-sm my-5">
-          <h1 class="p-4 text-xl font-normal border-b border-g-300">更改密码</h1>
+          <h1 class="p-4 text-xl font-normal border-b border-line">更改密码</h1>
 
           <ElForm
             ref="passwordFormRef"
             :model="passwordFormState"
             class="box-border p-5"
             :rules="resetPasswordRules"
-            label-width="86px"
+            label-width="96px"
             label-position="top"
           >
             <ElFormItem label="当前密码" prop="old_password">
@@ -343,7 +356,7 @@ import { useUserStore, useDictStore } from "@stores";
 import { Camera, Loading } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "vue-i18n";
-import { redirectToLogin, dataURLToFile } from "@utils";
+import { redirectToLogin, dataURLToFile, formatToDateTime } from "@utils";
 
 // 与路由 name 一致：KeepAlive 的 include/exclude 按组件 name 匹配
 defineOptions({ name: "FastlinkProfile" });
@@ -423,13 +436,7 @@ function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
-  return date.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatToDateTime(date);
 }
 
 const infoFormState = reactive<InfoFormState>({
@@ -461,6 +468,16 @@ const passwordFormState = reactive<PasswordFormState>({
 
 const fileList = ref<any[]>([]);
 const uploadRef = ref<InstanceType<typeof ElUpload>>();
+
+/** 远程头像加载失败时回退到本地默认头像 */
+const avatarLoadFailed = ref(false);
+
+watch(
+  () => infoFormState.avatar,
+  () => {
+    avatarLoadFailed.value = false;
+  }
+);
 
 const avatarCropVisible = ref(false);
 const avatarCropSrc = ref("");

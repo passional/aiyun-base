@@ -48,9 +48,9 @@ function handleNavigate(url: string) {
 <template>
   <view class="page-wraper box-border py-3">
     <!-- 头部介绍 -->
-    <view class="mx-3 mb-3">
+    <view class="mx-4 mb-4">
       <view class="wot-bg-filled-oppo rounded-3 px-5 py-8 text-center">
-        <view class="mb-3 text-10">
+        <view class="mb-4 text-10">
           👋
         </view>
         <view class="wot-text-text-main mb-2 text-6 font-bold">
@@ -66,18 +66,18 @@ function handleNavigate(url: string) {
     </view>
 
     <!-- 更多信息 -->
-    <view class="mx-3">
+    <view class="mx-4">
       <view class="wot-text-text-main mb-2 px-1 text-3.5 font-bold">
         {{ t('about.moreInfo') }}
       </view>
-      <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+      <wd-cell-group border custom-class="rounded-3! overflow-hidden">
         <wd-cell :title="t('common.docs')" is-link @click="handleNavigate(helpDoc)" />
         <wd-cell :title="t('common.github')" is-link @click="handleNavigate(gitCode)" />
       </wd-cell-group>
     </view>
 
     <!-- 版权信息 -->
-    <view v-if="copyright" class="mx-3 mt-8 text-center">
+    <view v-if="copyright" class="mx-4 mt-8 text-center">
       <wd-text class="wot-text-text-auxiliary text-2.5" :text="copyright" />
     </view>
 

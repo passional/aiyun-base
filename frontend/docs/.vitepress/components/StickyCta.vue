@@ -187,16 +187,16 @@ onUnmounted(() => {
   border-radius: var(--vp-radius-md);
   box-shadow:
     0 16px 40px rgba(0, 0, 0, 0.18),
-    0 0 30px rgba(99, 102, 241, 0.1);
+    0 0 30px rgba(79, 107, 255, 0.1);
   transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .dark .sticky-cta-inner {
   background: rgba(20, 20, 32, 0.92);
-  border-color: rgba(139, 92, 246, 0.25);
+  border-color: rgba(109, 91, 255, 0.25);
   box-shadow:
     0 16px 40px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(99, 102, 241, 0.12);
+    0 0 30px rgba(79, 107, 255, 0.12);
 }
 
 .sticky-cta-text {
@@ -256,12 +256,12 @@ onUnmounted(() => {
 .sticky-cta-btn--primary {
   background: var(--vp-brand-gradient);
   color: var(--vp-button-brand-text);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(79, 107, 255, 0.35);
 }
 
 .sticky-cta-btn--primary:hover {
   transform: translateY(calc(-1 * var(--vp-hover-lift) / 4));  /* -1px 轻提 */
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 16px rgba(79, 107, 255, 0.5);
 }
 
 .sticky-cta-btn--ghost {

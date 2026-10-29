@@ -16,7 +16,7 @@
             class="new-session-btn"
             @click="handleNewSession"
           >
-            <ElIcon class="btn-icon"><Plus /></ElIcon>
+            <ElIcon class="btn-icon"><FaSvgIcon icon="ri:add-line" /></ElIcon>
             <span>开启新对话</span>
           </ElButton>
         </div>
@@ -58,7 +58,9 @@
                     trigger="click"
                     @command="(cmd) => handleSessionCommand(cmd, session)"
                   >
-                    <ElIcon class="more-icon" @click.stop><MoreFilled /></ElIcon>
+                    <ElIcon class="more-icon" @click.stop
+                      ><FaSvgIcon icon="ri:more-2-fill"
+                    /></ElIcon>
                     <template #dropdown>
                       <ElDropdownMenu>
                         <div v-hasPerm="['module_ai:chat:update']" style="display: contents">
@@ -74,7 +76,7 @@
               </div>
             </div>
             <div v-if="filteredSessions.length === 0" class="empty-state">
-              <ElEmpty description="暂无会话历史" :image-size="60" />
+              <FaEmptyState icon="ri:inbox-line" title="暂无会话历史" compact />
             </div>
           </div>
         </div>
@@ -84,7 +86,7 @@
     <div class="sidebar-footer">
       <div v-if="!isCollapsed" class="user-info">
         <ElAvatar :size="32" :src="userInfo.avatar">
-          <ElIcon><User /></ElIcon>
+          <ElIcon><FaSvgIcon icon="ri:user-3-line" /></ElIcon>
         </ElAvatar>
         <div class="user-details">
           <div class="user-name">{{ userInfo.name }}</div>
@@ -104,7 +106,7 @@
       <div v-else class="collapsed-user">
         <ElDropdown trigger="click" @command="handleUserCommand">
           <ElAvatar :size="32" :src="userInfo.avatar">
-            <ElIcon><User /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:user-3-line" /></ElIcon>
           </ElAvatar>
           <template #dropdown>
             <ElDropdownMenu>
@@ -122,16 +124,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import {
-  ChatDotRound,
-  ChatLineRound,
-  User,
-  Setting,
-  MoreFilled,
-  Plus,
-  Search,
-  ArrowDown,
-} from "@element-plus/icons-vue";
+import { ChatDotRound, ChatLineRound, Setting, Search, ArrowDown } from "@element-plus/icons-vue";
 import { useUserStoreHook } from "@stores";
 import { ChatSession, SessionGroup, UserInfo } from "@/api/module_ai/chat";
 import AiChatAPI from "@/api/module_ai/chat";
@@ -341,7 +334,6 @@ defineExpose({
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-right: 1px solid var(--el-border-color-light);
   transition: width 0.3s ease;
 
   .sidebar-header {
@@ -380,7 +372,12 @@ defineExpose({
         justify-content: center;
         width: 100%;
         border-radius: 20px;
-        transition: all 0.2s ease;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease,
+          transform 0.2s ease;
 
         .btn-icon {
           font-size: 16px;
@@ -404,7 +401,12 @@ defineExpose({
         :deep(.el-input__wrapper) {
           border-radius: 20px;
           box-shadow: 0 0 0 1px var(--el-border-color) inset;
-          transition: all 0.2s ease;
+          transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
 
           &:hover {
             box-shadow: 0 0 0 1px var(--el-color-primary) inset;
@@ -475,7 +477,12 @@ defineExpose({
               cursor: pointer;
               border: 1px solid transparent;
               border-radius: 14px;
-              transition: all 0.2s ease;
+              transition:
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease,
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
 
               &:hover {
                 background: var(--el-fill-color-light);
@@ -521,7 +528,12 @@ defineExpose({
                 font-size: 16px;
                 border-radius: 4px;
                 opacity: 0;
-                transition: all 0.2s;
+                transition:
+                  background-color 0.2s,
+                  border-color 0.2s,
+                  color 0.2s,
+                  box-shadow 0.2s,
+                  transform 0.2s;
 
                 &:hover {
                   color: var(--el-color-primary);
@@ -594,5 +606,41 @@ defineExpose({
       justify-content: center;
     }
   }
+}
+
+/* 与 FaSidePanel 工作区风格对齐：方角、紧凑行、无位移动效 */
+.sidebar .sidebar-header {
+  padding: 10px 12px 8px;
+}
+
+.sidebar .logo-section .project-name {
+  font-size: 14px;
+}
+
+.sidebar .sidebar-content .new-session-btn {
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.sidebar .sidebar-content .new-session-btn:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.sidebar .history-section .search-section :deep(.el-input__wrapper) {
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.sidebar .history-section .session-list .session-item {
+  padding: 7px 8px;
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.sidebar .history-section .session-list .session-item:hover {
+  border-color: transparent;
+  transform: none;
+}
+
+.sidebar .history-section .session-list .session-item .session-title {
+  font-size: 13px;
 }
 </style>

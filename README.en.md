@@ -3,17 +3,23 @@
           <img src="./frontend/web/public/logo.png" width="150" height="150" alt="logo" />
      </p>
      <h1>FastApiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v3.0.0</sup></h1>
-     <h3>🚀 Exceptional Code Quality, Production-Ready Admin Dashboard in 5 Minutes</h3>
-     <p>Full-stack rapid development platform powered by <b>FastAPI + Vue3 + TypeScript</b>. Web, H5, and Mini Program — all in one project.</p>
+     <h3>🚀 One codebase for Web, H5 and Mini Program — AI code generation + RBAC + Docker, ready to ship</h3>
+     <p>An enterprise full-stack foundation built on <b>FastAPI + Vue3 + TypeScript</b>: shared types, complete permissions, one source for all surfaces.</p>
      <p align="center">
-          <a href="https://gitee.com/fastapiadmin/FastapiAdmin.git" target="_blank">
-               <img src="https://gitee.com/fastapiadmin/FastapiAdmin/badge/star.svg?theme=dark" alt="Gitee Stars">
-          </a>
           <a href="https://github.com/fastapiadmin/FastapiAdmin.git" target="_blank">
                <img src="https://img.shields.io/github/stars/fastapiadmin/FastapiAdmin?style=social" alt="GitHub Stars">
           </a>
           <a href="https://github.com/fastapiadmin/FastapiAdmin/forks" target="_blank">
                <img src="https://img.shields.io/github/forks/fastapiadmin/FastapiAdmin?style=social" alt="GitHub Forks">
+          </a>
+          <a href="https://gitee.com/fastapiadmin/FastapiAdmin.git" target="_blank">
+               <img src="https://gitee.com/fastapiadmin/FastapiAdmin/badge/star.svg?theme=dark" alt="Gitee Stars">
+          </a>
+          <a href="https://gitee.com/fastapiadmin/FastapiAdmin.git" target="_blank">
+               <img src="https://gitee.com/fastapiadmin/FastapiAdmin/badge/fork.svg?theme=dark" alt="Gitee Forks">
+          </a>
+          <a href="https://atomgit.com/fastapiadmin/FastapiAdmin" target="_blank">
+               <img src="https://atomgit.com/fastapiadmin/FastapiAdmin/star/badge.svg" alt="AtomGit G-Star">
           </a>
           <br>
           <a href="https://gitee.com/fastapiadmin/FastapiAdmin/blob/master/LICENSE" target="_blank">
@@ -41,10 +47,12 @@ English | [简体中文](./README.md)
 **Mobile (H5 / Mini Program / App from one codebase)**
 
 <p>
-<img src="frontend/web/public/app_login.png" width="180" />
-<img src="frontend/web/public/app_home.png" width="180" />
-<img src="frontend/web/public/app_mine.png" width="180" />
+<img src="frontend/web/public/app_login.png" width="180" alt="Login with puzzle verification" />
+<img src="frontend/web/public/app_home.png" width="180" alt="Mobile workbench" />
+<img src="frontend/web/public/app_mine.png" width="180" alt="Profile" />
 </p>
+
+> All surfaces share one brand token set: logo, primary colors, radii, spacing, dark-mode layers, and destructive-action semantics.
 
 ## 💡 Why FastapiAdmin?
 
@@ -59,6 +67,18 @@ English | [简体中文](./README.md)
 
 > 👉 Full comparison: [Why FastapiAdmin?](https://service.fastapiadmin.com/en/guide/why)
 
+### ✅ A good fit for
+
+- Teams that need a usable enterprise admin / operations system in **1–4 weeks**;
+- Projects that want **shared frontend/backend types** and less API glue;
+- Products that must cover **Web admin + mobile / mini program** with one domain model;
+- Teams that need code generation, RBAC, audit logs and scheduled jobs as a foundation.
+
+### ⚠️ Not a good fit for
+
+- Full IM requirements (files, recall, read receipts, multi-device sync);
+- Real-time chat / scheduling that must horizontally scale from day one (currently single-instance by design).
+
 ## 🍪 Live Demo
 
 | | URL | Account |
@@ -67,7 +87,7 @@ English | [简体中文](./README.md)
 | 📱 Mobile | [service.fastapiadmin.com/app](https://service.fastapiadmin.com/app) | `admin` / `123456` |
 | 📖 Official Docs | [service.fastapiadmin.com](https://service.fastapiadmin.com) | No login |
 
-## 🚀 5-Minute Quick Start
+## 🚀 5–15 Minute Quick Start
 
 ```bash
 # 1. Clone
@@ -85,6 +105,8 @@ cd ../frontend/web && pnpm install && pnpm run dev
 
 # ✅ Open http://127.0.0.1:5173, login with admin/123456
 ```
+
+> First launch creates tables and demo data automatically. Backend defaults to `8001`, frontend to `5173`. Use Alembic migrations and dedicated secrets in production.
 
 | Requirements | |
 |-------------|------|
@@ -113,6 +135,16 @@ FastapiAdmin/            # Monorepo full-stack project
 ├─ deploy.sh             # One-click deploy script
 └─ LICENSE               # MIT
 ```
+
+## 🧱 Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Backend | FastAPI · Pydantic 2 · SQLAlchemy 2 · Alembic · Redis |
+| Web | Vue 3 · TypeScript · Vite · Element Plus · Pinia · Tailwind |
+| Mobile | UniApp · Vue 3 · Wot Design Uni |
+| AI | Agno · pluggable model providers |
+| Deploy | Docker Compose · Nginx · SSL |
 
 ## 📌 Built-in Features
 
@@ -156,9 +188,25 @@ ENABLED_MODULES = ["generator", "task", "storage"]
 
 ## 📷 More Screenshots
 
-| Login | Code Generator | AI Assistant |
-| ----- | -------------- | ------------ |
+| Login + puzzle verification | Code Generator | AI Assistant |
+| ---- | -------- | ------- |
 | ![Login](frontend/web/public/login.png) | ![Code Generator](frontend/web/public/gencode.png) | ![AI](frontend/web/public/ai.png) |
+
+> Screenshots come from the current release: light theme, real API data and the latest brand visuals.
+
+## ❓ FAQ
+
+**Q: Login says the captcha is invalid?**  
+A: Make sure Redis is running, then complete the puzzle verification. The development credentials are `admin / 123456`.
+
+**Q: Can I use only the Web app?**  
+A: Yes. `frontend/web` runs independently; the mobile project is optional.
+
+**Q: How do I trim modules?**  
+A: Edit `ENABLED_MODULES` in `backend/app/config/setting.py`; endpoints and initialization are unloaded automatically.
+
+**Q: How should production initialize the database?**  
+A: Run `uv run alembic upgrade head`; do not rely on `create_all`.
 
 ## 📖 Documentation
 

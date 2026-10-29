@@ -43,7 +43,90 @@
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="data.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="allCardsSelected"
+            :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+            @change="toggleAllCards"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+        <div v-if="!data.length" class="py-12">
+          <FaEmptyState
+            icon="ri:shield-user-line"
+            title="暂无角色"
+            description="新增第一个角色后在这里展示"
+          />
+        </div>
+
+        <div
+          v-for="row in data"
+          :key="row.id"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <ElCheckbox
+              class="mt-0.5 shrink-0"
+              :model-value="isCardSelected(row)"
+              @change="(val) => toggleCardRow(row, val)"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium truncate">{{ row.name }}</div>
+              <div class="mt-0.5 text-xs text-g-600">{{ row.code }}</div>
+            </div>
+            <FaStatusTag
+              :type="row.status === 0 ? 'success' : 'danger'"
+              :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+            <span class="truncate"
+              >{{ $t("common.dataScope") }}：{{ scopeText(row.data_scope) }}</span
+            >
+            <span>{{ $t("common.sort") }}：{{ row.order }}</span>
+            <span class="col-span-2 truncate">{{ $t("common.dept") }}：{{ deptText(row) }}</span>
+            <span class="col-span-2"
+              >{{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}</span
+            >
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="opCtx.onDetail(row.id!)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton
+              link
+              type="primary"
+              size="small"
+              :disabled="row.id === 1"
+              @click="opCtx.onEdit(row.id!)"
+            >
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton
+              link
+              type="danger"
+              size="small"
+              :disabled="row.id === 1"
+              @click="opCtx.onDelete(row.id!, row.name ?? '')"
+            >
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+        <ElPagination
+          v-if="data.length"
+          class="justify-center mt-1"
+          layout="prev, pager, next"
+          :current-page="pagination.current"
+          :page-size="pagination.size"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+        />
+      </div>
       <FaTable
+        v-else
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -58,13 +141,13 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="640px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
       :confirm-loading="submitLoading"
       @cancel="handleCloseDialog"
       @confirm="dialogVisible.type === 'detail' ? handleCloseDialog() : handleSubmit()"
+      size="md"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -112,7 +195,7 @@
           :items="roleDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -143,11 +226,13 @@
 </template>
 
 <script setup lang="ts">
-import { h } from "vue";
+import { computed, h } from "vue";
+import { useWindowSize } from "@vueuse/core";
 import { useCrudForm } from "@/hooks/core/useCrudForm";
 import { confirmToggleStatus } from "@/hooks/core/useConfirm";
 
 import {
+  formatDateTime,
   renderTableOperationCell,
   resolveStatusColumns,
   stripPaginationParams,
@@ -467,6 +552,40 @@ async function handleAdd() {
   }
 }
 
+const { width: viewportWidth } = useWindowSize();
+
+const allCardsSelected = computed(
+  () => data.value.length > 0 && selectedRows.value.length === data.value.length
+);
+
+function isCardSelected(row: RoleTable) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: RoleTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...data.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
+function scopeText(scope?: number | null) {
+  return (
+    ({ 1: "仅本人", 2: "本部门及以下", 3: "全部" } as Record<number, string>)[Number(scope)] ?? "—"
+  );
+}
+
+function deptText(row: RoleTable) {
+  const names = (row.depts ?? []).map((d) => d.name).filter(Boolean);
+  return names.length ? names.join("、") : "—";
+}
+
 const opCtx = {
   onPerm: handleOpenAssignPermDialog,
   onDetail: (id: number) => void handleOpenDialog("detail", id),
@@ -558,11 +677,11 @@ const {
       { type: "selection", width: 48, fixed: "left" },
       { type: "globalIndex", width: 56, label: "序号" },
       { prop: "name", label: "角色名称", minWidth: 120, showOverflowTooltip: true },
-      { prop: "code", label: "角色编码", minWidth: 130, showOverflowTooltip: true },
+      { prop: "code", label: "角色编码", minWidth: 110, showOverflowTooltip: true },
       {
         prop: "data_scope",
         label: "数据权限",
-        minWidth: 160,
+        minWidth: 140,
         status: {
           1: { type: "primary", text: "仅本人数据权限" },
           2: { type: "warning", text: "本部门及以下数据权限" },
@@ -572,7 +691,7 @@ const {
       {
         prop: "depts",
         label: "所属部门",
-        minWidth: 200,
+        minWidth: 160,
         formatter: (row: RoleTable) => deptsCell(row),
       },
       { prop: "order", label: "排序", width: 80, showOverflowTooltip: true },
@@ -589,21 +708,16 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
-        sortable: true,
-        showOverflowTooltip: true,
-      },
-      {
-        prop: "updated_time",
-        label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "operation",
         label: "操作",
-        width: 230,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: RoleTable) => formatRoleOperationCell(row, opCtx),

@@ -38,6 +38,7 @@
       </FaTableHeader>
 
       <FaTable
+        mobile-cards
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -53,10 +54,10 @@
     <FaDialog
       v-model="detailVisible"
       title="流程详情"
-      width="680px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       @cancel="detailVisible = false"
+      size="md"
     >
       <FaDescriptions :column="2" :data="detailFormData" :items="flowDetailItems" max-height="70vh">
         <template #sources="{ row }">
@@ -96,7 +97,7 @@
                   >{{ sourceName(t.target_id) }}</ElTag
                 >
               </ElTooltip>
-              <span class="text-xs text-[#909399]">{{ t.target_path }}</span>
+              <span class="text-xs text-(--el-text-color-secondary)">{{ t.target_path }}</span>
             </div>
           </div>
         </template>
@@ -122,8 +123,8 @@
     <FaDialog
       v-model="executeVisible"
       :title="`执行流程 · ${executeRow?.name || ''}`"
-      width="620px"
       @cancel="executeVisible = false"
+      size="md"
     >
       <div class="mb-3 text-[13px] text-(--el-text-color-regular)">
         为以下源节点选择源文件 / 目录（回显节点默认源目录，可修改或浏览选择）：
@@ -141,6 +142,7 @@
             v-model="s.path"
             size="small"
             placeholder="源文件 / 目录，留空使用节点默认源目录"
+            aria-label="源文件 / 目录，留空使用节点默认源目录"
           />
           <ElButton size="small" @click="openExecuteBrowser(idx)">浏览</ElButton>
         </div>
@@ -392,7 +394,7 @@ function buildFlowRowActions(
 
 function formatFlowOperationCell(row: FlowTable, ctx: Parameters<typeof buildFlowRowActions>[1]) {
   return renderTableOperationCell(buildFlowRowActions(row, ctx), {
-    wrapperClass: "inline-flex flex-wrap items-center justify-end gap-1 flow-table-actions",
+    wrapperClass: "inline-flex flex-wrap items-center justify-end gap-1 flow-table-actions align-middle",
   });
 }
 
@@ -612,7 +614,7 @@ const {
       {
         prop: "sources",
         label: "源节点",
-        minWidth: 180,
+        minWidth: 150,
         formatter: (row: FlowTable) => {
           const sources = row.sources || [];
           if (sources.length === 0) return "—";
@@ -658,7 +660,7 @@ const {
       {
         prop: "task_type",
         label: "类型",
-        width: 120,
+        width: 130,
         formatter: (row: FlowTable) =>
           h(
             ElTag,
@@ -738,18 +740,18 @@ const {
           1: { type: "danger", text: "停用" },
         },
       },
-      { prop: "description", label: "备注", minWidth: 120, showOverflowTooltip: true },
+      { prop: "description", label: "备注", minWidth: 100, showOverflowTooltip: true },
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 150,
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "operation",
         label: "操作",
-        width: 230,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: FlowTable) => formatFlowOperationCell(row, opCtx),

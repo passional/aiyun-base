@@ -29,7 +29,7 @@
             type="primary"
             @click="handleOpenDialog('create')"
           >
-            <ElIcon><Plus /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:add-line" /></ElIcon>
             提交工单
           </ElButton>
           <ElButton
@@ -39,7 +39,7 @@
             :loading="batchDeleting"
             @click="handleBatchDelete"
           >
-            <ElIcon><Delete /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:delete-bin-4-line" /></ElIcon>
             批量删除
           </ElButton>
         </template>
@@ -54,6 +54,22 @@
         @pagination:size-change="onPageSizeChange"
         @pagination:current-change="onPageCurrentChange"
       >
+        <template #empty>
+          <FaEmptyState
+            icon="ri:file-list-3-line"
+            title="暂无工单"
+            description="提交一个问题、建议或优化想法，我们会尽快处理"
+          >
+            <ElButton
+              v-hasPerm="['module_system:ticket:create']"
+              type="primary"
+              size="small"
+              @click="handleOpenDialog('create')"
+            >
+              提交工单
+            </ElButton>
+          </FaEmptyState>
+        </template>
         <template #header="{ item }">
           <div class="flex items-center gap-2 min-w-0">
             <span
@@ -83,7 +99,7 @@
               <FaSvgIcon icon="ri:user-3-line" class="shrink-0" />
               <span
                 >{{ item.created_by?.name ?? "—" }} ·
-                {{ item.created_time?.slice(0, 10) ?? "" }}</span
+                {{ item.created_time ? formatToDate(item.created_time, "YYYY-MM-DD") : "" }}</span
               >
             </div>
             <div class="flex items-center justify-between">
@@ -149,7 +165,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="900px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -157,6 +172,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleDialogConfirm"
+      size="xl"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <ElScrollbar max-height="65vh">
@@ -232,7 +248,7 @@
                         c.created_by_name || c.created_by?.name || "匿名"
                       }}</span>
                       <span class="text-xs text-(--el-text-color-placeholder)">{{
-                        c.created_time?.slice(0, 16) ?? ""
+                        formatDateTime(c.created_time)
                       }}</span>
                     </div>
                     <div
@@ -242,7 +258,7 @@
                   </div>
                 </div>
               </template>
-              <ElEmpty v-else description="暂无评论" :image-size="60" />
+              <FaEmptyState v-else icon="ri:chat-3-line" title="暂无评论" compact />
             </ElScrollbar>
 
             <!-- 提交评论 -->
@@ -256,6 +272,7 @@
                 placeholder="输入评论内容..."
                 :disabled="commentSubmitting"
                 resize="none"
+                aria-label="输入评论内容..."
               />
               <ElButton
                 type="primary"
@@ -280,7 +297,7 @@
           :items="ticketDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -372,6 +389,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime, formatToDate } from "@utils";
 import { useCrudForm } from "@/hooks/core/useCrudForm";
 import TicketAPI, {
   getTicketComments,
@@ -399,7 +417,6 @@ import {
   ElInput,
   ElMessageBox,
 } from "element-plus";
-import { Plus, Delete } from "@element-plus/icons-vue";
 import DOMPurify from "dompurify";
 import FaForm from "@/components/forms/fa-form/index.vue";
 import FaTableHeader from "@/components/tables/fa-table-header/index.vue";
@@ -605,10 +622,12 @@ function statusLabel(s: number) {
 function typeTag(t: string): any {
   return { suggestion: "success", bug: "danger", optimize: "warning", other: "info" }[t] || "info";
 }
-function statusTagType(s: string): "warning" | "info" | "success" | "danger" | undefined {
-  const map: Record<number, "warning" | "info" | "success" | "danger"> = {
+function statusTagType(
+  s: string
+): "primary" | "warning" | "info" | "success" | "danger" | undefined {
+  const map: Record<number, "primary" | "warning" | "info" | "success" | "danger"> = {
     0: "warning",
-    1: "info",
+    1: "primary",
     2: "success",
     3: "info",
   };

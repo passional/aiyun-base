@@ -214,7 +214,7 @@ function generateMeteors(count: number): Meteor[] {
   padding: 0 2rem;
   overflow: hidden;
   color: white;
-  border-radius: calc(var(--custom-radius) + 2px) !important;
+  border-radius: var(--fa-radius-lg, 16px) !important;
 
   &__content {
     position: relative;
@@ -231,8 +231,22 @@ function generateMeteors(count: number): Meteor[] {
     position: relative;
     z-index: 10;
     margin: 0 0 1.5rem;
-    font-size: 0.9rem;
+    font-size: 14px;
     opacity: 0.9;
+  }
+
+  @media (width <= 640px) {
+    &__title {
+      margin-bottom: 0.375rem;
+      font-size: 1.125rem !important;
+      line-height: 1.5 !important;
+    }
+
+    &__subtitle {
+      margin-bottom: 0.75rem;
+      font-size: 12px !important;
+      line-height: 1.5 !important;
+    }
   }
 
   &__button {
@@ -246,7 +260,12 @@ function generateMeteors(count: number): Meteor[] {
     text-align: center;
     cursor: pointer;
     user-select: none;
-    transition: all 0.3s;
+    transition:
+      background-color 0.3s,
+      border-color 0.3s,
+      color 0.3s,
+      box-shadow 0.3s,
+      transform 0.3s;
 
     &:hover {
       opacity: 0.8;

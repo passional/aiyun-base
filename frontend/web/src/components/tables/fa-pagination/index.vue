@@ -101,7 +101,7 @@ function handleCurrentChange(val: number) {
     .btn-prev,
     .btn-next {
       background-color: transparent;
-      border: 1px solid var(--fa-gray-300);
+      border: 1px solid var(--fa-border, #e6e8ec);
       transition: border-color 0.15s;
 
       &:hover:not(.is-disabled) {
@@ -114,7 +114,7 @@ function handleCurrentChange(val: number) {
       box-sizing: border-box;
       font-weight: 400 !important;
       background-color: transparent;
-      border: 1px solid var(--fa-gray-300);
+      border: 1px solid var(--fa-border, #e6e8ec);
       transition: border-color 0.15s;
 
       &.is-active {

@@ -9,8 +9,16 @@
           class="w-full h-full transition-transform duration-300 ease-in-out hover:scale-105"
         >
           <template #placeholder>
-            <div class="flex items-center justify-center w-full h-full bg-[#f5f7fa]">
-              <ElIcon><Picture /></ElIcon>
+            <div class="flex items-center justify-center w-full h-full bg-(--el-fill-color-light)">
+              <ElIcon><FaSvgIcon icon="ri:image-line" /></ElIcon>
+            </div>
+          </template>
+          <template #error>
+            <div
+              class="flex flex-col items-center justify-center w-full h-full gap-1 bg-(--el-fill-color-light)"
+            >
+              <FaSvgIcon icon="ri:image-line" class="text-2xl text-g-400" />
+              <span class="text-xs text-g-400">图片加载失败</span>
             </div>
           </template>
         </ElImage>
@@ -32,11 +40,11 @@
         <p class="m-0 mb-3 text-base font-medium">{{ props.title }}</p>
         <div class="flex items-center gap-4 text-xs text-g-600">
           <span class="flex items-center gap-1" v-if="props.views">
-            <ElIcon class="text-base"><View /></ElIcon>
+            <ElIcon class="text-base"><FaSvgIcon icon="ri:eye-line" /></ElIcon>
             {{ props.views }}
           </span>
           <span class="flex items-center gap-1" v-if="props.comments">
-            <ElIcon class="text-base"><ChatLineRound /></ElIcon>
+            <ElIcon class="text-base"><FaSvgIcon icon="ri:chat-3-line" /></ElIcon>
             {{ props.comments }}
           </span>
           <span>{{ props.date }}</span>
@@ -47,8 +55,6 @@
 </template>
 
 <script setup lang="ts">
-import { Picture, View, ChatLineRound } from "@element-plus/icons-vue";
-
 defineOptions({ name: "FaImageCard" });
 
 interface Props {

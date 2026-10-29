@@ -3,10 +3,10 @@
     <ElTabs v-model="activeTab" class="fa-tabs-fill">
       <!-- 监控信息 Tab -->
       <ElTabPane label="监控信息" name="0">
-        <div class="flex flex-col gap-4 h-full min-h-0">
+        <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto xl:overflow-hidden">
           <ElRow :gutter="16">
             <ElCol :span="24">
-              <ElCard shadow="hover" class="fa-card">
+              <ElCard shadow="hover" class="fa-card shrink-0">
                 <template #header>
                   <div class="flex items-center gap-2">
                     <FaSvgIcon icon="ri:database-2-line" class="text-lg" />
@@ -60,9 +60,9 @@
             </ElCol>
           </ElRow>
 
-          <ElRow :gutter="16" class="flex-1 min-h-0">
-            <ElCol :xs="24" :sm="12" class="mb-5">
-              <ElCard shadow="hover" class="fa-card flex-1 flex flex-col chart-card">
+          <ElRow :gutter="16" class="flex-1 min-h-0 overflow-hidden">
+            <ElCol :xs="24" :sm="12" class="mb-0 h-full">
+              <ElCard shadow="hover" class="fa-card h-full flex flex-col chart-card">
                 <template #header>
                   <div class="flex items-center gap-2">
                     <FaSvgIcon icon="ri:bar-chart-2-line" class="text-lg" />
@@ -72,8 +72,8 @@
                 <div ref="commandstats" class="flex flex-1 items-center justify-center min-h-75" />
               </ElCard>
             </ElCol>
-            <ElCol :xs="24" :sm="12" class="mb-5">
-              <ElCard shadow="hover" class="fa-card flex-1 flex flex-col chart-card">
+            <ElCol :xs="24" :sm="12" class="mb-0 h-full">
+              <ElCard shadow="hover" class="fa-card h-full flex flex-col chart-card">
                 <template #header>
                   <div class="flex items-center gap-2">
                     <FaSvgIcon icon="ri:pie-chart-2-line" class="text-lg" />
@@ -89,12 +89,14 @@
 
       <!-- 缓存管理 Tab -->
       <ElTabPane label="缓存管理" name="1">
-        <div class="grid grid-cols-3 gap-4 h-150">
+        <div
+          class="grid grid-cols-1 xl:grid-cols-3 xl:grid-rows-1 gap-4 h-full min-h-0 overflow-y-auto xl:overflow-hidden"
+        >
           <!-- 缓存列表 -->
           <ElCard
             :loading="loading"
             shadow="hover"
-            class="fa-card flex flex-col min-h-0"
+            class="fa-card flex flex-col min-h-100 xl:min-h-0"
             body-class="flex flex-col flex-1 min-h-0 overflow-hidden"
           >
             <template #header>
@@ -115,7 +117,7 @@
             <ElScrollbar class="flex-1 min-h-0">
               <ElTable :loading="loading" :data="cacheNames" row-key="cache_name">
                 <template #empty>
-                  <ElEmpty :image-size="80" description="暂无数据" />
+                  <FaEmptyState icon="ri:inbox-line" title="暂无数据" compact />
                 </template>
                 <ElTableColumn prop="cache_name" label="缓存名称" show-overflow-tooltip>
                   <template #default="{ row }">
@@ -157,7 +159,7 @@
           <ElCard
             :loading="loading"
             shadow="hover"
-            class="fa-card flex flex-col min-h-0"
+            class="fa-card flex flex-col min-h-100 xl:min-h-0"
             body-class="flex flex-col flex-1 min-h-0 overflow-hidden"
           >
             <template #header>
@@ -182,7 +184,7 @@
                 row-key="cacheKey"
               >
                 <template #empty>
-                  <ElEmpty :image-size="80" description="暂无数据" />
+                  <FaEmptyState icon="ri:inbox-line" title="暂无数据" compact />
                 </template>
                 <ElTableColumn prop="cacheKey" label="缓存键名" show-overflow-tooltip>
                   <template #default="{ row }">
@@ -223,7 +225,7 @@
           <ElCard
             :loading="loading"
             shadow="hover"
-            class="fa-card flex flex-col min-h-0"
+            class="fa-card flex flex-col min-h-100 xl:min-h-0"
             body-class="flex flex-col flex-1 min-h-0 overflow-hidden"
           >
             <template #header>
@@ -246,10 +248,20 @@
             <ElScrollbar class="flex-1 min-h-0">
               <ElForm :model="cacheForm" label-suffix=":" label-position="top">
                 <ElFormItem label="缓存名称">
-                  <ElInput v-model="cacheForm.cache_name" readonly placeholder="缓存名称" />
+                  <ElInput
+                    v-model="cacheForm.cache_name"
+                    readonly
+                    placeholder="缓存名称"
+                    aria-label="缓存名称"
+                  />
                 </ElFormItem>
                 <ElFormItem label="缓存键名">
-                  <ElInput v-model="cacheForm.cache_key" readonly placeholder="缓存键名" />
+                  <ElInput
+                    v-model="cacheForm.cache_key"
+                    readonly
+                    placeholder="缓存键名"
+                    aria-label="缓存键名"
+                  />
                 </ElFormItem>
                 <ElFormItem label="缓存内容" class="cache-value-item">
                   <ElInput
@@ -258,12 +270,111 @@
                     readonly
                     placeholder="缓存内容"
                     :rows="10"
+                    aria-label="缓存内容"
                   />
                 </ElFormItem>
               </ElForm>
             </ElScrollbar>
           </ElCard>
         </div>
+      </ElTabPane>
+
+      <ElTabPane label="键空间浏览" name="2">
+        <ElCard
+          shadow="hover"
+          class="fa-card flex flex-col h-full min-h-0"
+          body-class="flex flex-col flex-1 min-h-0 overflow-hidden"
+        >
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[13px] text-(--el-text-color-secondary)">逻辑库</span>
+            <ElSelect v-model="redisDb" style="width: 160px" @change="scanRedisKeys(true)">
+              <ElOption
+                v-for="item in redisDatabases"
+                :key="item.db"
+                :label="`db${item.db}（${item.keys} 键）`"
+                :value="item.db"
+              />
+            </ElSelect>
+            <ElInput
+              v-model="redisPattern"
+              placeholder="键模式，如 fastapiadmin:*"
+              style="width: 260px"
+              clearable
+              @keyup.enter="scanRedisKeys(true)"
+              aria-label="键模式，如 fastapiadmin:*"
+            />
+            <ElButton type="primary" :loading="redisLoading" @click="scanRedisKeys(true)"
+              >扫描</ElButton
+            >
+            <ElButton :disabled="!redisCursor" @click="scanRedisKeys(false)">加载更多</ElButton>
+            <span class="text-xs text-(--el-text-color-secondary)"
+              >只读浏览；敏感键（token/session 等）的值自动脱敏</span
+            >
+          </div>
+          <ElTable
+            v-loading="redisLoading"
+            :data="redisKeys"
+            class="mt-3 flex-1 min-h-0"
+            height="100%"
+            @row-click="openRedisValue"
+          >
+            <ElTableColumn prop="key" label="键名" min-width="320" show-overflow-tooltip />
+            <ElTableColumn prop="type" label="类型" width="110" />
+            <ElTableColumn label="TTL" width="120">
+              <template #default="{ row }">
+                {{ row.ttl === -1 ? "永不过期" : row.ttl === -2 ? "不存在" : `${row.ttl}s` }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" width="90" align="center" fixed="right">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click.stop="openRedisValue(row)">查看</ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+          <FaEmptyState
+            v-if="!redisKeys.length"
+            icon="ri:inbox-line"
+            title="没有扫描到键（可换逻辑库或模式再试）"
+            compact
+          />
+        </ElCard>
+
+        <ElDialog
+          v-model="redisValueVisible"
+          :title="`键详情：${redisValue?.key ?? ''}`"
+          width="760px"
+        >
+          <ElDescriptions :column="3" border size="small">
+            <ElDescriptionsItem label="类型">{{ redisValue?.type ?? "-" }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="TTL">
+              {{
+                redisValue?.ttl === -1
+                  ? "永不过期"
+                  : redisValue?.ttl === -2
+                    ? "不存在"
+                    : `${redisValue?.ttl ?? "-"}s`
+              }}
+            </ElDescriptionsItem>
+            <ElDescriptionsItem label="大小">
+              {{ redisValue?.size == null ? "-" : `${redisValue.size} B` }}
+            </ElDescriptionsItem>
+          </ElDescriptions>
+          <ElAlert
+            v-if="redisValue?.masked"
+            class="mt-3"
+            type="warning"
+            :closable="false"
+            title="该键命中敏感模式，值已脱敏"
+          />
+          <ElAlert
+            v-else-if="redisValue?.truncated"
+            class="mt-3"
+            type="info"
+            :closable="false"
+            title="值过大，仅展示前一部分"
+          />
+          <ElInput class="mt-3" type="textarea" :rows="12" readonly :model-value="redisValueText" />
+        </ElDialog>
       </ElTabPane>
     </ElTabs>
   </div>
@@ -276,7 +387,10 @@ import CacheAPI, {
   type CacheInfo,
   type CacheForm,
   type CacheMonitor,
+  type RedisDatabase,
   type RedisInfo,
+  type RedisKeyMeta,
+  type RedisValue,
 } from "@/api/module_monitor/cache";
 import { echarts } from "@/plugins/echarts";
 import { useWindowSize } from "@vueuse/core";
@@ -294,6 +408,66 @@ const cacheKeys = ref<string[]>([]);
 const loading = ref(true);
 const subLoading = ref(false);
 const nowCacheName = ref("");
+
+// ─── Redis 键空间浏览（只读）────────────────────────────────────────
+const redisDatabases = ref<RedisDatabase[]>([]);
+const redisDb = ref(0);
+const redisPattern = ref("*");
+const redisKeys = ref<RedisKeyMeta[]>([]);
+const redisCursor = ref(0);
+const redisLoading = ref(false);
+const redisValueVisible = ref(false);
+const redisValue = ref<RedisValue | null>(null);
+const redisValueText = computed(() =>
+  redisValue.value ? JSON.stringify(redisValue.value.value, null, 2) : ""
+);
+
+async function loadRedisDatabases() {
+  const res = await CacheAPI.getRedisDatabases();
+  redisDatabases.value = res.data.data || [];
+  if (
+    redisDatabases.value.length &&
+    !redisDatabases.value.some((item) => item.db === redisDb.value)
+  ) {
+    redisDb.value = redisDatabases.value[0]!.db;
+  }
+}
+
+async function scanRedisKeys(reset: boolean) {
+  if (reset) {
+    redisKeys.value = [];
+    redisCursor.value = 0;
+  }
+  redisLoading.value = true;
+  try {
+    const res = await CacheAPI.scanRedisKeys({
+      db: redisDb.value,
+      pattern: redisPattern.value || "*",
+      cursor: reset ? 0 : redisCursor.value,
+      count: 100,
+    });
+    const page = res.data.data;
+    const incoming = page?.keys || [];
+    redisKeys.value = reset ? incoming : [...redisKeys.value, ...incoming];
+    redisCursor.value = page?.cursor ?? 0;
+  } finally {
+    redisLoading.value = false;
+  }
+}
+
+async function openRedisValue(row: unknown) {
+  const target = row as RedisKeyMeta;
+  const res = await CacheAPI.getRedisValue({ db: redisDb.value, key: target.key });
+  redisValue.value = res.data.data ?? null;
+  redisValueVisible.value = true;
+}
+
+watch(activeTab, async (tab) => {
+  if (tab === "2" && !redisDatabases.value.length) {
+    await loadRedisDatabases();
+    await scanRedisKeys(true);
+  }
+});
 
 const commandstats = ref<HTMLElement | null>(null);
 const usedmemory = ref<HTMLElement | null>(null);
@@ -443,21 +617,40 @@ const initCharts = async () => {
   commandstatsInstance = echarts.init(commandstats.value, "macarons");
   usedmemoryInstance = echarts.init(usedmemory.value, "macarons");
 
+  // 命令种类多时只展示 Top 8 + 其他，避免标签重叠成一团
+  const rawStats = cache.value.command_stats || [];
+  const sortedStats = [...rawStats].sort((a, b) => Number(b.value) - Number(a.value));
+  const topStats: Array<{ name: string; value: number }> = sortedStats
+    .slice(0, 8)
+    .map((item) => ({ name: item.name, value: Number(item.value) || 0 }));
+  const restStats = sortedStats.slice(8);
+  if (restStats.length > 0) {
+    topStats.push({
+      name: "其他",
+      value: restStats.reduce((sum, item) => sum + Number(item.value || 0), 0),
+    });
+  }
   commandstatsInstance.setOption({
     tooltip: { trigger: "item", formatter: "{a} <br/>{b} : {c} ({d}%)" },
+    legend: {
+      type: "scroll",
+      bottom: 0,
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { fontSize: 11 },
+    },
     series: [
       {
         name: "命令",
         type: "pie",
-        roseType: "radius",
-        radius: ["20%", "70%"],
-        center: ["50%", "50%"],
-        data: cache.value.command_stats || [],
+        radius: ["30%", "64%"],
+        center: ["50%", "44%"],
+        minAngle: 2,
+        data: topStats,
         animationEasing: "cubicInOut",
         animationDuration: 1000,
-        label: {
-          fontSize: 14,
-        },
+        label: { show: false },
+        labelLine: { show: false },
       },
     ],
   });
@@ -471,11 +664,18 @@ const initCharts = async () => {
         type: "gauge",
         min: 0,
         max: 1000,
-        radius: "70%",
-        detail: { formatter: usedMemory, fontSize: 16 },
+        radius: "72%",
+        splitNumber: 5,
+        detail: {
+          formatter: usedMemory,
+          fontSize: 16,
+          offsetCenter: [0, "58%"],
+        },
+        title: { offsetCenter: [0, "80%"], fontSize: 12 },
         data: [{ value: parseFloat(usedMemory) || 0, name: "内存消耗" }],
         axisLabel: {
-          fontSize: 12,
+          fontSize: 11,
+          distance: 8,
         },
       },
     ],

@@ -149,9 +149,9 @@ onLoad(() => {
     <!-- List -->
     <SkeletonPage v-if="loading && models.length === 0" :rows="3" />
     <template v-else>
-      <view class="mx-3">
+      <view class="mx-4">
         <wd-empty v-if="!loading && models.length === 0" :tip="t('aiModels.empty')" />
-        <wd-cell-group v-else border custom-class="rounded-2! overflow-hidden">
+        <wd-cell-group v-else border custom-class="rounded-3! overflow-hidden">
           <wd-cell :title="t('aiModels.groupTitle')" :value="t('aiModels.count', { count: models.length })" border />
           <wd-cell v-for="model in models" :key="model.config_id" center>
             <template #title>

@@ -2,12 +2,12 @@
 layout: doc
 outline: "deep"
 title: 部署指南
-description: FastApiAdmin 多种部署方式详解:Docker Compose 一键部署、生产环境 Nginx + SSL 配置、CI/CD 自动化、多节点架构与性能调优。
+description: FastapiAdmin 多种部署方式详解:Docker Compose 一键部署、生产环境 Nginx + SSL 配置、CI/CD 自动化、多节点架构与性能调优。
 ---
 
 ## 部署方式概述
 
-FastApiAdmin 支持以下部署方式：
+FastapiAdmin 支持以下部署方式：
 
 - **Docker Compose 部署**（推荐）：快速、便捷、可移植
 - **手动部署**：适用于需要高度定制的场景
@@ -39,8 +39,8 @@ sudo systemctl start docker && sudo systemctl enable docker
 ### 3. 部署步骤
 
 ```bash
-git clone https://github.com/fastapiadmin/FastApiAdmin.git
-cd FastApiAdmin
+git clone https://github.com/fastapiadmin/FastapiAdmin.git
+cd FastapiAdmin
 
 # 配置环境变量
 cp docker/.env.example docker/.env

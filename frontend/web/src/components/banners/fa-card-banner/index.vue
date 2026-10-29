@@ -12,7 +12,7 @@
       <div class="flex items-center gap-3">
         <div
           v-if="cancelButton?.show"
-          class="inline-block h-9 px-3 text-sm/9 cursor-pointer select-none rounded-md border border-g-300"
+          class="inline-block h-9 px-3 text-sm/9 cursor-pointer select-none rounded-md border border-line"
           :style="{
             backgroundColor: cancelButton?.color,
             color: cancelButton?.textColor,

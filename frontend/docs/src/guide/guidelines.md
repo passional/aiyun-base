@@ -2,12 +2,12 @@
 layout: doc
 outline: "deep"
 title: 开发规范
-description: FastApiAdmin 团队开发规范,涵盖代码风格、Git 提交规范、命名约定、测试要求、Code Review 标准与项目协作流程。
+description: FastapiAdmin 团队开发规范,涵盖代码风格、Git 提交规范、命名约定、测试要求、Code Review 标准与项目协作流程。
 ---
 
 ## 📚规范概述
 
-为了保证项目代码的一致性、可读性和可维护性，FastApiAdmin 项目制定了以下开发规范。所有参与项目开发的开发者都应该遵循这些规范。
+为了保证项目代码的一致性、可读性和可维护性，FastapiAdmin 项目制定了以下开发规范。所有参与项目开发的开发者都应该遵循这些规范。
 
 ## 🎨前端开发规范
 
@@ -447,5 +447,5 @@ docs: 更新开发文档
 
 ## 📄许可协议
 
-本开发规范文档采用 MIT 许可协议，与 FastApiAdmin 项目保持一致。
+本开发规范文档采用 MIT 许可协议，与 FastapiAdmin 项目保持一致。
 

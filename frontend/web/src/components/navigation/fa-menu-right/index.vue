@@ -404,7 +404,12 @@ defineExpose({
 /* 动画样式 */
 .context-menu-enter-active,
 .context-menu-leave-active {
-  transition: all v-bind('props.animationDuration + "ms"') ease-out;
+  transition:
+    background-color v-bind('props.animationDuration + "ms"') ease-out,
+    border-color v-bind('props.animationDuration + "ms"') ease-out,
+    color v-bind('props.animationDuration + "ms"') ease-out,
+    box-shadow v-bind('props.animationDuration + "ms"') ease-out,
+    transform v-bind('props.animationDuration + "ms"') ease-out;
 }
 
 .context-menu-enter-from,

@@ -50,7 +50,11 @@
     "subscribeTitle": "开启消息通知",
     "subscribeContent": "您已关闭消息通知，是否前往设置开启？",
     "subscribeGoSetting": "去设置",
-    "tab": { "home": "首页", "work": "工作台", "mine": "我的" },
+    "tab": {
+      "home": "首页",
+      "work": "工作台",
+      "mine": "我的"
+    },
     "nav": {
       "notices": "通知公告",
       "tickets": "工单管理",
@@ -114,7 +118,8 @@
     "brandSubtitle": "高效的企业管理移动平台",
     "wxOnly": "请在微信小程序中使用此功能",
     "wxAuthFailed": "微信登录授权失败",
-    "phoneCodeFailed": "手机号授权码获取失败"
+    "phoneCodeFailed": "手机号授权码获取失败",
+    "puzzleText": "拖动滑块，使图块与缺口重合"
   },
   "register": {
     "navTitle": "注册",

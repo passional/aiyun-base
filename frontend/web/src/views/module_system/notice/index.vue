@@ -50,7 +50,84 @@
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="data.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="allCardsSelected"
+            :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+            @change="toggleAllCards"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+        <div v-if="!data.length" class="py-12">
+          <FaEmptyState
+            icon="ri:notification-3-line"
+            title="暂无公告"
+            description="发布第一条系统公告，通知到所有用户"
+          />
+        </div>
+        <div
+          v-for="row in data"
+          :key="row.id"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <ElCheckbox
+              class="mt-0.5 shrink-0"
+              :model-value="isCardSelected(row)"
+              @change="(val) => toggleCardRow(row, val)"
+            />
+            <div class="text-sm font-medium min-w-0 flex-1 truncate">{{ row.notice_title }}</div>
+            <div class="flex gap-1 shrink-0">
+              <FaStatusTag
+                :type="row.notice_type === '2' ? 'warning' : 'primary'"
+                :label="row.notice_type === '2' ? '公告' : '通知'"
+              />
+              <FaStatusTag
+                :type="row.status === 0 ? 'success' : 'danger'"
+                :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+              />
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-g-600 line-clamp-3">
+            {{ row.description || "暂无描述" }}
+          </div>
+          <div class="mt-2 text-xs text-g-600">
+            {{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}
+          </div>
+          <div class="mt-1 text-xs text-g-600">
+            {{ $t("common.update") }}：{{ formatDateTime(row.updated_time) }}
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="handleOpenDialog('detail', row.id!)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="handleOpenDialog('update', row.id!)">
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton
+              link
+              type="danger"
+              size="small"
+              @click="deleteNoticeRow(row.id!, row.notice_title ?? '')"
+            >
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+        <ElPagination
+          v-if="data.length"
+          class="justify-center mt-1"
+          layout="prev, pager, next"
+          :current-page="pagination.current"
+          :page-size="pagination.size"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+        />
+      </div>
       <FaTable
+        v-else
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -59,13 +136,24 @@
         @selection-change="onTableSelectionChange"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
-      />
+      >
+        <template #empty>
+          <FaEmptyState
+            icon="ri:notification-3-line"
+            title="暂无公告"
+            description="发布第一条系统公告，通知到所有用户"
+          >
+            <ElButton type="primary" size="small" @click="handleAdd">{{
+              $t("common.addNotice")
+            }}</ElButton>
+          </FaEmptyState>
+        </template>
+      </FaTable>
     </ElCard>
 
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="820px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -73,6 +161,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="xl"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -103,7 +192,7 @@
           :items="noticeDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -113,8 +202,8 @@
         >
           <template #status>
             <ElRadioGroup v-model="formData.status">
-              <ElRadio :value="0">启用</ElRadio>
-              <ElRadio :value="1">停用</ElRadio>
+              <ElRadio :value="0">{{ $t("common.enabled") }}</ElRadio>
+              <ElRadio :value="1">{{ $t("common.disabled") }}</ElRadio>
             </ElRadioGroup>
           </template>
           <template #notice_content>
@@ -133,10 +222,16 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import { useCrudForm } from "@/hooks/core/useCrudForm";
 import { confirmToggleStatus } from "@/hooks/core/useConfirm";
 import NoticeAPI, { type NoticeForm, type NoticeTable } from "@/api/module_system/notice";
-import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
+import {
+  formatDateTime,
+  renderTableOperationCell,
+  resolveStatusColumns,
+  type TableOperationAction,
+} from "@utils";
 import { useDictStore, useNoticeStore } from "@stores";
 import type { SearchFormItem } from "@/components/forms/fa-search-bar/index.vue";
 import FaSearchBar from "@/components/forms/fa-search-bar/index.vue";
@@ -233,7 +328,8 @@ const noticeSearchItems = computed<SearchFormItem[]>(() => [
 const faTableRef = ref<{ elTableRef?: { clearSelection: () => void } } | null>(null);
 
 // ─── 表格多选 ───
-const { selectedIds, batchDeleting, onTableSelectionChange } = useTableSelection<NoticeTable>();
+const { selectedRows, selectedIds, batchDeleting, onTableSelectionChange } =
+  useTableSelection<NoticeTable>();
 
 const createLoading = ref(false);
 const moreLoading = ref(false);
@@ -417,33 +513,35 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
         sortable: true,
         showOverflowTooltip: true,
+        formatter: (row: NoticeTable) => formatDateTime(row.created_time),
       },
       {
         prop: "updated_time",
         label: "更新时间",
-        width: 168,
+        width: 190,
         sortable: true,
         showOverflowTooltip: true,
+        formatter: (row: NoticeTable) => formatDateTime(row.updated_time),
       },
       {
         prop: "created_id",
         label: "创建人",
-        minWidth: 100,
+        minWidth: 90,
         formatter: (row: NoticeTable) => row.created_by?.name ?? "—",
       },
       {
         prop: "updated_id",
         label: "更新人",
-        minWidth: 100,
+        minWidth: 90,
         formatter: (row: NoticeTable) => row.updated_by?.name ?? "—",
       },
       {
         prop: "operation",
         label: "操作",
-        width: 220,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: NoticeTable) => formatNoticeOperationCell(row),
@@ -507,6 +605,29 @@ async function deleteNoticeRow(id: number, name: string) {
     // 用户取消
   }
 }
+
+const { width: viewportWidth } = useWindowSize();
+
+const allCardsSelected = computed(
+  () => data.value.length > 0 && selectedRows.value.length === data.value.length
+);
+
+function isCardSelected(row: NoticeTable) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: NoticeTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...data.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
 
 function buildNoticeRowActions(row: NoticeTable): TableOperationAction[] {
   const all: TableOperationAction[] = [

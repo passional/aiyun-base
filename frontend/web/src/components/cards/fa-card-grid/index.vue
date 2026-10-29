@@ -62,12 +62,11 @@
         </ElRow>
       </div>
 
-      <!-- 空状态 -->
-      <ElEmpty v-else :description="emptyText">
-        <template v-if="$slots.empty" #default>
-          <slot name="empty" />
-        </template>
-      </ElEmpty>
+      <!-- 空状态：有数据时不能渲染，否则会盖在卡片上显示“暂无数据” -->
+      <template v-if="isEmpty">
+        <slot v-if="$slots.empty" name="empty" />
+        <FaEmptyState v-else icon="ri:inbox-line" :title="emptyText" />
+      </template>
     </ElScrollbar>
 
     <!-- 分页 -->
@@ -86,15 +85,7 @@
 
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { computed } from "vue";
-import {
-  ElCard,
-  ElRow,
-  ElCol,
-  ElEmpty,
-  ElSkeleton,
-  ElSkeletonItem,
-  ElScrollbar,
-} from "element-plus";
+import { ElCard, ElRow, ElCol, ElSkeleton, ElSkeletonItem, ElScrollbar } from "element-plus";
 import FaPagination from "@/components/tables/fa-pagination/index.vue";
 
 defineOptions({ name: "FaCardGrid" });
@@ -116,6 +107,8 @@ interface Props {
   items: T[];
   loading?: boolean;
   emptyText?: string;
+  /** 空状态图片尺寸（与其它页面保持一致，默认 60） */
+  emptyImageSize?: number;
   /** 分页状态（传入后显示分页器） */
   pagination?: FaPaginationConfig;
   /** 分页配置覆盖 */
@@ -139,6 +132,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   emptyText: "暂无数据",
+  emptyImageSize: 60,
   pagination: undefined,
   paginationOptions: () => ({}),
   gutter: 16,

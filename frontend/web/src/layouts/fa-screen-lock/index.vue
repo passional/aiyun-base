@@ -62,7 +62,7 @@
     <!-- 解锁全屏（旧版 LockPage 样式） -->
     <div v-else class="lockpage" :style="lockPageBgStyle">
       <div v-show="showClock" class="unlock-container" @click="showUnlockForm">
-        <ElIcon><Lock /></ElIcon>
+        <ElIcon><FaSvgIcon icon="ri:lock-2-line" /></ElIcon>
         <span>{{ t("lock.unlock") }}</span>
       </div>
 
@@ -146,7 +146,6 @@
 </template>
 
 <script setup lang="ts">
-import { Lock } from "@element-plus/icons-vue";
 
 defineOptions({ name: "FaScreenLock" });
 import type { FormInstance, FormRules } from "element-plus";
@@ -728,7 +727,12 @@ onUnmounted(() => {
 
 .fade-slide-leave-active,
 .fade-slide-enter-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-slide-enter-from {

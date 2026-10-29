@@ -2,7 +2,7 @@
   <div :class="['message-group', message.type]">
     <div class="message-avatar">
       <div v-if="message.type === 'user'" class="user-avatar">
-        <ElIcon><User /></ElIcon>
+        <ElIcon><FaSvgIcon icon="ri:user-3-line" /></ElIcon>
       </div>
       <div v-else class="ai-avatar">
         <ElIcon><ChatDotRound /></ElIcon>
@@ -25,7 +25,7 @@
       <div class="message-body">
         <div v-if="message.files && message.files.length > 0" class="message-files">
           <div v-for="file in message.files" :key="file.id" class="attached-file">
-            <ElIcon class="file-icon"><Document /></ElIcon>
+            <ElIcon class="file-icon"><FaSvgIcon icon="ri:file-text-line" /></ElIcon>
             <span class="file-name">{{ file.name }}</span>
             <span class="file-size">{{ formatFileSize(file.size) }}</span>
           </div>
@@ -63,14 +63,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
-import {
-  User,
-  ChatDotRound,
-  CopyDocument,
-  ArrowDown,
-  ArrowUp,
-  Document,
-} from "@element-plus/icons-vue";
+import { ChatDotRound, CopyDocument, ArrowDown, ArrowUp } from "@element-plus/icons-vue";
 import { useUserStoreHook } from "@stores";
 import type { ChatMessage } from "../types";
 
@@ -230,7 +223,7 @@ const formatFileSize = (bytes: number): string => {
       }
 
       .message-text {
-        font-size: 15px;
+        font-size: 16px;
         line-height: 1.6;
         color: var(--el-text-color-primary);
         transition:

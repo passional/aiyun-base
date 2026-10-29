@@ -1,19 +1,63 @@
 <!-- 文件浏览：多节点标签 + 上传/下载/新建目录/复制/移动/重命名/分享/删除（源项目风格，对接 /storage/browse） -->
 <template>
-  <div class="flex h-full">
-    <el-card shadow="never" class="browse-card flex min-h-0 flex-1 flex-col">
-      <!-- 多节点浏览：el-tabs 左侧标签（状态点+文字靠左、关闭按钮右端对齐，参考 data-transfer/web 已验证实现） -->
+  <FaWorkbench :side-width="216">
+    <template #side>
+      <!-- 左：节点栏（参考 FastHub：节点列表在左，工作区标签在右） -->
+      <FaSidePanel title="节点" class="browse-node-sidebar">
+        <template #actions>
+          <ElTooltip content="打开节点" placement="top">
+            <button
+              type="button"
+              class="browse-node-add"
+              aria-label="打开节点"
+              @click="openAddDialog"
+            >
+              <ElIcon><FaSvgIcon icon="ri:add-line" /></ElIcon>
+            </button>
+          </ElTooltip>
+        </template>
+        <div v-if="!nodes.length" class="browse-node-empty">暂无节点</div>
+        <button
+          v-for="node in nodes"
+          :key="node.id"
+          type="button"
+          class="browse-node-item"
+          :class="{ 'is-active': node.id === activeId, 'is-open': isTabOpen(node.id) }"
+          :title="`${node.name}（${node.protocol}）`"
+          @click="createTab(node)"
+        >
+          <span
+            class="tab-status"
+            :class="`status-${node.id === activeId ? activeTab?.status || 'ok' : 'idle'}`"
+          />
+          <span class="browse-node-name">{{ node.name }}</span>
+          <span
+            v-if="isTabOpen(node.id) && node.protocol !== 'local'"
+            class="browse-node-close"
+            role="button"
+            aria-label="关闭节点"
+            @click.stop="closeTab(node.id!)"
+          >
+            <ElIcon><FaSvgIcon icon="ri:close-line" /></ElIcon>
+          </span>
+        </button>
+      </FaSidePanel>
+    </template>
+
+    <el-card
+      ref="browseCardRef"
+      shadow="hover"
+      class="fa-card browse-card flex min-h-0 flex-1 flex-col"
+    >
+      <!-- 右侧工作区：已打开节点用顶部标签切换（节点入口在左侧栏） -->
       <el-tabs
         v-if="tabs.length"
         :model-value="activeId ?? undefined"
-        tab-position="left"
+        tab-position="top"
         class="min-h-0 flex-1"
-        :addable="true"
-        :editable="true"
         @update:model-value="(v) => (activeId = v as number)"
         @tab-change="onElTabChange"
         @tab-remove="(name) => closeTab(Number(name))"
-        @tab-add="openAddDialog"
       >
         <el-tab-pane
           v-for="tab in orderedTabs"
@@ -37,7 +81,7 @@
           <div class="flex h-full flex-col px-4 py-3">
             <template v-if="activeTab">
               <!-- 行1：后退 / 前进 / 路径地址栏 / 刷新 -->
-              <div class="mb-2 flex items-center gap-2">
+              <div class="mb-2 flex flex-wrap items-center gap-2">
                 <el-tooltip content="后退" placement="top">
                   <el-button size="small" :disabled="!canBack" @click="goBack">
                     <el-icon><ArrowLeft /></el-icon>
@@ -85,7 +129,7 @@
                           class="cursor-pointer whitespace-nowrap"
                           :class="
                             i === segments.length - 1
-                              ? 'text-[#909399] hover:text-(--el-color-primary)'
+                              ? 'text-(--el-text-color-secondary) hover:text-(--el-color-primary)'
                               : 'text-(--el-text-color-primary) hover:text-(--el-color-primary)'
                           "
                           @click="goToSegment(i)"
@@ -107,15 +151,20 @@
                   />
                   <!-- 后缀：存储路径按钮，点击回到存储根目录 -->
                   <span
-                    class="shrink-0 cursor-pointer whitespace-nowrap bg-(--el-fill-color) px-2 py-1 text-[13px] text-(--el-color-primary) hover:bg-(--el-fill-color-light)"
+                    class="path-root-btn shrink-0 cursor-pointer whitespace-nowrap bg-(--el-fill-color) px-2 py-1 text-[13px] text-(--el-color-primary) hover:bg-(--el-fill-color-light)"
                     title="点击回到存储根目录（FTP/SFTP 登录目录、对象存储桶根，不带路径前缀）"
                     @click="goRoot"
                     >存储路径</span
                   >
                 </div>
                 <el-tooltip content="刷新" placement="top">
-                  <el-button size="small" :loading="activeTab.loading" @click="load">
-                    <el-icon><Refresh /></el-icon>
+                  <el-button
+                    class="path-refresh-btn"
+                    size="small"
+                    :loading="activeTab.loading"
+                    @click="load"
+                  >
+                    <el-icon><FaSvgIcon icon="ri:refresh-line" /></el-icon>
                   </el-button>
                 </el-tooltip>
               </div>
@@ -123,18 +172,18 @@
               <!-- 行2：文件操作 + 搜索（桶列表最外层时隐藏，无文件可操作） -->
               <div
                 v-if="!activeTab?.browseBuckets"
-                class="mb-2.5 flex items-center justify-between gap-2"
+                class="mb-2.5 flex flex-wrap items-center justify-between gap-2"
               >
-                <div class="flex min-w-0 items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
                   <el-button size="small" type="primary" plain @click="triggerUpload">
-                    <el-icon class="mr-1"><Upload /></el-icon>上传
+                    <el-icon class="mr-1"><FaSvgIcon icon="ri:upload-2-line" /></el-icon>上传
                   </el-button>
                   <el-button size="small" @click="createDir">
                     <el-icon class="mr-1"><FolderAdd /></el-icon>新建目录
                   </el-button>
                   <el-divider direction="vertical" />
                   <el-button size="small" :disabled="!selectedRows.length" @click="batchDownload">
-                    <el-icon class="mr-1"><Download /></el-icon>下载
+                    <el-icon class="mr-1"><FaSvgIcon icon="ri:download-2-line" /></el-icon>下载
                   </el-button>
                   <el-button
                     size="small"
@@ -171,7 +220,9 @@
                           >分享</el-dropdown-item
                         >
                         <el-dropdown-item command="delete" divided>
-                          <el-icon class="mr-1.5 text-(--el-color-danger)"><Delete /></el-icon>
+                          <el-icon class="mr-1.5 text-(--el-color-danger)"
+                            ><FaSvgIcon icon="ri:delete-bin-4-line"
+                          /></el-icon>
                           <span class="text-(--el-color-danger)">删除</span>
                         </el-dropdown-item>
                       </el-dropdown-menu>
@@ -182,6 +233,7 @@
                   <el-input
                     v-model="activeTab.keyword"
                     placeholder="文件名称搜索"
+                    aria-label="按文件名称搜索"
                     clearable
                     size="small"
                     class="w-55"
@@ -189,7 +241,7 @@
                     @clear="load"
                   >
                     <template #prefix
-                      ><el-icon><Search /></el-icon
+                      ><el-icon><FaSvgIcon icon="ri:search-line" /></el-icon
                     ></template>
                   </el-input>
                 </div>
@@ -210,7 +262,19 @@
                 v-loading="activeTab.loading"
                 class="min-h-0 flex-1"
               >
-                <div class="mb-2 text-[13px] text-[#909399]">存储桶（账号下全部，点击进入）</div>
+                <div
+                  class="mb-2 flex items-center justify-between text-[13px] text-(--el-text-color-secondary)"
+                >
+                  <span>存储桶（账号下全部，点击进入）</span>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    plain
+                    :loading="bucketCreating"
+                    @click="createBucket"
+                    >新建桶</el-button
+                  >
+                </div>
                 <div
                   v-for="b in objectBuckets"
                   :key="b"
@@ -218,7 +282,9 @@
                   :title="`进入存储桶 ${b}`"
                   @click="enterBucket(b)"
                 >
-                  <el-icon :size="18" color="#e6a23c"><Folder /></el-icon>
+                  <el-icon :size="18" color="#e6a23c"
+                    ><FaSvgIcon icon="ri:folder-2-line"
+                  /></el-icon>
                   <span class="min-w-0 truncate font-medium text-(--el-text-color-primary)">{{
                     b
                   }}</span>
@@ -230,41 +296,51 @@
                     class="shrink-0"
                     >当前桶</el-tag
                   >
-                  <span class="ml-auto shrink-0 text-xs text-[#909399]">点击进入</span>
+                  <span class="ml-auto shrink-0 text-xs text-(--el-text-color-secondary)"
+                    >点击进入</span
+                  >
                 </div>
-                <el-empty
+                <FaEmptyState
                   v-if="!activeTab.loading && !objectBuckets.length"
-                  description="账号下暂无存储桶"
-                  :image-size="72"
+                  compact
+                  icon="ri:inbox-line"
+                  title="暂无存储桶"
+                  description="账号下还没有可用的存储桶"
                 />
               </el-scrollbar>
 
               <!-- 文件/文件夹列表（支持拖拽上传） -->
               <div
                 v-if="!activeTab?.browseBuckets"
-                class="min-h-0 flex-1"
+                class="flex min-h-0 flex-1 flex-col"
                 @dragover.prevent
                 @drop.prevent="onDrop"
               >
                 <FaTable
                   :loading="activeTab.loading"
                   :data="entries"
-                  :columns="browseColumns"
-                  height="100%"
+                  :columns="compactBrowseColumns"
                   :empty-text="activeTab.error ? '加载失败' : '该目录下没有内容'"
                   @selection-change="onSelectionChange"
                   @sort-change="onSortChange"
                 >
                   <template #name="{ row }">
                     <span class="inline-flex items-center gap-1">
-                      <el-icon :size="16" :class="row.is_dir ? 'text-[#e6a23c]' : 'text-[#909399]'">
-                        <Folder v-if="row.is_dir" />
-                        <Document v-else />
+                      <el-icon
+                        :size="16"
+                        :class="
+                          row.is_dir
+                            ? 'text-(--el-color-warning)'
+                            : 'text-(--el-text-color-secondary)'
+                        "
+                      >
+                        <FaSvgIcon v-if="row.is_dir" icon="ri:folder-2-line" />
+                        <FaSvgIcon v-else icon="ri:file-text-line" />
                       </el-icon>
                       <span
                         :class="
                           row.is_dir
-                            ? 'cursor-pointer font-medium text-[#409eff] hover:underline'
+                            ? 'cursor-pointer font-medium text-(--el-color-primary) hover:underline'
                             : ''
                         "
                         :title="row.name"
@@ -272,21 +348,23 @@
                         >{{ row.name }}</span
                       >
                       <el-icon
-                        class="shrink-0 cursor-pointer text-[#c0c4cc] hover:text-(--el-color-primary)"
+                        class="shrink-0 cursor-pointer text-(--el-text-color-placeholder) hover:text-(--el-color-primary)"
                         :size="14"
                         title="复制文件名"
                         @click.stop="copyName(row.name)"
-                        ><CopyDocument
+                        ><FaSvgIcon icon="ri:file-copy-line"
                       /></el-icon>
                     </span>
                   </template>
                   <template #size="{ row }">
-                    <span class="text-xs text-[#909399]">{{
+                    <span class="text-xs text-(--el-text-color-secondary)">{{
                       row.is_dir ? "—" : formatSize(row.size)
                     }}</span>
                   </template>
                   <template #modified_time="{ row }">
-                    <span class="text-xs text-[#909399]">{{ formatTime(row.modified_time) }}</span>
+                    <span class="text-xs text-(--el-text-color-secondary)">{{
+                      formatTime(row.modified_time)
+                    }}</span>
                   </template>
                   <template #operation="{ row }">
                     <div class="inline-flex items-center justify-end gap-1">
@@ -345,7 +423,7 @@
               <!-- 状态栏 + 游标分页（桶列表最外层不显示） -->
               <div
                 v-if="!activeTab?.browseBuckets"
-                class="mt-2.5 flex shrink-0 items-center gap-2 text-[13px] text-[#606266]"
+                class="mt-4 flex shrink-0 items-center gap-2 text-[13px] text-(--el-text-color-regular)"
               >
                 <span>当前页 {{ entries.length }} 项 · 第 {{ pageNo }} 页</span>
                 <span v-if="selectedRows.length" class="text-(--el-color-primary)"
@@ -369,46 +447,45 @@
                 </div>
               </div>
             </template>
-            <el-empty
+            <FaEmptyState
               v-else
+              icon="ri:folder-open-line"
+              :title="nodes.length ? '从左侧打开一个节点' : '暂无节点'"
               :description="
-                nodes.length
-                  ? '从左侧打开一个节点开始浏览（可同时打开多个节点）'
-                  : '暂无节点，请先在「存储源管理」中创建'
+                nodes.length ? '可同时打开多个节点，互不干扰' : '请先在「存储源管理」中创建存储源'
               "
-              :image-size="100"
             >
               <el-button v-if="nodes.length" type="primary" @click="openAddDialog">
-                <el-icon style="margin-right: 4px"><Plus /></el-icon>打开节点
+                <el-icon style="margin-right: 4px"><FaSvgIcon icon="ri:add-line" /></el-icon
+                >打开节点
               </el-button>
-            </el-empty>
+            </FaEmptyState>
           </div>
         </el-tab-pane>
       </el-tabs>
       <div v-else class="flex min-h-0 flex-1 items-center justify-center">
-        <el-empty
+        <FaEmptyState
+          icon="ri:folder-open-line"
+          :title="nodes.length ? '从左侧打开一个节点' : '暂无节点'"
           :description="
-            nodes.length
-              ? '从左侧打开一个节点开始浏览（可同时打开多个节点）'
-              : '暂无节点，请先在「存储源管理」中创建'
+            nodes.length ? '可同时打开多个节点，互不干扰' : '请先在「存储源管理」中创建存储源'
           "
-          :image-size="120"
         >
           <el-button v-if="nodes.length" type="primary" @click="openAddDialog">
-            <el-icon style="margin-right: 4px"><Plus /></el-icon>打开节点
+            <el-icon style="margin-right: 4px"><FaSvgIcon icon="ri:add-line" /></el-icon>打开节点
           </el-button>
-        </el-empty>
+        </FaEmptyState>
       </div>
 
       <!-- 打开节点对话框 -->
       <FaDialog
         v-model="addDialogVisible"
         title="打开节点"
-        width="420px"
         form-mode="create"
         confirm-text="打开"
         @cancel="addDialogVisible = false"
         @confirm="confirmAdd"
+        size="sm"
       >
         <el-select v-model="newNodeId" placeholder="选择要打开的节点" filterable class="w-full">
           <el-option
@@ -425,12 +502,12 @@
       <FaDialog
         v-model="shareDialog.visible"
         title="分享文件"
-        width="480px"
         :close-on-click-modal="false"
         @close="shareDialog.visible = false"
+        size="sm"
       >
         <div class="inline-flex items-center gap-2">
-          <span class="text-[13px] text-[#909399]">有效期</span>
+          <span class="text-[13px] text-(--el-text-color-secondary)">有效期</span>
           <el-radio-group v-model="shareDialog.expireSeconds">
             <el-radio v-for="opt in shareExpireOptions" :key="opt.value" :value="opt.value">{{
               opt.label
@@ -441,7 +518,7 @@
           <el-input v-model="shareDialog.url" readonly class="min-w-0 flex-1" />
           <el-button type="primary" :icon="CopyDocument" @click="copyShareUrl">复制</el-button>
         </div>
-        <p class="mt-2 text-xs text-[#909399]">
+        <p class="mt-2 text-xs text-(--el-text-color-secondary)">
           {{
             shareDialog.url
               ? "链接已生成，有效期结束后自动失效"
@@ -460,20 +537,20 @@
       <FaDialog
         v-model="dirPicker.visible"
         :title="dirPicker.mode === 'copy' ? '复制到' : '移动到'"
-        width="480px"
         :close-on-click-modal="false"
         form-mode="create"
         :confirm-text="dirPicker.mode === 'copy' ? '复制' : '移动'"
         @cancel="dirPicker.visible = false"
         @confirm="confirmPickDir"
+        size="sm"
       >
         <div class="mb-2 inline-flex w-full items-center gap-2">
-          <span class="text-[13px] text-[#909399]">目标目录</span>
+          <span class="text-[13px] text-(--el-text-color-secondary)">目标目录</span>
           <div
             class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded px-2 text-xs text-(--el-text-color-regular)"
             :title="dirPicker.dir || '（最外层）'"
           >
-            <span class="text-xs text-[#909399]">/</span
+            <span class="text-xs text-(--el-text-color-secondary)">/</span
             ><span class="truncate">{{ dirPicker.dir || "（最外层）" }}</span>
           </div>
           <el-button link type="primary" size="small" :disabled="!dirPicker.dir" @click="pickerBack"
@@ -489,7 +566,10 @@
         </div>
         <div class="rounded border border-(--el-border-color)">
           <el-scrollbar max-height="320px">
-            <div v-if="dirPicker.loading" class="py-6 text-center text-xs text-[#909399]">
+            <div
+              v-if="dirPicker.loading"
+              class="py-6 text-center text-xs text-(--el-text-color-secondary)"
+            >
               <el-icon class="is-loading"><Loading /></el-icon>
             </div>
             <template v-else>
@@ -500,25 +580,28 @@
                 :title="`进入 ${e.name}`"
                 @click="pickerEnter(e.name || '')"
               >
-                <el-icon class="shrink-0 text-[#e6a23c]"><Folder /></el-icon>
+                <el-icon class="shrink-0 text-(--el-color-warning)"
+                  ><FaSvgIcon icon="ri:folder-2-line"
+                /></el-icon>
                 <span class="min-w-0 flex-1 truncate">{{ e.name }}</span>
               </div>
-              <el-empty
+              <FaEmptyState
                 v-if="!dirPicker.entries.length"
-                description="没有子目录"
-                :image-size="60"
+                compact
+                icon="ri:folder-line"
+                title="没有子目录"
               />
             </template>
           </el-scrollbar>
         </div>
-        <p class="mt-2 text-xs text-[#909399]">
+        <p class="mt-2 text-xs text-(--el-text-color-secondary)">
           文件将{{ dirPicker.mode === "copy" ? "复制" : "移动" }}到当前显示的目录
         </p>
       </FaDialog>
 
       <!-- 传输到：选中文件/目录 → 其他存储源 -->
-      <FaDialog v-model="transferVisible" title="传输到其他存储" width="480px" top="12vh">
-        <FaForm v-model="transferForm" :items="transferFormItems" label-width="88px" :span="24" />
+      <FaDialog v-model="transferVisible" title="传输到其他存储" top="12vh" size="sm">
+        <FaForm v-model="transferForm" :items="transferFormItems" label-width="96px" :span="24" />
         <p class="mt-2 text-xs leading-relaxed text-(--el-text-color-secondary)">
           将创建 {{ selectedRows.length }} 个传输任务：选中的文件 /
           目录依次传输到目标存储源的指定目录。
@@ -579,7 +662,7 @@
         </div>
       </el-scrollbar>
     </el-card>
-  </div>
+  </FaWorkbench>
 </template>
 
 <script setup lang="ts">
@@ -590,21 +673,15 @@ import {
   ArrowLeft,
   ArrowRight,
   CopyDocument,
-  Delete,
-  Document,
   Download,
   EditPen,
-  Folder,
   FolderAdd,
   FolderOpened,
   Loading,
   MoreFilled,
-  Plus,
   Promotion,
   Refresh,
-  Search,
   Share,
-  Upload,
 } from "@element-plus/icons-vue";
 import StorageAPI, { type StorageObject } from "@/api/module_storage/browse";
 import NodeAPI, { type SourceTable } from "@/api/module_storage/node";
@@ -709,6 +786,19 @@ const browseColumns: ColumnOption[] = [
     useSlot: true,
   },
 ];
+
+const browseCardRef = ref();
+const browseCardEl = computed(
+  () => (browseCardRef.value as { $el?: HTMLElement } | undefined)?.$el
+);
+const { width: browseCardWidth } = useElementSize(browseCardEl);
+
+/** 右侧面板较窄时隐藏「大小 / 修改时间」，避免横向溢出或滚动条 */
+const compactBrowseColumns = computed<ColumnOption[]>(() =>
+  browseCardWidth.value > 0 && browseCardWidth.value < 820
+    ? browseColumns.filter((col) => col.prop !== "size" && col.prop !== "modified_time")
+    : browseColumns
+);
 
 function onSortChange({ prop, order }: { prop: string | null; order: string | null }) {
   if (!order || !prop) {
@@ -1172,6 +1262,32 @@ async function createDir() {
   });
   ElMessage.success("创建成功");
   load();
+}
+
+// ─── 对象存储：新建桶 ──────────────────────────────────────────────
+const bucketCreating = ref(false);
+
+async function createBucket() {
+  const tab = activeTab.value;
+  if (!tab) return;
+  const { value } = await ElMessageBox.prompt(
+    "请输入存储桶名称（COS 需带 -appid 后缀）",
+    "新建存储桶",
+    {
+      inputPattern: /^[^\s/\\]{1,63}$/,
+      inputErrorMessage: "桶名需 1-63 个字符，且不能包含空格或斜杠",
+    }
+  ).catch(() => ({ value: undefined as string | undefined }));
+  const name = value?.trim();
+  if (!name) return;
+  bucketCreating.value = true;
+  try {
+    await StorageAPI.createBucket({ source_id: tab.nodeId, bucket: name });
+    ElMessage.success("创建桶成功");
+    await loadTab(tab);
+  } finally {
+    bucketCreating.value = false;
+  }
 }
 
 // ─── 文件操作：下载 ────────────────────────────────────────────────
@@ -1697,19 +1813,140 @@ onMounted(async () => {
 }
 
 /* 高度链闭合：左侧标签布局下内容区撑满，使表格独立滚动、状态栏/分页固定底部 */
+.browse-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.browse-card :deep(.el-tabs__new-tab) {
+  display: none !important;
+}
+
+.browse-card :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
 .browse-card :deep(.el-tabs) {
   height: 100%;
 }
 
-.browse-card :deep(.el-tabs--left .el-tabs__content) {
+/* 顶部工作区标签 */
+.browse-card :deep(.el-tabs__header) {
+  padding: 0 4px;
+  margin: 0 0 6px;
+}
+
+.browse-card :deep(.el-tabs__content) {
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.browse-card :deep(.el-tabs--left .el-tabs__content > .el-tab-pane) {
+.browse-card :deep(.el-tabs__content > .el-tab-pane) {
   height: 100%;
+}
+
+/* 左侧节点栏 */
+.browse-node-sidebar {
+  width: 100%;
+  height: 100%;
+}
+
+@media (width <= 800px) {
+  .browse-node-sidebar {
+    display: none;
+  }
+
+  /* 窄屏路径栏空间有限，隐藏“存储路径”快捷按钮 */
+  .path-root-btn {
+    display: none;
+  }
+
+  .path-refresh-btn {
+    display: none;
+  }
+
+  /* 节点栏隐藏后，工作区左槽位同步收起，避免顶部 320px 空白 */
+  :deep(.fa-workbench__side) {
+    display: none;
+  }
+}
+
+.browse-node-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--fa-radius-xs, 6px);
+}
+
+.browse-node-add:hover {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+}
+
+.browse-node-empty {
+  padding: 16px 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.browse-node-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 8px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.browse-node-item:hover {
+  background: var(--el-fill-color-light);
+}
+
+.browse-node-item.is-active {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.browse-node-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browse-node-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--el-text-color-secondary);
+  opacity: 0;
+}
+
+.browse-node-item:hover .browse-node-close,
+.browse-node-item.is-active .browse-node-close {
+  opacity: 1;
+}
+
+.browse-node-close:hover {
+  color: var(--el-color-danger);
 }
 
 /* 节点状态点（颜色 + 闪烁动画，原子类无法表达） */

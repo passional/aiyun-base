@@ -1,8 +1,8 @@
 <!-- 聊天页 -->
 <template>
   <div :style="{ height: containerMinHeight }">
-    <ElSplitter :style="'height: 100%'">
-      <ElSplitterPanel size="360px" :min="260" :max="500">
+    <div class="flex h-full gap-4">
+      <div class="h-full w-[360px] shrink-0">
         <div class="box-border h-full p-5">
           <div class="pb-5 max-md:hidden!">
             <div class="flex items-center gap-3">
@@ -68,9 +68,9 @@
             </div>
           </ElScrollbar>
         </div>
-      </ElSplitterPanel>
+      </div>
 
-      <ElSplitterPanel :min="300">
+      <div class="h-full min-w-0 flex-1">
         <div class="box-border h-full">
           <div class="flex items-center justify-between pt-4 px-4 pb-0 mb-5">
             <div>
@@ -158,8 +158,8 @@
             </div>
           </div>
         </div>
-      </ElSplitterPanel>
-    </ElSplitter>
+      </div>
+    </div>
   </div>
 </template>
 

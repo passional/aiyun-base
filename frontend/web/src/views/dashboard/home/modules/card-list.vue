@@ -1,6 +1,6 @@
 <template>
   <ElRow :gutter="16">
-    <ElCol v-for="item in dataList" :key="item.des" :sm="12" :md="8" :lg="8" class="mb-5">
+    <ElCol v-for="item in dataList" :key="item.des" :sm="8" :md="8" :lg="8" class="mb-4">
       <div class="fa-card relative flex flex-col justify-center h-30 px-5">
         <div class="flex items-center justify-between">
           <span class="text-sm text-g-600">{{ item.des }}</span>

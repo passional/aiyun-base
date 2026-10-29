@@ -1,7 +1,7 @@
 ---
 layout: doc
 title: 更新日志
-description: FastApiAdmin 版本更新日志,记录 v1.x → v3.1.0 各版本功能迭代、性能优化、Bug 修复与破坏性变更。
+description: FastapiAdmin 版本更新日志,记录 v1.x → v3.1.0 各版本功能迭代、性能优化、Bug 修复与破坏性变更。
 sidebar: false
 aside: false
 ---

@@ -20,7 +20,7 @@
       >
         <template #suffix>
           <div
-            class="h-4.5 flex items-center justify-center rounded border border-g-300 dark:bg-g-200/50! bg-box! px-1.5 text-g-500"
+            class="h-4.5 flex items-center justify-center rounded border border-line dark:bg-g-200/50! bg-box! px-1.5 text-g-500"
           >
             <FaSvgIcon icon="fluent:arrow-enter-left-20-filled" />
           </div>
@@ -397,7 +397,7 @@ const highlightOnHoverHistory = (index: number) => {
     :deep(.el-input__wrapper) {
       background-color: var(--fa-gray-200);
       border: 1px solid var(--default-border-dashed);
-      border-radius: calc(var(--custom-radius) / 2 + 2px) !important;
+      border-radius: var(--fa-radius-md, 12px) !important;
       box-shadow: none;
     }
 

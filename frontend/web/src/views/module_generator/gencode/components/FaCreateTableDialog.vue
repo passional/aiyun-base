@@ -37,7 +37,7 @@
       <ElScrollbar max-height="min(52vh, 420px)" class="sql-editor-scroll">
         <div class="absolute z-36 right-5 top-2">
           <ElLink type="primary" @click="copySql">
-            <ElIcon><CopyDocument /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:file-copy-line" /></ElIcon>
             复制
           </ElLink>
         </div>
@@ -68,7 +68,7 @@ import Codemirror from "codemirror-editor-vue3";
 import type { EditorConfiguration } from "codemirror";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import { ElMessage } from "element-plus";
-import { ArrowDown, CopyDocument } from "@element-plus/icons-vue";
+import { ArrowDown } from "@element-plus/icons-vue";
 import { useClipboard } from "@vueuse/core";
 import { useSettingsStore } from "@stores";
 import { ThemeMode } from "@/enums/settings/theme.enum";

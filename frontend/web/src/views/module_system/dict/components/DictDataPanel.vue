@@ -23,13 +23,13 @@
           <line x1="8" y1="13" x2="14" y2="13" />
         </svg>
       </div>
-      <p class="text-sm">请在左侧选择一个字典类型</p>
-      <p class="text-xs mt-1 opacity-50">选择后将在右侧展示该字典的数据列表</p>
+      <p class="text-sm">{{ $t("common.dictSelectType") }}</p>
+      <p class="text-xs mt-1 opacity-50">{{ $t("common.dictSelectDesc") }}</p>
     </div>
     <template v-else>
       <ElCard class="fa-table-card" :style="{ 'margin-top': '0' }">
         <template #header>
-          <div class="flex items-center">
+          <div class="flex flex-col items-start sm:flex-row sm:items-center">
             <span class="text-base font-medium">字典数据【{{ dictLabel }}】</span>
             <span class="text-gray-400 ml-1">({{ dictType }})</span>
           </div>
@@ -42,6 +42,7 @@
             v-model="searchForm"
             :items="dictDataSearchItems"
             :rules="searchBarRules"
+            :span="8"
             :is-expand="false"
             :show-expand="true"
             :show-reset="true"
@@ -70,7 +71,77 @@
           </template>
         </FaTableHeader>
 
+        <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+          <div v-if="!data.length" class="py-12">
+            <FaEmptyState
+              icon="ri:book-open-line"
+              title="暂无字典数据"
+              description="新增第一条字典数据后在这里展示"
+            />
+          </div>
+          <div
+            v-for="row in data"
+            :key="row.id"
+            class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-sm font-medium truncate">{{ row.dict_label }}</div>
+                <div class="mt-0.5 text-xs text-g-600">{{ row.dict_value }}</div>
+              </div>
+              <div class="flex gap-1 shrink-0">
+                <FaStatusTag v-if="row.is_default" type="success" label="默认" />
+                <ElSwitch
+                  :model-value="row.status ?? 0"
+                  :active-value="0"
+                  :inactive-value="1"
+                  :loading="statusUpdating.has(row.id!)"
+                  @update:model-value="(val) => handleStatusChange(row.id!, Number(val))"
+                />
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-g-600">
+              {{ $t("common.sort") }}：{{ row.dict_sort ?? "—" }}
+            </div>
+            <div class="mobile-card-actions">
+              <ElButton
+                link
+                type="primary"
+                size="small"
+                @click="buildDictDataRowActions(row)[0]?.run()"
+              >
+                {{ $t("common.detail") }}
+              </ElButton>
+              <ElButton
+                link
+                type="primary"
+                size="small"
+                @click="buildDictDataRowActions(row)[1]?.run()"
+              >
+                {{ $t("common.edit") }}
+              </ElButton>
+              <ElButton
+                link
+                type="danger"
+                size="small"
+                @click="buildDictDataRowActions(row)[2]?.run()"
+              >
+                {{ $t("common.delete") }}
+              </ElButton>
+            </div>
+          </div>
+          <ElPagination
+            v-if="data.length"
+            class="justify-center mt-1"
+            layout="prev, pager, next"
+            :current-page="pagination.current"
+            :page-size="pagination.size"
+            :total="pagination.total"
+            @current-change="handleCurrentChange"
+          />
+        </div>
         <FaTable
+          v-else
           ref="faTableRef"
           :loading="loading"
           :data="data"
@@ -84,7 +155,6 @@
       <FaDialog
         v-model="dialogVisible.visible"
         :title="dialogVisible.title"
-        width="720px"
         dialog-class="crud-embed-dialog"
         modal-class="crud-embed-dialog"
         :form-mode="dialogVisible.type"
@@ -92,6 +162,7 @@
         @cancel="handleCloseDialog"
         @close="handleCloseDialog"
         @confirm="handleSubmit()"
+        size="lg"
       >
         <template v-if="dialogVisible.type === 'detail'">
           <FaDescriptions
@@ -111,7 +182,7 @@
             :items="dictDataDialogFormItems"
             :rules="rules"
             label-suffix=":"
-            :label-width="100"
+            :label-width="96"
             label-position="right"
             :span="24"
             :gutter="16"
@@ -195,6 +266,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import DictAPI, {
   type DictDataForm,
   type DictDataPageQuery,
@@ -379,7 +451,7 @@ const {
       {
         prop: "operation",
         label: "操作",
-        width: 220,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: DictDataTable) => formatDictDataOperationCell(row),
@@ -587,6 +659,9 @@ async function handleAdd() {
     dict_type_id: props.dictTypeId,
   });
 }
+
+const { width: viewportWidth } = useWindowSize();
+const isNarrow = computed(() => viewportWidth.value < 1025);
 
 function buildDictDataRowActions(row: DictDataTable): TableOperationAction[] {
   const all: TableOperationAction[] = [

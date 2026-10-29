@@ -8,7 +8,7 @@
   background: rgba(8, 8, 20, 0.78);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+  border-bottom: 1px solid rgba(79, 107, 255, 0.08);
 }
 
 .dark :deep(.VPNavBar::before) {
@@ -20,16 +20,16 @@
   height: 1px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(99, 102, 241, 0.6),
-    rgba(236, 72, 153, 0.4),
-    rgba(6, 182, 212, 0.5),
+    rgba(79, 107, 255, 0.6),
+    rgba(109, 91, 255, 0.4),
+    rgba(109, 91, 255, 0.5),
     transparent
   );
 }
 
 .dark :deep(.VPNavBarTitle) {
   font-weight: 700;
-  background: linear-gradient(135deg, #e0e7ff 0%, #c084fc 50%, #f472b6 100%);
+  background: linear-gradient(135deg, #E5E9FF 0%, #C9BFFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -46,7 +46,7 @@
 }
 
 .dark :deep(.VPNavBarMenuLink:hover) {
-  color: #c4b5fd;
+  color: #C9BFFF;
 }
 
 .dark :deep(.VPNavBarMenuLink::after) {
@@ -56,7 +56,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  background: var(--fa-brand-gradient);
   border-radius: 1px;
   transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -75,8 +75,8 @@
 }
 
 :deep(.DocSearch-Button:hover) {
-  border-color: rgba(99, 102, 241, 0.4) !important;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(79, 107, 255, 0.4) !important;
+  box-shadow: 0 0 20px rgba(79, 107, 255, 0.15) !important;
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -85,17 +85,17 @@
   background: rgba(8, 8, 20, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(99, 102, 241, 0.06);
+  border-right: 1px solid rgba(79, 107, 255, 0.06);
 }
 
 .dark :deep(.VPSidebarItem.is-active > .item > .link) {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08));
+  background: linear-gradient(135deg, rgba(79, 107, 255, 0.15), rgba(109, 91, 255, 0.08));
   border-radius: var(--vp-radius-sm);
-  color: #c4b5fd;
+  color: #C9BFFF;
 }
 
 .dark :deep(.VPSidebarItem .link:hover) {
-  color: #c4b5fd;
+  color: #C9BFFF;
 }
 
 /* 侧边栏展开动画 */
@@ -125,8 +125,8 @@
   height: 1px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(99, 102, 241, 0.5),
-    rgba(236, 72, 153, 0.3),
+    rgba(79, 107, 255, 0.5),
+    rgba(109, 91, 255, 0.3),
     transparent
   );
   opacity: 0;
@@ -140,9 +140,9 @@
   right: -1px;
   width: 6px;
   height: 6px;
-  background: #a855f7;
+  background: #6D5BFF;
   border-radius: 50%;
-  box-shadow: 0 0 12px #a855f7;
+  box-shadow: 0 0 12px #6D5BFF;
   opacity: 0;
   transition: opacity 0.5s ease;
 }
@@ -150,11 +150,11 @@
 .dark :deep(.VPHero .features .VPFeature:hover) {
   /* hover lift 增大到 10px(feature 卡片是主视觉,允许比普通卡片多一倍) */
   transform: translateY(calc(-1 * var(--vp-hover-lift) * 2.5)) scale(1.03);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(79, 107, 255, 0.35);
   background: rgba(255, 255, 255, 0.03);
   box-shadow:
-    0 20px 50px rgba(99, 102, 241, 0.18),
-    0 0 70px rgba(139, 92, 246, 0.1),
+    0 20px 50px rgba(79, 107, 255, 0.18),
+    0 0 70px rgba(109, 91, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -170,12 +170,12 @@
 
 .dark :deep(.VPHero .features .VPFeature:hover .icon) {
   transform: scale(1.2);
-  filter: drop-shadow(0 0 24px rgba(139, 92, 246, 0.9));
+  filter: drop-shadow(0 0 24px rgba(109, 91, 255, 0.9));
 }
 
 /* Features 标题渐变 */
 .dark :deep(.VPHero .features .VPFeature .title) {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c4b5fd 100%);
+  background: linear-gradient(135deg, #E5E9FF 0%, #C9BFFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -183,7 +183,7 @@
 }
 
 .dark :deep(.VPHero .features .VPFeature:hover .title) {
-  background: linear-gradient(135deg, #c4b5fd 0%, #f9a8d4 100%);
+  background: linear-gradient(135deg, #C9BFFF 0%, #C9BFFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -196,12 +196,12 @@
 
 .dark :deep(.VPHero .text) {
   color: rgba(255, 255, 255, 0.7);
-  text-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
+  text-shadow: 0 0 40px rgba(79, 107, 255, 0.2);
 }
 
 .dark :deep(.VPHero .tagline) {
   color: rgba(255, 255, 255, 0.55);
-  text-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+  text-shadow: 0 0 30px rgba(109, 91, 255, 0.15);
 }
 
 .dark :deep(.VPHero .actions) {
@@ -225,7 +225,7 @@
 }
 
 .dark :deep(.vp-doc th) {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(79, 107, 255, 0.08);
   font-weight: 600;
 }
 
@@ -234,12 +234,12 @@
 }
 
 .dark :deep(.vp-doc tr:hover) {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(79, 107, 255, 0.05);
 }
 
 /* Footer */
 .dark :deep(.VPFooter) {
-  border-top: 1px solid rgba(99, 102, 241, 0.06);
+  border-top: 1px solid rgba(79, 107, 255, 0.06);
   background: rgba(8, 8, 20, 0.4);
   backdrop-filter: blur(12px);
 }

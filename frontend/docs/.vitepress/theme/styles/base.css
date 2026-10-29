@@ -9,7 +9,7 @@ html {
 
 /* 移动端点击高亮(改成品牌色,避免默认蓝框突兀) */
 a, button {
-  -webkit-tap-highlight-color: rgba(139, 92, 246, 0.18);
+  -webkit-tap-highlight-color: rgba(109, 91, 255, 0.18);
 }
 
 /* 键盘焦点可见性(仅键盘,鼠标点击不显示) */
@@ -45,7 +45,7 @@ a:focus-visible {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  background: linear-gradient(180deg, #4F6BFF 0%, #6D5BFF 50%, #6D5BFF 100%);
   border-radius: 4px;
 }
 
@@ -55,7 +55,7 @@ a:focus-visible {
 
 /* 文本选择高亮(深色) */
 .dark ::selection {
-  background: rgba(139, 92, 246, 0.35);
+  background: rgba(109, 91, 255, 0.35);
   color: #fff;
 }
 

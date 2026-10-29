@@ -1,0 +1,20 @@
+/* 由 design/tokens.json 生成，请勿手改。 */
+:root {
+  --fa-brand-blue: #4F6BFF;
+  --fa-brand-violet: #6D5BFF;
+  --fa-brand-gradient: linear-gradient(135deg, #4F6BFF 0%, #6D5BFF 100%);
+  --vp-brand-gradient: linear-gradient(135deg, #4F6BFF 0%, #6D5BFF 100%);
+  --fa-border: #E6E8EC;
+  --fa-shadow-card: 0 1px 2px rgb(16 24 40 / 4%);
+}
+
+.dark {
+  --vp-c-bg: #15181E;
+  --vp-c-bg-alt: #191D24;
+  --vp-c-bg-soft: #191D24;
+  --vp-c-divider: #262B34;
+  --vp-c-border: #262B34;
+  --vp-c-text-1: #E5E7EB;
+  --vp-c-text-2: #A3AAB8;
+  --vp-c-text-3: #8B93A1;
+}

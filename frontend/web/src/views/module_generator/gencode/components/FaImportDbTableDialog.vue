@@ -46,7 +46,7 @@
       class="mb-5"
     >
       <template #empty>
-        <ElEmpty :image-size="80" description="暂无数据" />
+        <FaEmptyState icon="ri:inbox-line" title="暂无数据" compact />
       </template>
       <ElTableColumn type="selection" width="55"></ElTableColumn>
       <ElTableColumn label="序号" type="index" min-width="30" align="center" fixed>

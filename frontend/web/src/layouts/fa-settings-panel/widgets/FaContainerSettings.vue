@@ -1,6 +1,6 @@
 <template>
   <div>
-    <FaSectionTitle :title="$t('setting.container.title')" class="mt-12.5" />
+    <FaSectionTitle :title="$t('setting.container.title')" />
     <div class="flex">
       <div
         v-for="option in containerWidthOptions"

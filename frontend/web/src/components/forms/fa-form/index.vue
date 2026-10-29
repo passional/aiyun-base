@@ -200,6 +200,7 @@
  * @see SearchFormItem 接口定义
  */
 import { useI18n } from "vue-i18n";
+import { translateFormLabels } from "@utils/table/columnLabelI18n";
 import { type Component } from "vue";
 import FaDatePicker from "@/components/forms/fa-search-bar/FaDatePicker.vue";
 import {
@@ -328,7 +329,7 @@ const props = withDefaults(defineProps<Props>(), {
   span: 6,
   gutter: 12,
   labelPosition: "right",
-  labelWidth: "70px",
+  labelWidth: "96px",
   buttonLeftLimit: 2,
   showReset: false,
   showSubmit: false,
@@ -458,7 +459,10 @@ const getComponent = (item: FormItem) => {
  * 可见的表单项
  */
 const visibleFormItems = computed(() => {
-  return props.items.filter((item) => !item.hidden);
+  return translateFormLabels(
+    props.items.filter((item) => !item.hidden),
+    t
+  );
 });
 
 /**

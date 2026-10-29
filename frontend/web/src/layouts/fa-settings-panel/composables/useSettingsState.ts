@@ -1,5 +1,6 @@
 import { MenuTypeEnum, MenuThemeEnum } from "@/enums/appEnum";
 import { useSettingsStore } from "@stores";
+import { MOBILE_BREAKPOINT } from "@/utils/constants/definitions";
 
 /**
  * 设置状态管理
@@ -19,13 +20,14 @@ export function useSettingsState() {
 
   // 菜单布局切换
   const switchMenuLayouts = (type: MenuTypeEnum) => {
-    if (type === MenuTypeEnum.LEFT || type === MenuTypeEnum.TOP_LEFT) {
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+    if (!isMobile && (type === MenuTypeEnum.LEFT || type === MenuTypeEnum.TOP_LEFT)) {
       settingStore.setMenuOpen(true);
     }
     settingStore.switchMenuLayouts(type);
     if (type === MenuTypeEnum.DUAL_MENU) {
       settingStore.switchMenuStyles(MenuThemeEnum.DESIGN);
-      settingStore.setMenuOpen(true);
+      if (!isMobile) settingStore.setMenuOpen(true);
     }
   };
 

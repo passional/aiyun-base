@@ -127,7 +127,7 @@ export default {
   width: 600rpx;
   padding: 0 24rpx;
   box-sizing: border-box;
-  border-radius: 32rpx;
+  border-radius: var(--fa-radius-md, 24rpx);
   overflow: hidden;
 }
 </style>

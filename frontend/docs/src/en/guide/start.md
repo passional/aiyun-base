@@ -2,7 +2,7 @@
 layout: doc
 outline: "deep"
 title: Quick Start
-description: "Spin up a working MVP in 15-30 minutes: prerequisites, source, Docker Compose, first run."
+description: "Spin up a working MVP in 5–15 minutes: prerequisites, source, Docker Compose and first run."
 ---
 
 ## Demo Environment
@@ -16,7 +16,7 @@ description: "Spin up a working MVP in 15-30 minutes: prerequisites, source, Doc
 
 | Type | Technology | Version |
 |------|------------|---------|
-| Backend | Python | ≥ 3.10 (3.12 recommended) |
+| Backend | Python | ≥ 3.12 |
 | Backend | FastAPI | 0.109+ |
 | Frontend | Node.js | ≥ 20.0 |
 | Frontend | pnpm | ≥ 9.0 |
@@ -29,9 +29,9 @@ description: "Spin up a working MVP in 15-30 minutes: prerequisites, source, Doc
 ## Get the Code
 
 ```bash
-git clone https://github.com/fastapiadmin/FastApiAdmin.git
+git clone https://github.com/fastapiadmin/FastapiAdmin.git
 # or via Gitee
-git clone https://gitee.com/fastapiadmin/FastApiAdmin.git
+git clone https://gitee.com/fastapiadmin/FastapiAdmin.git
 ```
 
 ## Backend Setup
@@ -74,17 +74,17 @@ python main.py upgrade --env=dev
 # Web Frontend (Vue3)
 cd FastapiAdmin/frontend/web
 pnpm install
-pnpm run dev
+pnpm run dev --port 5173
 
 # Mobile (UniApp)
 cd FastapiAdmin/frontend/app
 pnpm install
-pnpm run dev:h5
+pnpm run dev:h5 --port 5175
 
 # Documentation Site (VitePress)
 cd FastapiAdmin/frontend/docs
 pnpm install
-pnpm run dev
+pnpm run dev --port 5174
 ```
 
 ## Local Access URLs
@@ -92,7 +92,7 @@ pnpm run dev
 | Service | URL |
 |---------|-----|
 | Web Frontend | `http://127.0.0.1:5173` |
-| Mobile H5 | `http://127.0.0.1:8080` |
+| Mobile H5 | `http://127.0.0.1:5175` |
 | Documentation | `http://127.0.0.1:5174` |
 | Backend API | `http://127.0.0.1:8001` |
 | Swagger | `http://127.0.0.1:8001/docs` |

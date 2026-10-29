@@ -1,6 +1,6 @@
 <template>
   <div>
-    <FaSectionTitle :title="$t('setting.basics.title')" class="mt-10" />
+    <FaSectionTitle :title="$t('setting.basics.title')" />
     <FaSettingItem
       v-for="config in basicSettingsConfig"
       :key="config.key"

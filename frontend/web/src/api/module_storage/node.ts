@@ -80,7 +80,30 @@ const NodeAPI = {
       method: "get",
     });
   },
+
+  /** 导出存储源配置（不含凭据） */
+  exportConfig() {
+    return request<ApiResponse<StorageConfigExport>>({
+      url: `${API_PATH}/export`,
+      method: "get",
+    });
+  },
+
+  /** 导入存储源配置（不含凭据，按名称去重，已存在则跳过） */
+  importConfig(data: StorageConfigExport) {
+    return request<ApiResponse<{ created: number; skipped: number; invalid: number }>>({
+      url: `${API_PATH}/import`,
+      method: "post",
+      data,
+    });
+  },
 };
+
+export interface StorageConfigExport {
+  version: number;
+  exported_at: string;
+  nodes: Record<string, unknown>[];
+}
 
 export default NodeAPI;
 

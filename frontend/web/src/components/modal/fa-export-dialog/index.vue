@@ -4,10 +4,10 @@
     <FaDialog
       v-model="exportsModalVisible"
       title="导出数据"
-      width="600px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       @close="handleCloseExportsModal"
+      size="md"
     >
       <!-- 滚动 -->
       <ElScrollbar max-height="60vh">

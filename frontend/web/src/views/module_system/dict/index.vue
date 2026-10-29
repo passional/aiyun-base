@@ -1,74 +1,94 @@
 <!-- 字典管理：左侧字典类型列表 + 右侧字典数据面板 -->
 <template>
   <div class="fa-full-height">
-    <ElSplitter :style="'height: 100%'">
-      <!-- Left: Dict Type -->
-      <ElSplitterPanel size="30%" :min="320">
-        <div class="flex flex-col h-full overflow-hidden pr-2">
-          <FaSearchBar
-            v-show="showSearchBar"
-            ref="searchBarRef"
-            v-model="searchForm"
-            :items="dictTypeSearchItems"
-            :rules="searchBarRules"
-            :is-expand="false"
-            :show-expand="true"
-            :show-reset="true"
-            :show-search="true"
-            :disabled-search="false"
-            :default-expanded="false"
-            @search="handleSearchBarSearch"
-            @reset="onResetSearch"
-          />
-
-          <ElCard class="fa-table-card" :style="{ 'margin-top': showSearchBar ? '12px' : '0' }">
-            <FaTableHeader
-              v-model:columns="columnChecks"
-              v-model:showSearchBar="showSearchBar"
-              :loading="loading"
-              @refresh="refreshData"
+    <FaWorkbench :side-width="380">
+      <template #side>
+        <FaSidePanel title="字典类型" class="dict-type-panel">
+          <template #search>
+            <div class="dict-filter">
+              <ElInput
+                v-model="searchForm.dict_name"
+                size="small"
+                placeholder="字典名称"
+                clearable
+                aria-label="字典名称"
+                @keyup.enter="applyDictSearch"
+              />
+              <ElInput
+                v-model="searchForm.dict_type"
+                size="small"
+                placeholder="字典类型"
+                clearable
+                aria-label="字典类型"
+                @keyup.enter="applyDictSearch"
+              />
+              <div class="dict-filter-actions">
+                <ElButton size="small" text @click="resetDictSearch">重置</ElButton>
+                <ElButton size="small" type="primary" @click="applyDictSearch">查询</ElButton>
+              </div>
+            </div>
+          </template>
+          <template #actions>
+            <ElButton
+              v-hasPerm="['module_system:dict_type:create']"
+              type="primary"
+              size="small"
+              plain
+              @click="handleAdd"
             >
-              <template #left>
-                <FaTableHeaderLeft
-                  :perm-create="['module_system:dict_type:create']"
-                  @add="handleAdd"
-                />
+              新增
+            </ElButton>
+          </template>
+          <div v-if="!data.length" class="dict-type-empty">暂无字典类型</div>
+          <div
+            v-for="row in data"
+            :key="row.id"
+            class="dict-type-row"
+            :class="{ 'is-active': row.id === currentDictTypeId }"
+            @click="handleDictTypeRowClick(row)"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="dict-type-name">{{ row.dict_name }}</div>
+              <div class="dict-type-code">{{ row.dict_type }}</div>
+            </div>
+            <ElDropdown
+              trigger="click"
+              @command="(cmd) => runDictTypeAction(row, String(cmd))"
+              @click.stop
+            >
+              <button type="button" class="dict-type-more" aria-label="更多操作">
+                <ElIcon><FaSvgIcon icon="ri:more-2-fill" /></ElIcon>
+              </button>
+              <template #dropdown>
+                <ElDropdownMenu>
+                  <ElDropdownItem
+                    v-for="act in buildDictRowActions(row)"
+                    :key="act.key"
+                    :command="act.key"
+                  >
+                    {{ act.label }}
+                  </ElDropdownItem>
+                </ElDropdownMenu>
               </template>
-            </FaTableHeader>
+            </ElDropdown>
+          </div>
+        </FaSidePanel>
+      </template>
 
-            <FaTable
-              ref="faTableRef"
-              :loading="loading"
-              :data="data"
-              :columns="columns"
-              :pagination="pagination"
-              :row-class-name="dictTypeRowClassName"
-              @row-click="handleDictTypeRowClick"
-              @pagination:size-change="handleSizeChange"
-              @pagination:current-change="handleCurrentChange"
-            />
-          </ElCard>
-        </div>
-      </ElSplitterPanel>
-
-      <!-- Right: Dict Data -->
-      <ElSplitterPanel :min="300">
-        <div class="flex flex-col h-full overflow-hidden pl-2">
-          <DictDataPanel
-            :key="currentDictTypeId"
-            :dict-type="currentDictType"
-            :dict-label="currentDictLabel"
-            :dict-type-id="currentDictTypeId"
-          />
-        </div>
-      </ElSplitterPanel>
-    </ElSplitter>
+      <div class="fa-card dict-data-card">
+        <DictDataPanel
+          :key="currentDictTypeId"
+          :dict-type="currentDictType"
+          :dict-label="currentDictLabel"
+          :dict-type-id="currentDictTypeId"
+        />
+      </div>
+    </FaWorkbench>
 
     <!-- Dict Type CRUD Dialogs -->
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="640px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -76,6 +96,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="md"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -99,7 +120,7 @@
           :items="dictDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -118,13 +139,10 @@ import { useCrudForm } from "@/hooks/core/useCrudForm";
 import DictAPI, { type DictForm, type DictTable } from "@/api/module_system/dict";
 import { useDictStore } from "@stores";
 import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
-import type { SearchFormItem } from "@/components/forms/fa-search-bar/index.vue";
-import type FaSearchBar from "@/components/forms/fa-search-bar/index.vue";
 import type { FormItem } from "@/components/forms/fa-form/index.vue";
 import FaForm from "@/components/forms/fa-form/index.vue";
 import DictDataPanel from "./components/DictDataPanel.vue";
 import FaStatusTag from "@/components/display/fa-status-tag/index.vue";
-import FaTableHeader from "@/components/tables/fa-table-header/index.vue";
 import FaDescriptions from "@/components/display/fa-descriptions/index.vue";
 
 defineOptions({
@@ -143,31 +161,6 @@ const searchForm = ref<DictTypeSearchForm>({
   dict_name: undefined,
   dict_type: undefined,
 });
-
-const showSearchBar = ref(true);
-const searchBarRef = ref<InstanceType<typeof FaSearchBar> | null>(null);
-const searchBarRules: Record<string, unknown> = {};
-
-const dictTypeSearchItems = computed<SearchFormItem[]>(() => [
-  {
-    label: "字典名称",
-    key: "dict_name",
-    type: "input",
-    placeholder: "请输入字典名称",
-    clearable: true,
-    span: 8,
-  },
-  {
-    label: "字典类型",
-    key: "dict_type",
-    type: "input",
-    placeholder: "请输入字典类型",
-    clearable: true,
-    span: 8,
-  },
-]);
-
-const faTableRef = ref<{ elTableRef?: { clearSelection: () => void } } | null>(null);
 
 const createLoading = ref(false);
 const statusUpdating = ref<Set<number>>(new Set());
@@ -296,16 +289,9 @@ const dictDialogFormItems = computed<FormItem[]>(() => [
 ]);
 
 const {
-  columns,
-  columnChecks,
   data,
-  loading,
-  pagination,
   getData,
   replaceSearchParams,
-  resetSearchParams,
-  handleSizeChange,
-  handleCurrentChange,
   refreshData,
   refreshCreate,
   refreshUpdate,
@@ -315,7 +301,7 @@ const {
     apiFn: DictAPI.listDictType,
     apiParams: {
       page_no: 1,
-      page_size: 10,
+      page_size: 100,
     },
     columnsFactory: resolveStatusColumns<DictTable>(() => [
       { type: "globalIndex", width: 56, label: "序号" },
@@ -361,10 +347,6 @@ const currentDictTypeId = ref(0);
 const hasAutoSelected = ref(false);
 const selectedDictRowId = ref<number | null>(null);
 
-function dictTypeRowClassName({ row }: { row: DictTable }) {
-  return row?.id === selectedDictRowId.value ? "dict-type-row-selected" : "";
-}
-
 function handleDictTypeRowClick(row: DictTable) {
   selectedDictRowId.value = row.id ?? null;
   currentDictType.value = row.dict_type || "";
@@ -372,21 +354,20 @@ function handleDictTypeRowClick(row: DictTable) {
   currentDictTypeId.value = row.id ?? 0;
 }
 
-async function handleSearchBarSearch(params: DictTypeSearchForm) {
-  await searchBarRef.value?.validate?.();
+async function applyDictSearch() {
   replaceSearchParams({
-    dict_name: params.dict_name,
-    dict_type: params.dict_type,
+    dict_name: searchForm.value.dict_name,
+    dict_type: searchForm.value.dict_type,
   } as Record<string, unknown>);
   await getData();
 }
 
-function onResetSearch() {
+function resetDictSearch() {
   searchForm.value = {
     dict_name: undefined,
     dict_type: undefined,
   };
-  void resetSearchParams();
+  void applyDictSearch();
 }
 
 async function handleOpenDictTypeDetail(id: number) {
@@ -427,6 +408,12 @@ function buildDictRowActions(row: DictTable): TableOperationAction[] {
     },
   ];
   return all;
+}
+
+function runDictTypeAction(row: DictTable, key: string): void {
+  const action = buildDictRowActions(row).find((a) => a.key === key);
+  action?.run();
+  void action;
 }
 
 function formatDictOperationCell(row: DictTable) {
@@ -489,3 +476,106 @@ watch(data, (newData) => {
   }
 });
 </script>
+
+<style lang="scss" scoped>
+.dict-type-panel {
+  width: 100%;
+  height: 100%;
+}
+
+.dict-data-card {
+  box-sizing: border-box;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: 12px 16px;
+}
+
+/* 让字典数据面板和内部表格填满右侧卡片，与常规列表页保持一致的固定表格区 */
+.dict-data-card :deep(.dict-data-panel) {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 面板内筛选 */
+.dict-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dict-filter-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* 字典类型列表（左栏） */
+.dict-type-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.dict-type-row:hover {
+  background: var(--el-fill-color-light);
+}
+
+.dict-type-row.is-active {
+  background: var(--el-color-primary-light-9);
+}
+
+.dict-type-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  white-space: nowrap;
+}
+
+.dict-type-code {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+
+.dict-type-more {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--fa-radius-xs, 6px);
+  opacity: 0;
+}
+
+.dict-type-row:hover .dict-type-more,
+.dict-type-row.is-active .dict-type-more {
+  opacity: 1;
+}
+
+.dict-type-more:hover {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color);
+}
+
+.dict-type-empty {
+  padding: 12px 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+</style>

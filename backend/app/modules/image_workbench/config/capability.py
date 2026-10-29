@@ -724,18 +724,16 @@ def resolve_params(
     for key, value in submitted.items():
         param = evaluation.params.get(key)
         if param is None:
-            raise CustomException(msg=f"参数「{key}」不在该绘图模型的能力声明内", code=400, status_code=400)
+            raise CustomException(msg=f"参数「{key}」不在该绘图模型的能力声明内", code=400)
         if not param.available:
             raise CustomException(
                 msg=f"参数「{param.key}」在当前条件下不可用：{param.reason}" if param.reason else f"参数「{param.key}」在当前条件下不可用",
                 code=400,
-                status_code=400,
             )
         if not param.accepts(value):
             raise CustomException(
                 msg=f"参数「{param.key}」的取值「{_render_value(value)}」不在该模型支持的取值内，可选：{param.domain_text()}",
                 code=400,
-                status_code=400,
             )
 
     filled: dict[str, Any] = {}

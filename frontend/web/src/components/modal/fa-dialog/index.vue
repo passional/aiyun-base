@@ -2,7 +2,7 @@
   <ElDialog
     ref="elDialogRef"
     v-model="visible"
-    :width="width"
+    :width="dialogWidth"
     :draggable="draggable"
     :fullscreen="fullscreen"
     :show-close="false"
@@ -76,6 +76,8 @@ interface Props {
   modelValue: boolean;
   title?: string;
   width?: string | number;
+  /** 尺寸预设：sm 480 / md 640 / lg 720 / xl 900（width 优先） */
+  size?: "sm" | "md" | "lg" | "xl";
   /** 默认可拖拽；全屏时 Element Plus 会限制拖拽 */
   draggable?: boolean;
   /** 透传到 el-dialog 的 class */
@@ -128,6 +130,16 @@ const emit = defineEmits<Emits>();
 
 const attrs = useAttrs();
 const fullscreen = ref(false);
+
+const SIZE_WIDTH: Record<NonNullable<Props["size"]>, string> = {
+  sm: "480px",
+  md: "640px",
+  lg: "720px",
+  xl: "900px",
+};
+const dialogWidth = computed(
+  () => props.width ?? (props.size ? SIZE_WIDTH[props.size] : undefined)
+);
 
 watch(fullscreen, (newVal) => {
   emit("fullscreen-change", newVal);

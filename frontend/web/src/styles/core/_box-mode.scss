@@ -11,7 +11,7 @@
 @mixin fa-card-base($border-color, $shadow: none, $radius-diff: 4px) {
   background: var(--default-box-color);
   border: 1px solid #{$border-color} !important;
-  border-radius: calc(var(--custom-radius) + #{$radius-diff}) !important;
+  border-radius: var(--fa-radius-md, 12px) !important;
   box-shadow: #{$shadow} !important;
 
   --el-card-border-color: var(--default-border) !important;
@@ -19,7 +19,7 @@
 
 // 全局统一 ElCard 卡片圆角，与 dashboard 首页一致
 .el-card {
-  --el-card-border-radius: calc(var(--custom-radius) + 2px);
+  --el-card-border-radius: var(--fa-radius-md, 12px) !important;
 }
 
 .fa-card,
@@ -29,15 +29,15 @@
 }
 
 .fa-card {
-  border-radius: calc(var(--custom-radius) + 4px);
+  border-radius: var(--fa-radius-md, 12px);
 }
 
 .fa-card-sm {
-  border-radius: calc(var(--custom-radius) + 2px);
+  border-radius: var(--fa-radius-sm, 8px);
 }
 
 .fa-card-xs {
-  border-radius: calc(var(--custom-radius) - 4px);
+  border-radius: var(--fa-radius-xs, 6px);
 }
 
 // 盒子边框
@@ -64,7 +64,7 @@
 [data-box-mode="shadow-mode"] {
   .page-content,
   .fa-table-card {
-    border: 1px solid var(--fa-gray-200) !important;
+    border: 1px solid var(--fa-border, #e6e8ec) !important;
     box-shadow: 0 0 4px 0 rgb(0 0 0 / 4%) !important;
   }
 

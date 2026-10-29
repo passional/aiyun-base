@@ -94,7 +94,36 @@ export const AiChatAPI = {
       method: "post",
     });
   },
+
+  /** 拉取接口可用模型列表（按填写中的 base_url + api_key 探测，不落库） */
+  listAvailableModels(body: { base_url: string; api_key: string }) {
+    return request<ApiResponse<AiModelOption[]>>({
+      url: `${API_PATH}/model/available`,
+      method: "post",
+      data: body,
+    });
+  },
+
+  /** 测试接口连通性（按填写中的参数探测，不落库） */
+  testModelConnection(body: { base_url: string; api_key: string; model_id: string }) {
+    return request<ApiResponse<AiModelTestResult>>({
+      url: `${API_PATH}/model/test`,
+      method: "post",
+      data: body,
+    });
+  },
 };
+
+export interface AiModelOption {
+  id: string;
+  owned_by?: string | null;
+}
+
+export interface AiModelTestResult {
+  ok: boolean;
+  model_id: string;
+  latency_ms: number;
+}
 
 export interface AiModelConfigInput {
   name: string;

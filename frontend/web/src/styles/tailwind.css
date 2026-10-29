@@ -45,6 +45,8 @@
   --color-g-100: var(--fa-gray-100);
   --color-g-200: var(--fa-gray-200);
   --color-g-300: var(--fa-gray-300);
+  --color-line: var(--fa-border);
+  --color-line-subtle: var(--fa-border-subtle);
   --color-g-400: var(--fa-gray-400);
   --color-g-500: var(--fa-gray-500);
   --color-g-600: var(--fa-gray-600);
@@ -64,11 +66,11 @@
 
 /* ==================== Custom Border Radius Utilities ==================== */
 @utility rounded-custom-xs {
-  border-radius: calc(var(--custom-radius) / 2);
+  border-radius: var(--fa-radius-sm, 8px);
 }
 
 @utility rounded-custom-sm {
-  border-radius: calc(var(--custom-radius) / 2 + 2px);
+  border-radius: var(--fa-radius-md, 12px);
 }
 
 /* ==================== Custom Utility Classes ==================== */
@@ -232,9 +234,9 @@
   --fa-gray-900: #323251;
 
   /* Border Colors */
-  --fa-card-border: rgb(0 0 0 / 8%);
-  --default-border: #e2e8ee;
-  --default-border-dashed: #dbdfe9;
+  --fa-card-border: var(--fa-border);
+  --default-border: var(--fa-border);
+  --default-border-dashed: var(--fa-border-subtle);
 
   /* Background Colors */
   --default-bg-color: #fafbfc;
@@ -282,9 +284,9 @@
   --fa-gray-900: #e3e3e8;
 
   /* Border Colors */
-  --fa-card-border: rgb(255 255 255 / 8%);
-  --default-border: rgb(255 255 255 / 10%);
-  --default-border-dashed: #363843;
+  --fa-card-border: var(--fa-border);
+  --default-border: var(--fa-border);
+  --default-border-dashed: var(--fa-border-subtle);
 
   /* Background Colors */
   --default-bg-color: #070707;

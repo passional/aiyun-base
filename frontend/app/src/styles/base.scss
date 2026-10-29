@@ -17,6 +17,8 @@
 .wot-theme-dark {
   /* tabbar 背景跟随暗色页面背景，避免与内容区断层 */
   --wot-tabbar-bg: var(--wot-filled-content);
+  /* 卡片表面与 Web 深色卡片一致，形成层级差 */
+  --wot-filled-oppo: #191D24 !important;
 }
 
 .wot-theme-dark.page-wraper,
@@ -30,7 +32,7 @@
 .user-info-card {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--wot-primary-6), var(--wot-primary-4));
+  background: linear-gradient(135deg, var(--fa-brand-blue, #4F6BFF), var(--fa-brand-violet, #6D5BFF));
   box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.18);
 
   /* 右上角装饰圆环 */
@@ -55,4 +57,10 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.08);
   }
+}
+
+
+/* 暗色卡片统一为 Web 表面色（Wot 默认可能是纯黑） */
+.wot-theme-dark .wot-bg-filled-oppo {
+  background-color: #191D24 !important;
 }

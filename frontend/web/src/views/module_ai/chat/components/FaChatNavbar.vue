@@ -1,7 +1,11 @@
 <template>
   <div class="chat-navbar">
     <div class="navbar-left">
-      <button class="collapse-btn" @click="toggleSidebar">
+      <button
+        class="collapse-btn"
+        :aria-label="props.isSidebarCollapsed ? '展开侧栏' : '折叠侧栏'"
+        @click="toggleSidebar"
+      >
         <FaSvgIcon
           v-if="!props.isSidebarCollapsed"
           :icon="resolveIconForFaSvgIcon('layout_leftbar_close_line')"
@@ -25,7 +29,7 @@
         <ElIcon :class="['status-icon', connectionStatus]">
           <Connection v-if="connectionStatus === 'connected'" />
           <Loading v-else-if="connectionStatus === 'connecting'" />
-          <Warning v-else />
+          <FaSvgIcon v-else icon="ri:error-warning-line" />
         </ElIcon>
         <span class="status-text">{{ connectionStatusText }}</span>
       </ElTag>
@@ -40,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { Connection, Loading, Warning, Delete, Setting } from "@element-plus/icons-vue";
+import { Connection, Loading, Delete, Setting } from "@element-plus/icons-vue";
 import { resolveIconForFaSvgIcon } from "@utils";
 
 interface Props {
@@ -95,7 +99,7 @@ const toggleSidebar = () => emit("toggle-sidebar");
   }
 
   .navbar-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--el-text-color-primary);
   }

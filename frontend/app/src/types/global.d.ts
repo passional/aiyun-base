@@ -83,8 +83,8 @@ declare global {
    * 分页响应对象（列表接口 `data` 统一为该结构）
    */
   interface PageResult<T = any> {
-    /** 数据列表 */
-    list: T[]
+    /** 数据列表（后端 PageResultSchema 统一返回 items，而非 list） */
+    items: T[]
     /** 总数 */
     total: number
     page_no?: number

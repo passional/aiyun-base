@@ -39,6 +39,7 @@
       </FaTableHeader>
 
       <FaTable
+        mobile-cards
         ref="faTableRef"
         row-key="id"
         :loading="loading"
@@ -61,7 +62,7 @@
           <ElTooltip v-else content="点击编辑" placement="top">
             <span class="editable-cell" @click="handleEditTitle(row)">
               {{ row.title || "未命名会话" }}
-              <ElIcon class="edit-icon"><Edit /></ElIcon>
+              <ElIcon class="edit-icon"><FaSvgIcon icon="ri:edit-2-line" /></ElIcon>
             </span>
           </ElTooltip>
         </template>
@@ -71,7 +72,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="920px"
       dialog-class="session-detail-dialog"
       modal-class="session-detail-dialog"
       :form-mode="dialogVisible.type"
@@ -79,6 +79,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="xl"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <ElScrollbar max-height="70vh" :view-style="{ overflowX: 'hidden' }">
@@ -115,7 +116,7 @@
               </div>
             </ElTimelineItem>
           </ElTimeline>
-          <ElEmpty v-else description="暂无消息记录" :image-size="60" />
+          <FaEmptyState v-else icon="ri:history-line" title="暂无消息记录" compact />
         </ElScrollbar>
       </template>
       <template v-else>
@@ -126,7 +127,7 @@
           :items="memoryDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -146,14 +147,18 @@ defineOptions({
   inheritAttrs: false,
 });
 
-import { Edit } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import AiChatAPI, { type ChatSession, type ChatSessionDetail } from "@/api/module_ai/chat";
 import type { SearchFormItem } from "@/components/forms/fa-search-bar/index.vue";
 import type FaSearchBar from "@/components/forms/fa-search-bar/index.vue";
 import type { FormItem } from "@/components/forms/fa-form/index.vue";
 import type FaForm from "@/components/forms/fa-form/index.vue";
-import { formatToDateTime, renderTableOperationCell, type TableOperationAction } from "@utils";
+import {
+  formatDateTime,
+  formatToDateTime,
+  renderTableOperationCell,
+  type TableOperationAction,
+} from "@utils";
 import type { ColumnOption } from "@/types/component";
 import FaDescriptions from "@/components/display/fa-descriptions/index.vue";
 import FaTable from "@/components/tables/fa-table/index.vue";
@@ -325,14 +330,18 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "updated_time",
         label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.updated_time),
         sortable: true,
         showOverflowTooltip: true,
       },

@@ -1,15 +1,15 @@
 ---
 layout: doc
-title: 为什么选择 FastApiAdmin？
-description: 为什么选择 FastApiAdmin?与其他中后台方案对比分析:异步后端、全栈融合、代码生成、多端统一、模块化设计与活跃社区。
+title: 为什么选择 FastapiAdmin？
+description: 为什么选择 FastapiAdmin?与其他中后台方案对比分析:异步后端、全栈融合、代码生成、多端统一、模块化设计与活跃社区。
 outline: "deep"
 ---
 
-如果你正在寻找一套快速开发平台来搭建中后台系统，以下是 FastApiAdmin 与其他方案的核心差异。
+如果你正在寻找一套快速开发平台来搭建中后台系统，以下是 FastapiAdmin 与其他方案的核心差异。
 
 ## 与其他方案对比
 
-| 维度 | FastApiAdmin | Django Admin / Flask-Admin | 纯前端模板（vue-pure-admin 等） |
+| 维度 | FastapiAdmin | Django Admin / Flask-Admin | 纯前端模板（vue-pure-admin 等） |
 |------|-------------|---------------------------|-------------------------------|
 | **后端** | FastAPI 异步，Pydantic 类型安全 | Django/Flask 同步为主 | 无，需自行搭建 |
 | **前端** | Vue3 + TypeScript + Element Plus，开箱即用 | Jinja 模板渲染 | Vue3 + Element Plus |
@@ -71,9 +71,9 @@ services/user.py                # 用户逻辑又在另一个目录
 
 ## 内置功能：你不需要从零写的部分
 
-FastApiAdmin 开箱自带这些，而纯前端模板或裸框架**没有**：
+FastapiAdmin 开箱自带这些，而纯前端模板或裸框架**没有**：
 
-| 功能 | FastApiAdmin | Django Admin | 纯前端模板 |
+| 功能 | FastapiAdmin | Django Admin | 纯前端模板 |
 |------|:-----------:|:-----------:|:---------:|
 | RBAC 权限（菜单/按钮/数据级） | ✅ | ⚠️ 基础 | ❌ |
 | 代码生成器（表→CRUD） | ✅ | ❌ | ❌ |
@@ -92,7 +92,7 @@ FastApiAdmin 开箱自带这些，而纯前端模板或裸框架**没有**：
 - ✅ 不想从零搭建 RBAC、日志、监控等基础功能
 - ✅ 多人协作，需要模块间低耦合
 
-那么 FastApiAdmin 是这个场景下**效率最高的选择**。
+那么 FastapiAdmin 是这个场景下**效率最高的选择**。
 
 ## 下一步
 
@@ -105,7 +105,7 @@ FastApiAdmin 开箱自带这些，而纯前端模板或裸框架**没有**：
 | 3 | [前端开发指南](/guide/frontend) | 15 min | 第一次添加一个页面 |
 | 4 | [部署指南](/guide/deployment) | 20 min | 从本地推到生产环境 |
 
-或者直接 [克隆仓库](https://gitee.com/fastapiadmin/FastApiAdmin) 边看代码边查文档。
+或者直接 [克隆仓库](https://gitee.com/fastapiadmin/FastapiAdmin) 边看代码边查文档。
 
 ::: tip 遇到问题?
 [常见问题](/guide/why#常见问题)  ·  [GitHub Issues](https://github.com/fastapiadmin/FastapiAdmin/issues)  ·  [Gitee 问答](https://gitee.com/fastapiadmin/FastapiAdmin/issues)

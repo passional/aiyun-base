@@ -150,7 +150,7 @@ class ChannelEvalPlatformService:
             runs = await self.db.execute(select(ChannelEvalRunModel.id).where(ChannelEvalRunModel.platform_id == id_).limit(1))
             if runs.first() is not None:
                 platform = await self.crud.get(id=id_)
-                raise CustomException(msg=f"平台「{platform.name if platform else id_}」存在历史运行数据，禁止删除", code=400, status_code=400)
+                raise CustomException(msg=f"平台「{platform.name if platform else id_}」存在历史运行数据，禁止删除", code=400)
         await self.crud.delete(ids=ids)
 
     # ─────────────────────── 测试连接 ───────────────────────
@@ -209,17 +209,19 @@ class ChannelEvalPlatformService:
         # 通用 CRUD 的「仅本人」数据范围屏蔽管理员登记的平台。
         platform = await self.db.get(ChannelEvalPlatformModel, id) if for_run else await self.crud.get_or_404(id=id, msg="平台不存在")
         if platform is None or platform.is_deleted:
-            raise CustomException(msg="平台不存在", code=404, status_code=404)
+            raise CustomException(msg="平台不存在", code=404)
         if platform.status != 0:
-            raise CustomException(msg="平台已停用，请先启用后再拉取渠道目录", code=400, status_code=400)
+            raise CustomException(msg="平台已停用，请先启用后再拉取渠道目录", code=400)
 
         if platform.type == "user":
             # 基准渠道：整平台视为一条隐式渠道，模型目录经 /v1/models 实时拉取
             client = NewApiClient(platform.base_url, test_key=CryptoUtil.decrypt(platform.test_key_enc))
             try:
                 models = await client.list_models()
+            except CustomException:
+                raise
             except Exception as e:  # noqa: BLE001
-                raise CustomException(msg=f"拉取平台模型目录失败: {e}", code=400, status_code=400) from e
+                raise CustomException(msg=f"拉取平台模型目录失败: {e}", code=400) from e
             implicit = ChannelEvalChannelItemSchema(
                 channel_id=0,
                 name=f"{platform.name}（隐式渠道）",
@@ -239,12 +241,14 @@ class ChannelEvalPlatformService:
             )
 
         if not platform.admin_key_enc:
-            raise CustomException(msg="该平台未配置管理凭证，无法拉取渠道目录", code=400, status_code=400)
+            raise CustomException(msg="该平台未配置管理凭证，无法拉取渠道目录", code=400)
         client = build_client(platform)
         try:
             raw_channels = await client.list_channels()
+        except CustomException:
+            raise
         except Exception as e:  # noqa: BLE001
-            raise CustomException(msg=f"拉取渠道目录失败: {e}", code=400, status_code=400) from e
+            raise CustomException(msg=f"拉取渠道目录失败: {e}", code=400) from e
 
         items = [
             ChannelEvalChannelItemSchema(

@@ -52,7 +52,7 @@ async function loadComments() {
     return
   try {
     const res = await TicketAPI.getComments(ticketId.value, { page_no: commentPage.page_no, page_size: commentPage.page_size })
-    comments.value = res.list || []
+    comments.value = res.items || []
     commentTotal.value = res.total || 0
   }
   catch (e) {
@@ -146,7 +146,7 @@ onLoad((options) => {
 
     <template v-else-if="ticket">
       <!-- Ticket Header -->
-      <view class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <wd-text class="wot-text-text-main block text-4" :text="ticket.title || t('ticketDetail.unnamed')" bold />
         <view class="mt-3 flex gap-2">
           <wd-tag size="small" round :bg-color="getTypeBg(ticket.ticket_type)" :color="getTypeColor(ticket.ticket_type)">
@@ -159,8 +159,8 @@ onLoad((options) => {
       </view>
 
       <!-- Ticket Status Steps -->
-      <view class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
-        <wd-text class="wot-text-text-main mb-3 block text-3.5" :text="t('ticketDetail.progress')" bold />
+      <view class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
+        <wd-text class="wot-text-text-main mb-4 block text-3.5" :text="t('ticketDetail.progress')" bold />
         <wd-steps :active="Number(ticket.status ?? 0)" align-center>
           <wd-step :title="t('common.status.pending')" />
           <wd-step :title="t('common.status.processing')" />
@@ -170,8 +170,8 @@ onLoad((options) => {
       </view>
 
       <!-- Ticket Info -->
-      <view class="mx-3 mb-3">
-        <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+      <view class="mx-4 mb-4">
+        <wd-cell-group border custom-class="rounded-3! overflow-hidden">
           <wd-cell :title="t('ticketDetail.createdAt')" :value="ticket.created_time || '—'" />
           <wd-cell :title="t('ticketDetail.handler')" :value="ticket.assigned_by?.name || t('ticketDetail.unassigned')" />
           <wd-cell :title="t('ticketDetail.updatedAt')" :value="ticket.updated_time || '—'" />
@@ -179,14 +179,14 @@ onLoad((options) => {
       </view>
 
       <!-- Ticket Content -->
-      <view v-if="ticket.ticket_content || ticket.summary" class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view v-if="ticket.ticket_content || ticket.summary" class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <wd-text class="wot-text-text-main block text-3.5" :text="t('ticketDetail.content')" bold />
         <wd-divider class="my-3!" />
         <mp-html :content="ticket.summary || ticket.ticket_content" markdown :tag-style="MARKDOWN_TAG_STYLE" />
       </view>
 
       <!-- Images -->
-      <view v-if="parseImages(ticket.images).length > 0" class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view v-if="parseImages(ticket.images).length > 0" class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <wd-text class="wot-text-text-main block text-3.5" :text="t('ticketDetail.attachments')" bold />
         <wd-divider class="my-3!" />
         <view class="flex flex-wrap gap-3">
@@ -205,7 +205,7 @@ onLoad((options) => {
       </view>
 
       <!-- Reply -->
-      <view v-if="ticket.reply" class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view v-if="ticket.reply" class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <wd-text class="wot-text-text-main block text-3.5" :text="t('ticketDetail.replies')" bold />
         <wd-divider class="my-3!" />
         <view class="wot-bg-primary-1 rounded-lg p-3">
@@ -214,7 +214,7 @@ onLoad((options) => {
       </view>
 
       <!-- Comments -->
-      <view class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <wd-text class="wot-text-text-main block text-3.5" :text="t('ticketDetail.comments', { count: commentTotal })" bold />
         <wd-divider class="my-3!" />
         <wd-empty v-if="comments.length === 0" :tip="t('ticketDetail.emptyComments')" />

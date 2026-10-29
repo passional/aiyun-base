@@ -3,9 +3,11 @@
     <div class="input-wrapper">
       <div v-if="uploadedFiles.length > 0" class="uploaded-files">
         <div v-for="file in uploadedFiles" :key="file.id" class="file-item">
-          <ElIcon class="file-icon"><Document /></ElIcon>
+          <ElIcon class="file-icon"><FaSvgIcon icon="ri:file-text-line" /></ElIcon>
           <span class="file-name">{{ file.name }}</span>
-          <ElIcon class="file-remove" @click="removeFile(file.id)"><Close /></ElIcon>
+          <ElIcon class="file-remove" @click="removeFile(file.id)"
+            ><FaSvgIcon icon="ri:close-line"
+          /></ElIcon>
         </div>
       </div>
       <div class="input-container">
@@ -84,7 +86,7 @@
               :accept="acceptTypes"
               :multiple="true"
             >
-              <ElButton :icon="Paperclip" class="upload-btn" circle />
+              <ElButton :icon="Paperclip" class="upload-btn" circle aria-label="上传附件" />
             </ElUpload>
             <ElButton
               v-if="sending"
@@ -92,6 +94,7 @@
               type="danger"
               circle
               title="停止生成"
+              aria-label="停止生成"
               @click="handleStop"
             >
               <ElIcon><VideoPause /></ElIcon>
@@ -102,6 +105,7 @@
               class="send-button"
               type="primary"
               circle
+              aria-label="发送消息"
               @click="handleSend"
             >
               <ElIcon><Promotion /></ElIcon>
@@ -121,8 +125,6 @@ import { ElMessage } from "element-plus";
 import {
   Promotion,
   Paperclip,
-  Document,
-  Close,
   VideoPause,
   Cpu,
   ArrowDown,
@@ -300,7 +302,12 @@ defineExpose({
         background: var(--el-fill-color-light);
         border: 1px solid var(--el-border-color-light);
         border-radius: 8px;
-        transition: all 0.2s ease;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease,
+          transform 0.2s ease;
 
         &:hover {
           background: var(--el-color-primary-light-9);
@@ -375,6 +382,12 @@ defineExpose({
           background: transparent;
           border: none;
           box-shadow: none;
+          /* 输入框内不显示滚动条（内容超长仍可滚轮/方向键滚动） */
+          scrollbar-width: none;
+
+          &::-webkit-scrollbar {
+            display: none;
+          }
         }
 
         :deep(.el-textarea) {
@@ -406,7 +419,12 @@ defineExpose({
           background: var(--el-fill-color-blank);
           border: 1px solid var(--el-border-color-light);
           border-radius: 6px;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            border-color 0.2s,
+            color 0.2s,
+            box-shadow 0.2s,
+            transform 0.2s;
 
           &:hover {
             color: var(--el-color-primary);
@@ -454,7 +472,12 @@ defineExpose({
           .upload-btn {
             font-size: 18px;
             color: var(--el-text-color-secondary);
-            transition: all 0.2s ease;
+            transition:
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.2s ease;
 
             &:hover {
               color: var(--el-color-primary);
@@ -466,7 +489,12 @@ defineExpose({
             flex-shrink: 0;
             border-radius: 50%;
             box-shadow: var(--el-box-shadow-light);
-            transition: all 0.2s ease;
+            transition:
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.2s ease;
 
             &:hover {
               box-shadow: var(--el-box-shadow);

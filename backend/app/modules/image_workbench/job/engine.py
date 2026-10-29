@@ -165,9 +165,9 @@ def resolve_reference_files(paths: list[str] | None) -> list[str]:
         candidate = Path(raw)
         abs_path = (candidate if candidate.is_absolute() else Path.cwd() / candidate).resolve()
         if not abs_path.is_relative_to(root):
-            raise CustomException(msg=f"参考图路径不在上传目录内: {raw}", code=400, status_code=400)
+            raise CustomException(msg=f"参考图路径不在上传目录内: {raw}", code=400)
         if not abs_path.is_file():
-            raise CustomException(msg=f"参考图不存在或已被清理: {raw}", code=400, status_code=400)
+            raise CustomException(msg=f"参考图不存在或已被清理: {raw}", code=400)
         resolved.append(str(abs_path))
     return resolved
 

@@ -7,11 +7,11 @@ lastUpdated: true
 
 ## Project Background
 
-FastApiAdmin was born from a recurring pain in enterprise admin development: under the front-end/back-end separation architecture, even a simple CRUD page requires touching multiple directories, files, and technology stacks. The development experience is fragmented, and collaboration costs are high.
+FastapiAdmin was born from a recurring pain in enterprise admin development: under the front-end/back-end separation architecture, even a simple CRUD page requires touching multiple directories, files, and technology stacks. The development experience is fragmented, and collaboration costs are high.
 
 Traditional admin solutions (like Django Admin) are limited in functionality and hard to customize. Pure front-end templates (like AdminLTE, Ant Design Pro) lack backend support, requiring you to build the API layer from scratch. The market was missing a **truly out-of-the-box, full-stack, AI-capable** enterprise admin platform.
 
-FastApiAdmin's mission: spin up a working MVP in 15-30 minutes; routine CRUD is auto-generated so the team can focus on what makes the product unique.
+FastapiAdmin's mission: spin up a working MVP in 15-30 minutes; routine CRUD is auto-generated so the team can focus on what makes the product unique.
 
 ## Technical Philosophy
 
@@ -21,7 +21,7 @@ The backend uses FastAPI's native async/await architecture with Pydantic v2 auto
 
 ### 🧩 Vertical Slice Architecture
 
-Instead of traditional layered architecture (Controller → Service → DAO), FastApiAdmin organizes code by business domain using Vertical Slice. Each module contains its own Controller, Service, Model, and Schema — zero coupling between modules. Multiple developers can work in parallel without conflicts, and extracting a module into a microservice is as simple as moving one directory.
+Instead of traditional layered architecture (Controller → Service → DAO), FastapiAdmin organizes code by business domain using Vertical Slice. Each module contains its own Controller, Service, Model, and Schema — zero coupling between modules. Multiple developers can work in parallel without conflicts, and extracting a module into a microservice is as simple as moving one directory.
 
 ### 🤖 AI-Powered Development
 
@@ -72,7 +72,7 @@ Built on UniApp, one codebase generates H5, WeChat Mini Program, Alipay Mini Pro
 
 ## Roadmap
 
-FastApiAdmin will continue to invest in:
+FastapiAdmin will continue to invest in:
 
 - **Deep AI Integration** — From code generation to intelligent testing, auto deployment, smart ops
 - **Low-Code Capabilities** — Visual form designer, workflow orchestration, report configuration
@@ -102,8 +102,8 @@ Want to contribute? Feel free to participate via GitHub Issues or PRs.
 
 | Platform | Link |
 |----------|------|
-| GitHub | [FastApiAdmin](https://github.com/fastapiadmin/FastApiAdmin) |
-| Gitee | [FastApiAdmin](https://gitee.com/fastapiadmin/FastApiAdmin) |
-| GitCode | [FastApiAdmin](https://gitcode.com/qq_36002987/FastApiAdmin) |
+| GitHub | [FastapiAdmin](https://github.com/fastapiadmin/FastapiAdmin) |
+| Gitee | [FastapiAdmin](https://gitee.com/fastapiadmin/FastapiAdmin) |
+| GitCode | [FastapiAdmin](https://gitcode.com/qq_36002987/FastapiAdmin) |
 
-If FastApiAdmin helps you, feel free to follow and support the project's development ❤️
+If FastapiAdmin helps you, feel free to follow and support the project's development ❤️

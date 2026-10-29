@@ -44,7 +44,88 @@
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="mobileDeptRows.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="allCardsSelected"
+            :indeterminate="selectedRows.length > 0 && !allCardsSelected"
+            @change="toggleAllCards"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+        <div v-if="!mobileDeptRows.length" class="py-12">
+          <FaEmptyState
+            icon="ri:node-tree"
+            title="暂无部门"
+            description="新增第一个部门后在这里展示"
+          />
+        </div>
+        <div
+          v-for="{ row, depth } in mobileDeptRows"
+          :key="row.id"
+          class="p-3 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+          :style="{ marginLeft: `${depth * 12}px` }"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-1 min-w-0">
+              <ElCheckbox
+                class="shrink-0"
+                :model-value="isCardSelected(row)"
+                @change="(val) => toggleCardRow(row, val)"
+              />
+              <button
+                v-if="row.children?.length"
+                type="button"
+                class="flex items-center justify-center shrink-0 size-5 text-g-600"
+                @click="toggleMobileDept(row.id!)"
+              >
+                <FaSvgIcon
+                  :icon="
+                    expandedDeptIds.has(row.id!) ? 'ri:arrow-down-s-line' : 'ri:arrow-right-s-line'
+                  "
+                />
+              </button>
+              <span class="text-sm font-medium truncate">{{ row.name }}</span>
+            </div>
+            <FaStatusTag
+              :type="row.status === 0 ? 'success' : 'danger'"
+              :label="row.status === 0 ? $t('common.enabled') : $t('common.disabled')"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-xs text-g-600">
+            <span class="truncate">{{ $t("common.table.code") }}：{{ row.code }}</span>
+            <span>{{ $t("common.sort") }}：{{ row.order ?? "—" }}</span>
+            <span class="col-span-2 truncate"
+              >{{ $t("common.parent") }}：{{ row.parent_name || "—" }}</span
+            >
+            <span class="col-span-2"
+              >{{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}</span
+            >
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="opCtx.onAddChild(row.id!)">
+              {{ $t("common.addChild") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="opCtx.onDetail(row.id!)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="opCtx.onEdit(row.id!)">
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton
+              link
+              type="danger"
+              size="small"
+              @click="opCtx.onDelete(row.id!, row.name ?? '')"
+            >
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+      </div>
       <FaTable
+        v-else
         ref="tableRef"
         row-key="id"
         :loading="loading"
@@ -59,7 +140,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="640px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -67,6 +147,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="md"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -86,7 +167,7 @@
           :items="deptDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -101,6 +182,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import DeptAPI, {
   type DeptForm,
   type DeptPageQuery,
@@ -108,6 +190,7 @@ import DeptAPI, {
 } from "@/api/module_system/dept";
 import { useUserStore } from "@stores";
 import {
+  formatDateTime,
   formatTree,
   renderTableOperationCell,
   resolveStatusColumns,
@@ -387,6 +470,56 @@ async function handleOpenDeptDetail(id: number) {
   dialogVisible.visible = true;
 }
 
+const { width: viewportWidth } = useWindowSize();
+
+const visibleMobileRows = computed(() => mobileDeptRows.value.map((item) => item.row));
+
+const allCardsSelected = computed(
+  () =>
+    visibleMobileRows.value.length > 0 &&
+    visibleMobileRows.value.every((row) => selectedRows.value.some((item) => item.id === row.id))
+);
+
+function isCardSelected(row: DeptTable) {
+  return selectedRows.value.some((item) => item.id === row.id);
+}
+
+function toggleCardRow(row: DeptTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...selectedRows.value.filter((item) => item.id !== row.id), row]
+    : selectedRows.value.filter((item) => item.id !== row.id);
+  onTableSelectionChange(next);
+}
+
+function toggleAllCards(checked: boolean | string | number) {
+  onTableSelectionChange(checked ? [...visibleMobileRows.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
+const expandedDeptIds = ref<Set<number>>(new Set());
+
+const mobileDeptRows = computed(() => {
+  const rows: Array<{ row: DeptTable; depth: number }> = [];
+  const walk = (nodes: DeptTable[], depth: number) => {
+    nodes.forEach((node) => {
+      rows.push({ row: node, depth });
+      if (node.children?.length && expandedDeptIds.value.has(node.id!)) {
+        walk(node.children, depth + 1);
+      }
+    });
+  };
+  walk(tableData.value ?? [], 0);
+  return rows;
+});
+
+function toggleMobileDept(id: number) {
+  const next = new Set(expandedDeptIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expandedDeptIds.value = next;
+}
+
 const opCtx = {
   onAddChild: (parentId: number) =>
     void handleOpenDialog("create", undefined, { parent_id: parentId }),
@@ -415,21 +548,25 @@ const { columnChecks, columns } = useTableColumns<DeptTable>(
     {
       prop: "created_time",
       label: "创建时间",
-      width: 168,
+      width: 190,
+      formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+        formatDateTime(row.created_time),
       sortable: true,
       showOverflowTooltip: true,
     },
     {
       prop: "updated_time",
       label: "更新时间",
-      width: 168,
+      width: 190,
+      formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+        formatDateTime(row.updated_time),
       sortable: true,
       showOverflowTooltip: true,
     },
     {
       prop: "operation",
       label: "操作",
-      width: 220,
+      width: 200,
       fixed: "right",
       align: "center",
       formatter: (row: DeptTable) => formatDeptOperationCell(row, opCtx),

@@ -31,6 +31,32 @@ const CacheAPI = {
     });
   },
 
+  /** Redis 逻辑库列表（只读） */
+  getRedisDatabases() {
+    return request<ApiResponse<RedisDatabase[]>>({
+      url: `${API_PATH}/redis/databases`,
+      method: "get",
+    });
+  },
+
+  /** SCAN 浏览 Redis 键（只读） */
+  scanRedisKeys(params: { db?: number; pattern?: string; cursor?: number; count?: number }) {
+    return request<ApiResponse<RedisKeyPage>>({
+      url: `${API_PATH}/redis/keys`,
+      method: "get",
+      params,
+    });
+  },
+
+  /** 读取 Redis 单键详情（只读；敏感键已脱敏） */
+  getRedisValue(params: { db?: number; key: string }) {
+    return request<ApiResponse<RedisValue>>({
+      url: `${API_PATH}/redis/value`,
+      method: "get",
+      params,
+    });
+  },
+
   deleteCacheName(cacheName: string) {
     return request<ApiResponse>({
       url: `${API_PATH}/delete/name/${cacheName}`,
@@ -92,4 +118,32 @@ export interface CacheMonitor {
   command_stats: CommandStats[];
   db_size: number;
   info: RedisInfo;
+}
+
+export interface RedisDatabase {
+  db: number;
+  keys: number;
+  expires: number;
+}
+
+export interface RedisKeyMeta {
+  key: string;
+  type: string;
+  ttl: number;
+}
+
+export interface RedisKeyPage {
+  cursor: number;
+  keys: RedisKeyMeta[];
+  scanned: number;
+}
+
+export interface RedisValue {
+  key: string;
+  type: string;
+  ttl: number;
+  size: number | null;
+  value: unknown;
+  truncated: boolean;
+  masked: boolean;
 }

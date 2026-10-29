@@ -92,8 +92,10 @@
             </ElFormItem>
           </template>
           <ElFormItem>
-            <ElButton type="primary" icon="search" @click="handleQuery">搜索</ElButton>
-            <ElButton icon="refresh" @click="handleReset">重置</ElButton>
+            <ElButton type="primary" icon="search" @click="handleQuery">{{
+              $t("common.search")
+            }}</ElButton>
+            <ElButton icon="refresh" @click="handleReset">{{ $t("common.reset") }}</ElButton>
           </ElFormItem>
         </ElForm>
         <!-- 列表 -->
@@ -135,8 +137,10 @@
           <ElButton type="primary" size="small" @click="handleConfirm">
             {{ confirmText }}
           </ElButton>
-          <ElButton type="danger" size="small" @click="handleClear">清 空</ElButton>
-          <ElButton size="small" @click="handleClose">关 闭</ElButton>
+          <ElButton type="danger" size="small" @click="handleClear">{{
+            $t("common.clear")
+          }}</ElButton>
+          <ElButton size="small" @click="handleClose">{{ $t("common.close") }}</ElButton>
         </div>
       </div>
     </ElPopover>

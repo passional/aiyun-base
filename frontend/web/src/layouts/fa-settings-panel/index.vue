@@ -79,6 +79,10 @@ onUnmounted(() => {
       width: calc(100% + 15px);
       margin-bottom: 10px;
 
+      &.setting-box-wrap--quad .setting-item {
+        width: calc(50% - 15px);
+      }
+
       .setting-item {
         box-sizing: border-box;
         width: calc(33.333% - 15px);

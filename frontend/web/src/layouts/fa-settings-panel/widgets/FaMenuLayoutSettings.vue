@@ -1,7 +1,7 @@
 <template>
   <div v-if="width > 1000">
     <FaSectionTitle :title="$t('setting.menuType.title')" />
-    <div class="setting-box-wrap">
+    <div class="setting-box-wrap setting-box-wrap--quad">
       <div
         class="setting-item"
         v-for="(item, index) in configOptions.menuLayoutList"

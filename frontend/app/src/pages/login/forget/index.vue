@@ -125,10 +125,10 @@ function goLogin() {
   margin-top: 120rpx;
   /* 亮色下默认带主题色最浅阶，避免一片纯白；--card-bg-color 可被外部覆盖 */
   background: var(--card-bg-color, var(--wot-primary-1, #FFFFFF));
-  border-radius: var(--radius-xl, 32rpx);
+  border-radius: var(--fa-radius-md, 24rpx);
   padding: 40rpx 36rpx;
   /* 边框跟随主题色浅阶，替代中性灰，让卡片更有主题感 */
-  border: 2rpx solid var(--border-color, var(--wot-primary-2, #EAECF0));
+  border: 2rpx solid var(--fa-border, #E6E8EC);
   box-shadow: var(--shadow-md, 0 8rpx 32rpx rgba(15, 23, 42, 0.04));
 
   .wot-theme-dark & {
@@ -153,7 +153,7 @@ function goLogin() {
 
 .forget-form {
   :deep(.wd-input) {
-    border-radius: 24rpx;
+    border-radius: var(--fa-radius-sm, 16rpx);
     /* 亮色下主题色浅阶边框与卡片边框呼应，白色底在淡色卡片上形成浮层 */
     border: 2rpx solid var(--wot-primary-2, var(--wot-border-main, #EAECF0));
     box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);

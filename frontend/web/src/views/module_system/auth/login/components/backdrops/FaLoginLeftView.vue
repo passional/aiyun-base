@@ -94,7 +94,7 @@
 import AppConfig from "@/config";
 import loginIcon from "@fa_imgs/background.svg";
 import { useConfigStore } from "@stores";
-import { themeAnimation } from "@utils";
+import { themeAnimation, normalizeBrandName } from "@utils";
 
 defineOptions({ name: "FaLoginLeftView" });
 
@@ -117,7 +117,8 @@ const webLogoSrc = computed(
 );
 
 const siteTitle = computed(
-  () => configStore.configData.sys_name?.config_value?.trim() || AppConfig.systemInfo.name
+  () =>
+    normalizeBrandName(configStore.configData.sys_name?.config_value) || AppConfig.systemInfo.name
 );
 
 const DEFAULT_APP_VERSION = "3.0.0";
@@ -445,7 +446,12 @@ $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
       background: $bg-mix-light-7;
       border-radius: 50%;
       box-shadow: 0 0 20px rgba(#fffc00, 0.5);
-      transition: all 0.3s;
+      transition:
+        background-color 0.3s,
+        border-color 0.3s,
+        color 0.3s,
+        box-shadow 0.3s,
+        transform 0.3s;
 
       &::after {
         position: absolute;
@@ -458,7 +464,12 @@ $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
         border-radius: 50%;
         opacity: 1;
         transform: translate(-50%, -50%);
-        transition: all 0.5s;
+        transition:
+          background-color 0.5s,
+          border-color 0.5s,
+          color 0.5s,
+          box-shadow 0.5s,
+          transform 0.5s;
       }
 
       &:hover {
@@ -612,7 +623,12 @@ $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
       background-color: #f5f3d0;
       box-shadow: 0 0 30px rgba(#fffc00, 0.35);
       rotate: -48deg;
-      transition: all 0.3s ease-in-out 0.1s;
+      transition:
+        background-color 0.3s ease-in-out 0.1s,
+        border-color 0.3s ease-in-out 0.1s,
+        color 0.3s ease-in-out 0.1s,
+        box-shadow 0.3s ease-in-out 0.1s,
+        transform 0.3s ease-in-out 0.1s;
 
       &::after {
         opacity: 0;
@@ -627,7 +643,12 @@ $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
         content: "";
         background-color: color-mix(in srgb, $primary-light-9 60%, #070707);
         border-radius: 50%;
-        transition: all 0.3s ease-in-out;
+        transition:
+          background-color 0.3s ease-in-out,
+          border-color 0.3s ease-in-out,
+          color 0.3s ease-in-out,
+          box-shadow 0.3s ease-in-out,
+          transform 0.3s ease-in-out;
       }
 
       &:hover {

@@ -5,7 +5,7 @@
     :style="{ height: 'calc(100vh - 180px)' }"
   >
     <div v-if="isEmpty" class="h-full flex items-center justify-center">
-      <ElEmpty description="暂无地图数据" />
+      <FaEmptyState icon="ri:map-2-line" title="暂无地图数据" compact />
     </div>
 
     <div v-else id="china-map" ref="chinaMapRef" class="h-full w-full overflow-hidden rounded-lg" />

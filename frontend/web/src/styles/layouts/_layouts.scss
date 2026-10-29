@@ -41,7 +41,7 @@
       flex: 1;
       flex-direction: column;
       min-height: 0;
-      padding: 20px;
+      padding: 16px;
       overflow: auto;
 
       .layout-content {
@@ -55,10 +55,10 @@
           position: relative;
           box-sizing: border-box;
           min-height: 0;
-          padding: 20px;
+          padding: 16px;
           overflow: hidden auto;
           background: var(--default-box-color);
-          border-radius: calc(var(--custom-radius) / 2 + 2px) !important;
+          border-radius: var(--fa-radius-md, 12px) !important;
         }
       }
     }
@@ -79,6 +79,13 @@
 
 @media only screen and (width <= 800px) {
   .app-layout {
+    .mobile-sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 299;
+      background: rgb(0 0 0 / 35%);
+    }
+
     position: relative;
 
     #app-sidebar {
@@ -86,7 +93,17 @@
       top: 0;
       left: 0;
       z-index: 300;
+      width: 220px;
       height: 100vh;
+      transition: transform 0.22s ease;
+
+      &.sidebar-hidden {
+        transform: translateX(-100%);
+      }
+
+      &:not(.sidebar-hidden) {
+        box-shadow: var(--fa-shadow-pop, 0 4px 16px rgb(0 0 0 / 12%));
+      }
     }
 
     /** H5 端：使用 100dvh（动态视口高度，排除移动浏览器地址栏）

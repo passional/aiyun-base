@@ -1,7 +1,7 @@
 ---
 layout: doc
 title: 前端开发指南
-description: FastApiAdmin 前端开发指南,Vue3 + TypeScript + Element Plus + Vite 技术栈的目录结构、组件封装、Pinia 状态管理、Axios 封装与 API 接入。
+description: FastapiAdmin 前端开发指南,Vue3 + TypeScript + Element Plus + Vite 技术栈的目录结构、组件封装、Pinia 状态管理、Axios 封装与 API 接入。
 outline: "deep"
 ---
 

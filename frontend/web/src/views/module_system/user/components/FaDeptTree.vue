@@ -8,10 +8,11 @@
         placeholder="部门名称"
         size="small"
         clearable
+        aria-label="部门名称"
       >
         <template #prefix>
           <ElIcon class="text-(--el-text-color-placeholder)">
-            <Search />
+            <FaSvgIcon icon="ri:search-line" />
           </ElIcon>
         </template>
         <template #suffix>
@@ -44,14 +45,14 @@
       @node-click="handleNodeClick"
     >
       <template #empty>
-        <ElEmpty :image-size="80" description="暂无数据" />
+        <FaEmptyState icon="ri:node-tree" title="暂无部门" compact />
       </template>
     </ElTree>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Search, Switch } from "@element-plus/icons-vue";
+import { Switch } from "@element-plus/icons-vue";
 import DeptAPI from "@/api/module_system/dept";
 import { formatTree } from "@utils";
 import type { FilterNodeMethodFunction, TreeInstance } from "element-plus";

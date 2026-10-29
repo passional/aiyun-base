@@ -102,7 +102,7 @@ const t = computed(() =>
         eyebrow: 'Full-Stack, End-to-End',
         title: 'One Stack, All Surfaces',
         subtitle:
-          'Web management, AI code generation, FastAPI async backend, UniApp mobile — built from one codebase, deployed in days.',
+          'Web management, AI code generation, FastAPI async backend and UniApp mobile — one codebase, one design system, shipped together.',
         stepLabel: 'Stage',
       }
     : {
@@ -110,7 +110,7 @@ const t = computed(() =>
         eyebrow: '全栈贯通',
         title: '一套代码,全端覆盖',
         subtitle:
-          'Web 管理后台 / AI 代码生成 / FastAPI 异步后端 / UniApp 移动端,从底层到终端一栈打通。',
+          'Web 管理后台、AI 代码生成、FastAPI 异步后端与 UniApp 移动端，一套代码、一套设计系统、一起交付。',
         stepLabel: '阶段',
       }
 )
@@ -122,10 +122,10 @@ const steps = computed<Step[]>(() =>
           id: 1,
           anchor: 'end-to-end-web',
           title: 'Web Management',
-          desc: '30+ production-ready business modules. Vue3 + TypeScript + Element Plus — dashboard, RBAC, CRUD, zero scaffolding.',
+          desc: 'A complete admin shell: dashboard, RBAC, CRUD, audit logs and 30+ business modules. Vue3 + TypeScript + Element Plus, no scaffolding.',
           features: [
             'Dashboard with live metrics',
-            'Menu / button / data RBAC',
+            'Menu / button / data-level RBAC',
             'Audit logs + operation history',
           ],
           images: [
@@ -158,14 +158,14 @@ const steps = computed<Step[]>(() =>
             'JWT + OAuth2 + RBAC',
           ],
           images: [
-            { src: '/showcase/login.webp', alt: 'FastAPI Login and API auth' },
+            { src: '/showcase/login.webp', alt: 'Login with puzzle verification and API auth' },
           ],
         },
         {
           id: 4,
           anchor: 'end-to-end-app',
           title: 'UniApp Mobile',
-          desc: 'One codebase, four outputs. UniApp + Vue3 + Wot Design → H5, WeChat, Alipay mini-programs, native App.',
+          desc: 'One codebase, four targets. UniApp + Vue3 + Wot Design → H5, WeChat / Alipay mini programs and native App, with shared auth and dark mode.',
           features: [
             'Single codebase → 4 platforms',
             'Built-in mobile RBAC',
@@ -184,7 +184,7 @@ const steps = computed<Step[]>(() =>
           id: 1,
           anchor: 'end-to-end-web',
           title: 'Web 管理后台',
-          desc: '30+ 业务模块开箱即用。Vue3 + TypeScript + Element Plus,仪表盘 / RBAC / CRUD,克隆即跑,零脚手架。',
+          desc: '完整管理壳：仪表盘、RBAC、CRUD、审计日志与 30+ 业务模块。Vue3 + TypeScript + Element Plus，克隆即跑，零脚手架。',
           features: [
             '仪表盘 + 实时业务指标',
             '菜单 / 按钮 / 数据三级 RBAC',
@@ -199,7 +199,7 @@ const steps = computed<Step[]>(() =>
           id: 2,
           anchor: 'end-to-end-gen',
           title: 'AI 代码生成器',
-          desc: '选数据库表 → AI 自动生成 Controller / Service / Model / Vue 页面。CRUD 从几天缩短到几秒。',
+          desc: '选表 → 自动生成 Controller / Service / Model / Vue 页面与类型定义，CRUD 从几天缩短到几秒。',
           features: [
             '数据库 schema 智能识别',
             'Pydantic + TypeScript 类型同步',
@@ -220,14 +220,14 @@ const steps = computed<Step[]>(() =>
             'JWT + OAuth2 + RBAC',
           ],
           images: [
-            { src: '/showcase/login.webp', alt: 'FastAPI 登录与 API 认证' },
+            { src: '/showcase/login.webp', alt: '登录、拼图验证与 API 认证' },
           ],
         },
         {
           id: 4,
           anchor: 'end-to-end-app',
           title: 'UniApp 移动端',
-          desc: '一套代码,4 端输出。UniApp + Vue3 + Wot Design → H5 / 微信小程序 / 支付宝小程序 / 原生 App。',
+          desc: '一套代码、4 个目标端。UniApp + Vue3 + Wot Design → H5 / 微信小程序 / 支付宝小程序 / 原生 App，登录、权限与暗色模式同源。',
           features: [
             '一套代码 4 个平台',
             '内置移动端 RBAC',
@@ -353,11 +353,11 @@ const lightboxNext = () => {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--vp-brand-accent);
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(109, 91, 255, 0.12);
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   margin-bottom: 1rem;
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(109, 91, 255, 0.25);
 }
 
 .endtoend-step-title {
@@ -425,7 +425,7 @@ const lightboxNext = () => {
   cursor: pointer;
   text-align: left;
   box-shadow:
-    0 24px 60px rgba(99, 102, 241, 0.18),
+    0 24px 60px rgba(79, 107, 255, 0.18),
     0 8px 20px rgba(0, 0, 0, 0.08);
   transition:
     transform 0.5s var(--vp-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1)),
@@ -439,7 +439,7 @@ const lightboxNext = () => {
   inset: -1px;
   border-radius: var(--vp-radius-xl);
   padding: 1px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), transparent 50%, rgba(99, 102, 241, 0.3));
+  background: linear-gradient(135deg, rgba(109, 91, 255, 0.4), transparent 50%, rgba(79, 107, 255, 0.3));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -455,7 +455,7 @@ const lightboxNext = () => {
 .endtoend-step-image-wrap:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 32px 80px rgba(99, 102, 241, 0.28),
+    0 32px 80px rgba(79, 107, 255, 0.28),
     0 12px 30px rgba(0, 0, 0, 0.12);
 }
 

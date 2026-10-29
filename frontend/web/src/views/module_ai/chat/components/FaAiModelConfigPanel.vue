@@ -1,17 +1,24 @@
 <template>
-  <FaDrawer v-model="drawerVisible" title="配置中心" size="60%" destroy-on-close>
+  <FaDrawer
+    v-model="drawerVisible"
+    :title="$t('common.aiConfig.title')"
+    size="60%"
+    destroy-on-close
+  >
     <div class="ai-model-config">
       <div v-if="loading" class="loading-tip">
         <ElIcon class="is-loading"><Loading /></ElIcon>
-        <span>加载中...</span>
+        <span>{{ $t("common.aiConfig.loading") }}</span>
       </div>
       <template v-else>
         <!-- 顶部状态栏 -->
         <div class="status-bar">
           <div class="status-info">
-            <span class="status-title">当前使用</span>
+            <span class="status-title">{{ $t("common.aiConfig.current") }}</span>
             <ElTag :type="activeId ? 'primary' : 'info'" effect="dark" size="small">
-              <ElIcon class="tag-icon"><CircleCheck v-if="activeId" /><Cpu v-else /></ElIcon>
+              <ElIcon class="tag-icon"
+                ><FaSvgIcon v-if="activeId" icon="ri:checkbox-circle-line" /><Cpu v-else
+              /></ElIcon>
               <span>{{ activeModelName }}</span>
             </ElTag>
           </div>
@@ -23,7 +30,7 @@
             @click="handleUseDefault"
           >
             <ElIcon><RefreshLeft /></ElIcon>
-            <span>恢复系统默认</span>
+            <span>{{ $t("common.aiConfig.restore") }}</span>
           </ElButton>
         </div>
 
@@ -31,32 +38,24 @@
         <div class="config-section">
           <div class="section-header">
             <div class="header-left">
-              <span class="section-title">已配置的模型</span>
+              <span class="section-title">{{ $t("common.aiConfig.configuredModels") }}</span>
               <ElTag v-if="items.length > 0" size="small" effect="plain" type="info">
-                {{ items.length }} 个
+                {{ items.length }} {{ $t("common.aiConfig.countUnit") }}
               </ElTag>
             </div>
           </div>
 
-          <!-- 空状态 - 直接显示添加按钮作为唯一行动 -->
-          <ElEmpty v-if="items.length === 0">
-            <template #image>
-              <div class="empty-illust">
-                <ElIcon :size="56"><Cpu /></ElIcon>
-                <ElIcon class="empty-icon-bg" :size="100"><ChatLineSquare /></ElIcon>
-              </div>
-            </template>
-            <template #description>
-              <div class="empty-title">添加你的第一个 AI 模型</div>
-              <div class="empty-desc">
-                支持 OpenAI、DeepSeek、Ollama 等任何 OpenAI 兼容服务<br />
-                配置后即可在 AI 助手页一键切换
-              </div>
-            </template>
+          <!-- 空状态 - 统一 FaEmptyState -->
+          <FaEmptyState
+            v-if="items.length === 0"
+            icon="ri:cpu-line"
+            :title="$t('common.aiConfig.emptyTitle')"
+            :description="$t('common.aiConfig.emptyDesc')"
+          >
             <ElButton type="primary" size="large" :icon="Plus" @click="openCreate">
-              立即添加
+              {{ $t("common.aiConfig.addNow") }}
             </ElButton>
-          </ElEmpty>
+          </FaEmptyState>
 
           <!-- 列表 -->
           <div v-else class="config-list">
@@ -75,7 +74,7 @@
                 <div class="config-item-main">
                   <div class="item-icon-wrap">
                     <ElIcon class="item-icon" :size="18">
-                      <CircleCheck v-if="item.id === activeId" />
+                      <FaSvgIcon v-if="item.id === activeId" icon="ri:checkbox-circle-line" />
                       <ChatLineSquare v-else />
                     </ElIcon>
                   </div>
@@ -83,23 +82,35 @@
                     <div class="item-row1">
                       <span class="item-name">{{ item.name }}</span>
                       <ElTag v-if="item.id === activeId" type="success" size="small" effect="light">
-                        使用中
+                        {{ $t("common.aiConfig.inUse") }}
                       </ElTag>
                     </div>
                     <div class="item-model">{{ item.model_id }}</div>
                   </div>
                   <div class="item-actions" @click.stop>
-                    <ElTooltip content="展开详情" placement="top" :show-after="200">
+                    <ElTooltip
+                      :content="$t('common.aiConfig.expand')"
+                      placement="top"
+                      :show-after="200"
+                    >
                       <ElButton text circle size="small" @click="toggleExpand(item.id)">
                         <ElIcon :class="{ rotated: expandedId === item.id }">
                           <ArrowDown />
                         </ElIcon>
                       </ElButton>
                     </ElTooltip>
-                    <ElTooltip content="编辑" placement="top" :show-after="200">
+                    <ElTooltip
+                      :content="$t('common.aiConfig.hintEdit')"
+                      placement="top"
+                      :show-after="200"
+                    >
                       <ElButton text circle size="small" :icon="Edit" @click="openEdit(item)" />
                     </ElTooltip>
-                    <ElTooltip content="删除" placement="top" :show-after="200">
+                    <ElTooltip
+                      :content="$t('common.aiConfig.hintDelete')"
+                      placement="top"
+                      :show-after="200"
+                    >
                       <ElButton
                         text
                         circle
@@ -127,7 +138,10 @@
                         size="small"
                         @click="showKeyId = showKeyId === item.id ? null : item.id"
                       >
-                        <ElIcon><View v-if="showKeyId !== item.id" /><Hide v-else /></ElIcon>
+                        <ElIcon
+                          ><FaSvgIcon v-if="showKeyId !== item.id" icon="ri:eye-line" /><Hide
+                            v-else
+                        /></ElIcon>
                       </ElButton>
                       <ElButton
                         text
@@ -135,7 +149,7 @@
                         :disabled="!item.api_key"
                         @click="copyKey(item.api_key)"
                       >
-                        <ElIcon><CopyDocument /></ElIcon>
+                        <ElIcon><FaSvgIcon icon="ri:file-copy-line" /></ElIcon>
                       </ElButton>
                     </div>
                   </div>
@@ -144,7 +158,7 @@
                     <span class="detail-value">{{ item.temperature.toFixed(1) }}</span>
                   </div>
                   <div v-if="item.created_time" class="detail-row">
-                    <span class="detail-label">添加于</span>
+                    <span class="detail-label">{{ $t("common.aiConfig.addedAt") }}</span>
                     <span class="detail-value">{{ item.created_time }}</span>
                   </div>
                 </div>
@@ -156,7 +170,7 @@
         <!-- 底部固定添加按钮 - 始终可见 -->
         <div v-if="items.length > 0" class="footer-add">
           <ElButton type="primary" plain :icon="Plus" class="add-btn" @click="openCreate">
-            添加新模型
+            {{ $t("common.aiConfig.addModel") }}
           </ElButton>
         </div>
       </template>
@@ -164,22 +178,22 @@
       <!-- 新增/编辑弹窗 -->
       <FaDialog
         v-model="dialogVisible"
-        :title="form.id ? '编辑模型' : '新增模型'"
-        width="520px"
+        :title="form.id ? $t('common.aiConfig.editModel') : $t('common.aiConfig.newModel')"
         :close-on-click-modal="false"
+        size="sm"
       >
         <ElForm
           ref="formRef"
           :model="form"
           :rules="rules"
-          label-width="100px"
+          label-width="96px"
           label-position="right"
           @submit.prevent="handleSave"
         >
-          <ElFormItem label="配置名称" prop="name">
+          <ElFormItem :label="$t('common.aiConfig.configName')" prop="name">
             <ElInput
               v-model="form.name"
-              placeholder="如：日常对话 / 代码助手"
+              :placeholder="$t('common.aiConfig.namePlaceholder')"
               maxlength="50"
               show-word-limit
               clearable
@@ -191,7 +205,7 @@
               <template #append>
                 <ElDropdown trigger="click" @command="(v: string) => (form.base_url = v)">
                   <ElButton text size="small">
-                    预设
+                    {{ $t("common.aiConfig.presetLabel") }}
                     <ElIcon><ArrowDown /></ElIcon>
                   </ElButton>
                   <template #dropdown>
@@ -221,12 +235,34 @@
               clearable
             />
           </ElFormItem>
-          <ElFormItem label="模型 ID" prop="model_id">
-            <ElInput
-              v-model="form.model_id"
-              placeholder="如：gpt-4o-mini / deepseek-chat"
-              clearable
-            />
+          <ElFormItem :label="$t('common.aiConfig.modelId')" prop="model_id">
+            <div class="w-full">
+              <div class="flex items-center gap-2">
+                <ElInput
+                  v-model="form.model_id"
+                  :placeholder="$t('common.aiConfig.modelPlaceholder')"
+                  clearable
+                  class="flex-1"
+                />
+                <ElButton :loading="probingModels" @click="fetchAvailableModels">{{
+                  $t("common.aiConfig.fetchModels")
+                }}</ElButton>
+                <ElButton :loading="testingConnection" @click="testConnection">{{
+                  $t("common.aiConfig.testConnection")
+                }}</ElButton>
+              </div>
+              <div v-if="availableModels.length" class="mt-1.5 flex flex-wrap gap-1">
+                <ElTag
+                  v-for="m in availableModels"
+                  :key="m.id"
+                  size="small"
+                  class="cursor-pointer"
+                  @click="form.model_id = m.id"
+                >
+                  {{ m.id }}
+                </ElTag>
+              </div>
+            </div>
           </ElFormItem>
           <ElFormItem label="Temperature" prop="temperature">
             <ElSlider
@@ -237,14 +273,16 @@
               show-input
               :show-input-controls="false"
             />
-            <div class="form-tip">越高越有创造性，0 更确定</div>
+            <div class="form-tip">{{ $t("common.aiConfig.creativityTip") }}</div>
           </ElFormItem>
         </ElForm>
         <template #footer>
-          <ElButton @click="dialogVisible = false">取消</ElButton>
+          <ElButton @click="dialogVisible = false">{{ $t("common.aiConfig.cancel") }}</ElButton>
           <ElButton type="primary" :loading="saving" @click="handleSave">
-            <ElIcon><Check /></ElIcon>
-            <span>{{ form.id ? "保存" : "新增并使用" }}</span>
+            <ElIcon><FaSvgIcon icon="ri:check-line" /></ElIcon>
+            <span>{{
+              form.id ? $t("common.aiConfig.save") : $t("common.aiConfig.addAndUse")
+            }}</span>
           </ElButton>
         </template>
       </FaDialog>
@@ -261,21 +299,21 @@ import {
   Delete,
   Cpu,
   ChatLineSquare,
-  CircleCheck,
   ArrowDown,
   RefreshLeft,
   Loading,
-  Check,
-  View,
   Hide,
-  CopyDocument,
 } from "@element-plus/icons-vue";
 import AiChatAPI, {
   type AiModelConfigInput,
   type AiModelConfigItem,
   type AiModelConfigList,
+  type AiModelOption,
 } from "@/api/module_ai/chat";
 import FaDialog from "@/components/modal/fa-dialog/index.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "changed"): void;
@@ -312,25 +350,77 @@ const form = reactive<AiModelConfigItem>({
   created_time: null,
 });
 
+// 模型探测：拉取可用模型 / 连通性测试（按表单中填写、尚未保存的参数）
+const probingModels = ref(false);
+const testingConnection = ref(false);
+const availableModels = ref<AiModelOption[]>([]);
+
+async function fetchAvailableModels() {
+  if (!form.base_url || !form.api_key) {
+    ElMessage.warning(t("common.aiConfig.needBase"));
+    return;
+  }
+  probingModels.value = true;
+  try {
+    const res = await AiChatAPI.listAvailableModels({
+      base_url: form.base_url,
+      api_key: form.api_key,
+    });
+    availableModels.value = res.data.data || [];
+    if (availableModels.value.length) {
+      ElMessage.success(t("common.aiConfig.fetched", { n: availableModels.value.length }));
+    } else {
+      ElMessage.warning(t("common.aiConfig.noModels"));
+    }
+  } catch {
+    // 统一错误提示已由 http 层处理
+  } finally {
+    probingModels.value = false;
+  }
+}
+
+async function testConnection() {
+  if (!form.base_url || !form.api_key || !form.model_id) {
+    ElMessage.warning(t("common.aiConfig.needAll"));
+    return;
+  }
+  testingConnection.value = true;
+  try {
+    const res = await AiChatAPI.testModelConnection({
+      base_url: form.base_url,
+      api_key: form.api_key,
+      model_id: form.model_id,
+    });
+    ElMessage.success(t("common.aiConfig.connected", { ms: res.data.data?.latency_ms ?? "-" }));
+  } catch {
+    // 统一错误提示已由 http 层处理
+  } finally {
+    testingConnection.value = false;
+  }
+}
+
 // 常用 Base URL 预设 - 提升用户输入效率
 const baseUrlPresets = [
-  { label: "OpenAI 官方", url: "https://api.openai.com/v1" },
+  { label: t("common.aiConfig.presetOpenai"), url: "https://api.openai.com/v1" },
   { label: "DeepSeek", url: "https://api.deepseek.com/v1" },
-  { label: "通义千问", url: "https://dashscope.aliyuncs.com/compatible-mode/v1" },
-  { label: "月之暗面 Moonshot", url: "https://api.moonshot.cn/v1" },
-  { label: "智谱 GLM", url: "https://open.bigmodel.cn/api/paas/v4" },
-  { label: "Ollama (本地)", url: "http://localhost:11434/v1" },
+  {
+    label: t("common.aiConfig.presetQwen"),
+    url: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  },
+  { label: t("common.aiConfig.presetMoonshot"), url: "https://api.moonshot.cn/v1" },
+  { label: t("common.aiConfig.presetZhipu"), url: "https://open.bigmodel.cn/api/paas/v4" },
+  { label: t("common.aiConfig.presetOllama"), url: "http://localhost:11434/v1" },
 ];
 
 const rules: FormRules<AiModelConfigInput> = {
-  name: [{ required: true, message: "请输入配置名称", trigger: "blur" }],
+  name: [{ required: true, message: t("common.aiConfig.needName"), trigger: "blur" }],
   base_url: [
-    { required: true, message: "请输入 Base URL", trigger: "blur" },
+    { required: true, message: t("common.aiConfig.needBaseUrl"), trigger: "blur" },
     {
       validator: (_rule, value: string, callback) => {
         if (!value) return callback();
         if (!/^https?:\/\//.test(value)) {
-          callback(new Error("必须以 http:// 或 https:// 开头"));
+          callback(new Error(t("common.aiConfig.needHttp")));
         } else {
           callback();
         }
@@ -338,15 +428,15 @@ const rules: FormRules<AiModelConfigInput> = {
       trigger: "blur",
     },
   ],
-  api_key: [{ required: true, message: "请输入 API Key", trigger: "blur" }],
-  model_id: [{ required: true, message: "请输入模型 ID", trigger: "blur" }],
-  temperature: [{ required: true, message: "请设置温度", trigger: "change" }],
+  api_key: [{ required: true, message: t("common.aiConfig.needKey"), trigger: "blur" }],
+  model_id: [{ required: true, message: t("common.aiConfig.needModel"), trigger: "blur" }],
+  temperature: [{ required: true, message: t("common.aiConfig.needTemp"), trigger: "change" }],
 };
 
 const activeModelName = computed(() => {
-  if (!activeId.value) return "系统默认";
+  if (!activeId.value) return t("common.aiConfig.systemDefault");
   const item = items.value.find((i) => i.id === activeId.value);
-  return item?.name || "系统默认";
+  return item?.name || t("common.aiConfig.systemDefault");
 });
 
 const loadList = async () => {
@@ -359,7 +449,7 @@ const loadList = async () => {
       activeId.value = data.active_id;
     }
   } catch {
-    ElMessage.error("加载模型配置失败");
+    ElMessage.error(t("common.aiConfig.loadFailed"));
   } finally {
     loading.value = false;
   }
@@ -425,12 +515,12 @@ const handleSave = async () => {
       emit("changed");
       await loadList();
       if (newId) flashHighlight(newId);
-      ElMessage.success(form.id ? "已保存" : "已添加并启用");
+      ElMessage.success(form.id ? t("common.aiConfig.saved") : t("common.aiConfig.added"));
     } else {
-      ElMessage.error(res.data?.msg || "保存失败");
+      ElMessage.error(res.data?.msg || t("common.aiConfig.saveFailed"));
     }
   } catch {
-    ElMessage.error("保存失败");
+    ElMessage.error(t("common.aiConfig.saveFailed"));
   } finally {
     saving.value = false;
   }
@@ -454,10 +544,10 @@ const handleItemClick = async (item: AiModelConfigItem) => {
       activeId.value = item.id;
       emit("changed");
     } else {
-      ElMessage.error(res.data?.msg || "切换失败");
+      ElMessage.error(res.data?.msg || t("common.aiConfig.switchFailed"));
     }
   } catch {
-    ElMessage.error("切换失败");
+    ElMessage.error(t("common.aiConfig.switchFailed"));
   }
 };
 
@@ -468,32 +558,32 @@ const handleUseDefault = async () => {
       activeId.value = null;
       emit("changed");
     } else {
-      ElMessage.error(res.data?.msg || "操作失败");
+      ElMessage.error(res.data?.msg || t("common.aiConfig.opFailed"));
     }
   } catch {
-    ElMessage.error("操作失败");
+    ElMessage.error(t("common.aiConfig.opFailed"));
   }
 };
 
 const handleDelete = async (item: AiModelConfigItem) => {
   try {
-    await confirmDelete(`确认删除模型「${item.name}」？此操作不可恢复`);
+    await confirmDelete(t("common.aiConfig.deleteConfirm", { name: item.name }));
   } catch {
     return;
   }
   try {
     const res = await AiChatAPI.deleteModelConfig(item.id);
     if (res.data?.code === 0) {
-      ElMessage.success("已删除");
+      ElMessage.success(t("common.aiConfig.deleted"));
       if (form.id === item.id) dialogVisible.value = false;
       if (expandedId.value === item.id) expandedId.value = null;
       emit("changed");
       await loadList();
     } else {
-      ElMessage.error(res.data?.msg || "删除失败");
+      ElMessage.error(res.data?.msg || t("common.aiConfig.deleteFailed"));
     }
   } catch {
-    ElMessage.error("删除失败");
+    ElMessage.error(t("common.aiConfig.deleteFailed"));
   }
 };
 
@@ -506,9 +596,9 @@ const copyKey = async (key: string) => {
   if (!key) return;
   try {
     await navigator.clipboard.writeText(key);
-    ElMessage.success("已复制到剪贴板");
+    ElMessage.success(t("common.aiConfig.copied"));
   } catch {
-    ElMessage.error("复制失败");
+    ElMessage.error(t("common.aiConfig.copyFailed"));
   }
 };
 
@@ -632,7 +722,12 @@ onMounted(loadList);
   background: var(--el-fill-color-blank);
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 
   &.active {
     background: var(--el-color-primary-light-9);
@@ -808,14 +903,19 @@ onMounted(loadList);
 }
 
 .preset-url {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
 }
 
 /* 列表过渡 */
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 }
 
 .list-enter-from {

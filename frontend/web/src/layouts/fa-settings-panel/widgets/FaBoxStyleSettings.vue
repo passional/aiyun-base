@@ -1,6 +1,6 @@
 <template>
   <div>
-    <FaSectionTitle :title="$t('setting.box.title')" class="mt-10" />
+    <FaSectionTitle :title="$t('setting.box.title')" />
     <div class="box-border flex items-center justify-between p-1 mt-5 rounded-lg bg-g-200">
       <div
         v-for="option in boxStyleOptions"

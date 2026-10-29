@@ -6,7 +6,7 @@
     <ElCollapseItem name="rules">
       <template #title>
         <span class="inline-flex gap-1.5 items-center">
-          <ElIcon class="shrink-0"><InfoFilled /></ElIcon>
+          <ElIcon class="shrink-0"><FaSvgIcon icon="ri:information-line" /></ElIcon>
           菜单、页面路由与接口路径对照（写入本地时）
         </span>
       </template>
@@ -44,8 +44,6 @@
 </template>
 
 <script setup lang="ts">
-import { InfoFilled } from "@element-plus/icons-vue";
-
 defineOptions({ name: "GencodeHelpPanel" });
 
 const rows = [
@@ -86,7 +84,7 @@ const rows = [
 
 .gencode-help-footnote code {
   padding: 0 4px;
-  font-size: 11px;
+  font-size: 12px;
   background: var(--el-fill-color);
   border-radius: 3px;
 }

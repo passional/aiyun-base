@@ -88,10 +88,10 @@ onPageScroll((e) => {
 })
 
 const NAV_LIST = [
-  { icon: 'notification', titleKey: 'common.nav.notices', name: 'work-notices', color: 'var(--wot-green-6)', soft: 'wot-bg-green-1' },
-  { icon: 'message', titleKey: 'common.nav.tickets', name: 'work-tickets', color: 'var(--wot-orange-6)', soft: 'wot-bg-orange-1' },
-  { icon: 'interaction', titleKey: 'common.nav.aiChat', name: 'work-chat', color: 'var(--wot-cyan-6)', soft: 'wot-bg-cyan-1' },
-  { icon: 'robot', titleKey: 'common.nav.aiModels', name: 'work-ai-models', color: 'var(--wot-purple-6)', soft: 'wot-bg-purple-1' },
+  { icon: 'notification', titleKey: 'common.nav.notices', name: 'work-notices', color: 'var(--fa-brand-blue)', soft: 'wot-bg-primary-1' },
+  { icon: 'message', titleKey: 'common.nav.tickets', name: 'work-tickets', color: 'var(--fa-brand-violet)', soft: 'wot-bg-purple-1' },
+  { icon: 'interaction', titleKey: 'common.nav.aiChat', name: 'work-chat', color: 'var(--fa-brand-blue)', soft: 'wot-bg-primary-1' },
+  { icon: 'robot', titleKey: 'common.nav.aiModels', name: 'work-ai-models', color: 'var(--fa-brand-violet)', soft: 'wot-bg-purple-1' },
 ]
 
 /** 轮播 Banner 条目 */
@@ -289,7 +289,7 @@ async function loadData() {
 async function loadNotices() {
   try {
     const res = await NoticeAPI.getPage({ page_no: 1, page_size: 3, status: 1 })
-    recentNotices.value = res.list || []
+    recentNotices.value = res.items || []
   }
   catch { /* silent */ }
 }
@@ -343,13 +343,13 @@ function getGreeting() {
       type="info"
       prefix="notification"
       custom-class="home-notice"
-      class="mb-3"
+      class="mb-4"
       :style="noticeBarStyle"
       @click="navigateTo('work-notices')"
     />
 
     <!-- 轮播 Banner -->
-    <view class="mx-3 mb-3">
+    <view class="mx-4 mb-4">
       <wd-swiper
         :list="banners"
         height="120"
@@ -401,7 +401,7 @@ function getGreeting() {
     </view>
 
     <!-- 快捷入口 -->
-    <view class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-2">
+    <view class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-2">
       <wd-grid :column="4" :border="false" clickable>
         <wd-grid-item
           v-for="item in NAV_LIST"
@@ -429,7 +429,7 @@ function getGreeting() {
       <wd-text class="wot-text-text-main text-3.5" :text="t('index.opsOverview')" bold />
     </view>
     <SkeletonPage v-if="loading && !dashboardStats" :rows="3" />
-    <view v-else class="mx-3">
+    <view v-else class="mx-4">
       <wd-row :gutter="12">
         <wd-col :span="8">
           <view class="stat-card wot-bg-filled-oppo">
@@ -493,7 +493,7 @@ function getGreeting() {
       </view>
 
       <!-- 登录趋势折线图 -->
-      <view class="wot-bg-filled-oppo mx-3 mb-3 rounded-2 p-4">
+      <view class="wot-bg-filled-oppo mx-4 mb-4 rounded-3 p-4">
         <view class="mb-4 flex items-center gap-2">
           <wd-text class="wot-text-text-main text-3.5" :text="t('index.loginTrend')" bold />
         </view>
@@ -509,8 +509,8 @@ function getGreeting() {
       </view>
       <wd-text class="text-3" :text="t('common.all')" type="primary" @click="navigateTo('work-notices')" />
     </view>
-    <view v-if="recentNotices.length > 0" class="mx-3">
-      <wd-cell-group border custom-class="rounded-2! overflow-hidden">
+    <view v-if="recentNotices.length > 0" class="mx-4">
+      <wd-cell-group border custom-class="rounded-3! overflow-hidden">
         <wd-cell
           v-for="item in recentNotices"
           :key="item.id"
@@ -537,7 +537,7 @@ function getGreeting() {
   flex-direction: column;
   align-items: flex-start;
   padding: 24rpx;
-  border-radius: 20rpx;
+  border-radius: var(--fa-radius-md, 24rpx);
   overflow: hidden;
 
   /* 图标徽章 */
@@ -619,7 +619,7 @@ function getGreeting() {
   }
 
   /* 问候 Banner：品牌卡，跟随主题色（primary），与用户卡/图表主色换肤一致；下方 ticket/stats 为语义色保留 */
-  &--greet { background: linear-gradient(135deg, var(--wot-primary-6), var(--wot-primary-4)); }
+  &--greet { background: linear-gradient(135deg, var(--fa-brand-blue, #4F6BFF), var(--fa-brand-violet, #6D5BFF)); }
   &--ticket { background: linear-gradient(135deg, var(--wot-orange-6), var(--wot-orange-4)); }
   &--ticket-empty { background: linear-gradient(135deg, var(--wot-green-6), var(--wot-green-4)); }
   &--stats { background: linear-gradient(135deg, var(--wot-purple-6), var(--wot-purple-4)); }

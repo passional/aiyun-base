@@ -1,6 +1,6 @@
 <!-- 时间轴列表卡片 -->
 <template>
-  <div class="fa-card p-5 h-110 overflow-hidden">
+  <div class="fa-card p-5 overflow-hidden" :class="autoHeight ? 'h-auto' : 'h-110'">
     <div class="pb-3.5">
       <p class="text-lg font-medium">{{ title }}</p>
       <p class="text-sm text-g-600">{{ subtitle }}</p>
@@ -31,7 +31,7 @@
 defineOptions({ name: "FaTimelineListCard" });
 
 // 常量配置
-const ITEM_HEIGHT = 65;
+const ITEM_HEIGHT = 64;
 const TIMELINE_PLACEMENT = "top";
 const DEFAULT_MAX_COUNT = 5;
 
@@ -55,10 +55,13 @@ interface Props {
   subtitle?: string;
   /** 最大显示数量 */
   maxCount?: number;
+  /** 高度随内容自适应 */
+  autoHeight?: boolean;
 }
 
 // Props 定义和验证
 const props = withDefaults(defineProps<Props>(), {
+  autoHeight: false,
   title: "",
   subtitle: "",
   maxCount: DEFAULT_MAX_COUNT,

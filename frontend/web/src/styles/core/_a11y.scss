@@ -1,0 +1,35 @@
+// ============================================================
+// 无障碍与动效基线
+// ============================================================
+// 键盘用户跳过导航直达主内容
+.fa-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 3000;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #fff;
+  background: var(--el-color-primary);
+  border-radius: var(--fa-radius-sm, 8px);
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    transform: translateY(0);
+  }
+}
+
+// 尊重「减少动效」系统设置
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

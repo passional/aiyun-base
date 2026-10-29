@@ -351,6 +351,12 @@ const captchaState = reactive<CaptchaInfo>({
   enable: false,
   key: "",
   img_base: "",
+  piece_base: "",
+  piece_y: 0,
+  piece_width: 55,
+  piece_height: 48,
+  bg_width: 320,
+  bg_height: 160,
 });
 
 const rules = computed<FormRules>(() => {

@@ -39,22 +39,22 @@
   --vp-pricing-text-3: rgba(60, 60, 60, 0.4);
   --vp-pricing-bg: rgba(255, 255, 255, 0.4);
   --vp-pricing-border: rgba(0, 0, 0, 0.08);
-  --vp-pricing-badge-bg: rgba(99, 102, 241, 0.1);
-  --vp-pricing-badge-border: rgba(99, 102, 241, 0.2);
-  --vp-pricing-badge-text: #6366f1;
+  --vp-pricing-badge-bg: rgba(79, 107, 255, 0.1);
+  --vp-pricing-badge-border: rgba(79, 107, 255, 0.2);
+  --vp-pricing-badge-text: var(--fa-brand-blue);
 
   /* 主色 */
-  --vp-c-indigo: #6366f1;
-  --vp-c-indigo-deep: #4f46e5;
-  --vp-c-violet: #8b5cf6;
-  --vp-c-cyan: #06b6d4;
-  --vp-c-pink: #ec4899;
+  --vp-c-indigo: var(--fa-brand-blue);
+  --vp-c-indigo-deep: #3D55E8;
+  --vp-c-violet: var(--fa-brand-violet);
+  --vp-c-cyan: #8FA4FF;
+  --vp-c-pink: #6D5BFF;
 
   /* 品牌主渐变(token 化,所有组件统一引用) */
-  --vp-brand-gradient: linear-gradient(135deg, #5b6cf7 0%, #8b5cf6 50%, #ec4899 100%);
-  --vp-brand-gradient-soft: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(236, 72, 153, 0.10) 100%);
-  --vp-brand-accent: #8b5cf6;
-  --vp-brand-accent-light: #a78bfa;
+  --vp-brand-gradient: var(--fa-brand-gradient);
+  --vp-brand-gradient-soft: linear-gradient(135deg, rgba(79, 107, 255, 0.12) 0%, rgba(109, 91, 255, 0.08) 50%, rgba(109, 91, 255, 0.10) 100%);
+  --vp-brand-accent: var(--fa-brand-violet);
+  --vp-brand-accent-light: #8FA4FF;
 
   /* 状态色 token(EndToEndShowcase 步骤勾选等) */
   --vp-status-shipped: #10b981;          /* 翠绿 - 已发布 */
@@ -78,7 +78,7 @@
 
   /* Eyebrow 颜色 — 4 处 section 用同一品牌紫
    * ✅ R5 P1-5:亮色模式从 #8b6cf6 (3.77:1 ⚠️ Large) → #6d28d9 (7.10:1 ✅ AAA)
-   *   R5 报告实测 #a78bfa (某些 section 用了更浅的) 2.72:1 严重 fail
+   *   R5 报告实测 #8FA4FF (某些 section 用了更浅的) 2.72:1 严重 fail
    *   现统一使用品牌深紫,WCAG AAA 通过 */
   --vp-eyebrow-color: #6d28d9;
 
@@ -116,30 +116,24 @@
 
   /* 标题渐变(亮色) */
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(
-    135deg,
-    #3b82f6 0%,
-    #6366f1 30%,
-    #8b5cf6 60%,
-    #a78bfa 100%
-  );
+  --vp-home-hero-name-background: linear-gradient(135deg, #4F6BFF 0%, #6D5BFF 100%);
 
   /* Hero 图标背景 */
   --vp-home-hero-image-background-image: linear-gradient(
     -45deg,
-    rgba(99, 102, 241, 0.2) 30%,
-    rgba(139, 92, 246, 0.12) 70%
+    rgba(79, 107, 255, 0.2) 30%,
+    rgba(109, 91, 255, 0.12) 70%
   );
   --vp-home-hero-image-filter: blur(44px);
 
   /* Brand 按钮(亮色) */
   --vp-button-brand-text: #fff;
-  --vp-button-brand-bg: #6366f1;
-  --vp-button-brand-border: #6366f1;
+  --vp-button-brand-bg: var(--fa-brand-blue);
+  --vp-button-brand-border: var(--fa-brand-blue);
   --vp-button-brand-hover-text: #fff;
-  --vp-button-brand-hover-bg: #4f46e5;
-  --vp-button-brand-hover-border: #8b5cf6;
-  --vp-button-brand-active-border: #6366f1;
+  --vp-button-brand-hover-bg: var(--fa-brand-violet);
+  --vp-button-brand-hover-border: var(--fa-brand-violet);
+  --vp-button-brand-active-border: var(--fa-brand-blue);
 
   /* Alt 按钮(亮色) */
   --vp-button-alt-text: #1f2937;
@@ -147,7 +141,7 @@
   --vp-button-alt-border: rgba(0, 0, 0, 0.12);
   --vp-button-alt-hover-text: #1f2937;
   --vp-button-alt-hover-bg: rgba(255, 255, 255, 0.7);
-  --vp-button-alt-hover-border: rgba(99, 102, 241, 0.35);
+  --vp-button-alt-hover-border: rgba(79, 107, 255, 0.35);
 }
 
 /* 深色主题覆盖 */
@@ -167,9 +161,9 @@
   --vp-home-card-hover-bg: #1a1a2e;
 
   /* Eyebrow 颜色(深色) — 亮一档,深底更醒目
-   * ✅ R5 P1-5:在 dark 背景(#0a0a14)上 #a78bfa 实测 ~6.8:1 ✅ AAA,无需改
+   * ✅ R5 P1-5:在 dark 背景(#0a0a14)上 #8FA4FF 实测 ~6.8:1 ✅ AAA,无需改
    *   但保留注释以说明对比度验证状态 */
-  --vp-eyebrow-color: #a78bfa;
+  --vp-eyebrow-color: #8FA4FF;
 
   /* 定价页(深色) */
   --vp-pricing-text-1: rgba(255, 255, 255, 0.9);
@@ -177,8 +171,8 @@
   --vp-pricing-text-3: rgba(255, 255, 255, 0.4);
   --vp-pricing-bg: #141420;
   --vp-pricing-border: rgba(255, 255, 255, 0.08);
-  --vp-pricing-badge-bg: rgba(91, 108, 247, 0.15);
-  --vp-pricing-badge-border: rgba(91, 108, 247, 0.3);
+  --vp-pricing-badge-bg: rgba(79, 107, 255, 0.15);
+  --vp-pricing-badge-border: rgba(79, 107, 255, 0.3);
   --vp-pricing-badge-text: #5B6CF7;
 
   /* Alt 按钮(深色 — 玻璃拟态) */

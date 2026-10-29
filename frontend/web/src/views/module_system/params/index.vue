@@ -1,11 +1,26 @@
 <template>
   <div class="fa-full-height">
-    <ElCard class="fa-card" header="系统参数配置">
-      <ElTabs v-model="activeTab" tabPosition="left" class="h-full">
-        <!-- 品牌标识 -->
-        <ElTabPane label="品牌标识" name="brand">
+    <FaWorkbench :side-width="240">
+      <template #side>
+        <FaSidePanel :title="$t('common.params.groupTitle')" class="params-side">
+          <button
+            v-for="tab in paramTabs"
+            :key="tab.name"
+            type="button"
+            class="params-nav-item"
+            :class="{ 'is-active': activeTab === tab.name }"
+            @click="activeTab = tab.name"
+          >
+            {{ tab.label }}
+          </button>
+        </FaSidePanel>
+      </template>
+
+      <div class="fa-card params-main">
+        <div class="params-main__body">
           <ParamTabPane
-            title="品牌标识"
+            v-if="activeTab === 'brand'"
+            :title="$t('common.params.brand')"
             :modified="brandModified"
             @save-group="saveGroup(fieldsMap.brand)"
           >
@@ -26,12 +41,11 @@
               />
             </ParamFieldCard>
           </ParamTabPane>
-        </ElTabPane>
 
-        <!-- 网站信息 -->
-        <ElTabPane label="网站信息" name="website">
+          <!-- 网站信息 -->
           <ParamTabPane
-            title="网站信息"
+            v-if="activeTab === 'website'"
+            :title="$t('common.params.siteInfo')"
             :modified="websiteModified"
             @save-group="saveGroup(fieldsMap.website)"
           >
@@ -47,15 +61,15 @@
                 :placeholder="'输入' + field.label"
                 clearable
                 @input="onFieldChange(field)"
+                aria-label="'输入' + field.label"
               />
             </ParamFieldCard>
           </ParamTabPane>
-        </ElTabPane>
 
-        <!-- 外部链接 -->
-        <ElTabPane label="外部链接" name="security">
+          <!-- 外部链接 -->
           <ParamTabPane
-            title="外部链接"
+            v-if="activeTab === 'security'"
+            :title="$t('common.params.externalLinks')"
             :modified="securityModified"
             @save-group="saveGroup(fieldsMap.security)"
           >
@@ -71,15 +85,15 @@
                 :placeholder="'输入' + field.label"
                 clearable
                 @input="onFieldChange(field)"
+                aria-label="'输入' + field.label"
               />
             </ParamFieldCard>
           </ParamTabPane>
-        </ElTabPane>
 
-        <!-- 安全访问 -->
-        <ElTabPane label="安全访问" name="access">
+          <!-- 安全访问 -->
           <ParamTabPane
-            title="安全访问"
+            v-if="activeTab === 'access'"
+            :title="$t('common.params.security')"
             :modified="accessModified"
             @save-group="saveGroup(fieldsMap.access)"
           >
@@ -93,15 +107,15 @@
                 <div class="flex items-center gap-3">
                   <ElSwitch
                     :model-value="fieldsMap.access[0]!.localValue === 'on'"
-                    active-text="开启"
-                    inactive-text="关闭"
+                    :active-text="$t('common.params.enable')"
+                    :inactive-text="$t('common.params.disable')"
                     @change="(val: string | number | boolean) => onLocationChange(val === true)"
                   />
                   <span class="text-xs text-(--el-text-color-secondary)">
                     {{
                       fieldsMap.access[0]!.localValue === "on"
-                        ? "登录时基于内置离线库本地解析客户端 IP 归属地，用于日志记录"
-                        : "IP 归属地查询已关闭，登录位置只记录内网 / 未解析"
+                        ? $t("common.params.ipLookupOn")
+                        : $t("common.params.ipLookupOff")
                     }}
                   </span>
                 </div>
@@ -127,34 +141,34 @@
                   <span
                     v-if="fieldsMap.access[1]!.ipList.length === 0"
                     class="text-xs text-(--el-text-color-placeholder) leading-8"
-                    >暂无 IP</span
+                    >{{ $t("common.params.noIp") }}</span
                   >
                 </div>
                 <div class="flex gap-2">
                   <ElInput
                     v-model="fieldsMap.access[1]!.newIp"
-                    placeholder="输入 IP 地址"
+                    :placeholder="$t('common.params.ipPlaceholder')"
                     size="small"
                     class="w-48!"
                     @keyup.enter="addIp(fieldsMap.access[1]!)"
+                    :aria-label="$t('common.params.ipPlaceholder')"
                   />
                   <ElButton
                     size="small"
                     type="primary"
                     :disabled="!fieldsMap.access[1]!.newIp.trim()"
                     @click="addIp(fieldsMap.access[1]!)"
-                    >添加</ElButton
+                    >{{ $t("common.params.add") }}</ElButton
                   >
                 </div>
               </ParamFieldCard>
             </template>
           </ParamTabPane>
-        </ElTabPane>
 
-        <!-- 演示环境 -->
-        <ElTabPane label="演示环境" name="demo">
+          <!-- 演示环境 -->
           <ParamTabPane
-            title="演示环境"
+            v-if="activeTab === 'demo'"
+            :title="$t('common.params.demoEnv')"
             :modified="demoModified"
             @save-group="saveGroup(fieldsMap.demo)"
           >
@@ -168,8 +182,8 @@
                 <div class="flex items-center gap-3">
                   <ElSwitch
                     :model-value="fieldsMap.demo[0]!.localValue === 'on'"
-                    active-text="开启"
-                    inactive-text="关闭"
+                    :active-text="$t('common.params.enable')"
+                    :inactive-text="$t('common.params.disable')"
                     @change="(val: string | number | boolean) => onDemoChange(val === true)"
                   />
                   <span class="text-xs text-(--el-text-color-secondary)">
@@ -202,31 +216,37 @@
                   <span
                     v-if="fieldsMap.demo[1]!.ipList.length === 0"
                     class="text-xs text-(--el-text-color-placeholder) leading-8"
-                    >暂无 IP</span
+                    >{{ $t("common.params.noIp") }}</span
                   >
                 </div>
                 <div class="flex gap-2">
                   <ElInput
                     v-model="fieldsMap.demo[1]!.newIp"
-                    placeholder="输入 IP 地址"
+                    :placeholder="$t('common.params.ipPlaceholder')"
                     size="small"
                     class="w-48!"
                     @keyup.enter="addIp(fieldsMap.demo[1]!)"
+                    :aria-label="$t('common.params.ipPlaceholder')"
                   />
                   <ElButton
                     size="small"
                     type="primary"
                     :disabled="!fieldsMap.demo[1]!.newIp.trim()"
                     @click="addIp(fieldsMap.demo[1]!)"
-                    >添加</ElButton
+                    >{{ $t("common.params.add") }}</ElButton
                   >
                 </div>
               </ParamFieldCard>
             </template>
           </ParamTabPane>
-        </ElTabPane>
-      </ElTabs>
-    </ElCard>
+        </div>
+
+        <div v-if="modifiedCount > 0" class="param-save-bar">
+          <span class="param-save-bar__text">有 {{ modifiedCount }} 项修改未保存</span>
+          <ElButton type="primary" :loading="saveAllLoading" @click="saveAll">保存全部</ElButton>
+        </div>
+      </div>
+    </FaWorkbench>
   </div>
 </template>
 
@@ -242,6 +262,14 @@ defineOptions({ name: "Params" });
 
 const configStore = useConfigStore();
 const activeTab = ref("brand");
+
+const paramTabs = [
+  { name: "brand", label: "品牌标识" },
+  { name: "website", label: "网站信息" },
+  { name: "security", label: "外部链接" },
+  { name: "access", label: "访问控制" },
+  { name: "demo", label: "演示环境" },
+];
 
 // ─── 字段类型 ───
 
@@ -428,6 +456,41 @@ async function saveGroup(fields: ParamField[]) {
   }
 }
 
+const modifiedFields = computed(() =>
+  Object.values(fieldsMap)
+    .flat()
+    .filter((f) => f.modified && f.id)
+);
+const modifiedCount = computed(() => modifiedFields.value.length);
+const saveAllLoading = ref(false);
+
+async function saveAll() {
+  const modified = modifiedFields.value;
+  if (modified.length === 0) return;
+  saveAllLoading.value = true;
+  let successCount = 0;
+  for (const field of modified) {
+    try {
+      await ParamsAPI.updateParams(field.id!, {
+        config_value: field.localValue,
+        config_name: field.configName,
+        config_key: field.configKey,
+      });
+      field.modified = false;
+      field.displayValue = field.localValue;
+      successCount++;
+    } catch {
+      // 已由全局拦截器提示
+    }
+  }
+  saveAllLoading.value = false;
+  if (successCount > 0) {
+    ElMessage.success(`已保存 ${successCount} 项配置`);
+    configStore.isConfigLoaded = false;
+    await configStore.getConfig();
+  }
+}
+
 // ─── 初始化 ───
 
 onMounted(async () => {
@@ -439,27 +502,59 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-:deep(.el-card) {
+.param-save-bar {
+  position: sticky;
+  bottom: 0;
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  margin-top: 12px;
+  background: var(--fa-surface, var(--default-box-color));
+  border-top: 1px solid var(--fa-border, var(--el-border-color-lighter));
 }
 
-:deep(.el-card__body) {
+.param-save-bar__text {
+  font-size: var(--fa-font-sm, 12px);
+  color: var(--el-text-color-secondary);
+}
+
+.params-side {
+  width: 100%;
+  height: 100%;
+}
+
+.params-nav-item {
+  width: 100%;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--fa-radius-sm, 8px);
+}
+
+.params-nav-item:hover {
+  background: var(--el-fill-color-light);
+}
+
+.params-nav-item.is-active {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.params-main {
+  box-sizing: border-box;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  height: 100%;
+  padding: 12px 16px;
 }
 
-:deep(.el-tabs) {
-  flex: 1;
-  min-height: 0;
-}
-
-:deep(.el-tabs__content) {
+.params-main__body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;

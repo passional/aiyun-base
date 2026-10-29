@@ -21,6 +21,7 @@
 <script setup lang="ts">
 import * as XLSX from "xlsx";
 import FileSaver from "file-saver";
+import { formatToDate } from "@utils";
 import { ref, computed, nextTick } from "vue";
 import { Loading } from "@element-plus/icons-vue";
 import type { ButtonType } from "element-plus";
@@ -171,7 +172,7 @@ const formatCellValue = (
   }
 
   if (value instanceof Date) {
-    return value.toLocaleDateString("zh-CN");
+    return formatToDate(value, "YYYY-MM-DD");
   }
 
   if (typeof value === "boolean") {
@@ -393,7 +394,7 @@ defineExpose({
 <!-- <template>
   <div class="page-content">
     <FaExcelImport @import-success="handleImportSuccess" @import-error="handleImportError">
-      <template #import-text>上传 Excel</template>
+      <template #import-text>{{ $t("common.uploadExcel") }}</template>
     </FaExcelImport>
 
     <FaExcelExport
@@ -412,7 +413,7 @@ defineExpose({
       导出 Excel
     </FaExcelExport>
 
-    <ElButton type="danger" @click="handleClear" v-ripple>清除数据</ElButton>
+    <ElButton type="danger" @click="handleClear" v-ripple>{{ $t("common.clearData") }}</ElButton>
 
     <FaTable :data="tableData" :style="'margin-top: 10px'">
       <ElTableColumn type="index" label="序号" width="60" />

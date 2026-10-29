@@ -2,7 +2,7 @@
 <template>
   <div class="fa-file-upload">
     <div v-if="modelValue" class="file-item">
-      <el-icon class="file-item-icon"><Document /></el-icon>
+      <el-icon class="file-item-icon"><FaSvgIcon icon="ri:file-text-line" /></el-icon>
       <el-link type="primary" :href="modelValue" target="_blank" :underline="false">
         {{ fileName }}
       </el-link>
@@ -12,7 +12,7 @@
     </div>
     <el-button v-else type="primary" plain :loading="uploading" @click="fileInputRef?.click()">
       <el-icon class="mr-1"><UploadFilled /></el-icon>
-      <span>选择文件</span>
+      <span>{{ $t("common.chooseFile") }}</span>
     </el-button>
     <input
       ref="fileInputRef"
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { CircleCloseFilled, Document, UploadFilled } from "@element-plus/icons-vue";
+import { CircleCloseFilled, UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { request } from "@utils";
 import type { AxiosResponse } from "axios";

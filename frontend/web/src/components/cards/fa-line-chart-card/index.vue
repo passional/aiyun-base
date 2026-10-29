@@ -4,7 +4,7 @@
     <div class="mb-2.5 flex justify-between items-start p-5">
       <div>
         <p class="text-2xl font-medium leading-none">
-          {{ value }}
+          {{ formatValue }}
         </p>
         <p class="mt-1 text-sm text-g-500">{{ label }}</p>
       </div>
@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { graphic, type EChartsOption } from "@/plugins/echarts";
 import { getCssVar, hexToRgba } from "@utils";
 import { useChartOps, useChartComponent } from "@/hooks/core/useChart";
@@ -61,6 +62,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   height: 11,
 });
+
+const formatValue = computed(() => Number(props.value).toLocaleString("zh-CN"));
 
 // 使用新的图表组件抽象
 const { chartRef } = useChartComponent({

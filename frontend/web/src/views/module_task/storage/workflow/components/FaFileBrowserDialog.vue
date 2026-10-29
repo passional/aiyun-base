@@ -2,10 +2,10 @@
   <FaDialog
     :model-value="visible"
     :title="title || `文件浏览 · ${sourceName || '存储源'}`"
-    width="720px"
     top="8vh"
     append-to-body
     @close="handleClose"
+    size="lg"
   >
     <div class="mb-3 flex items-center gap-2">
       <ElBreadcrumb separator="/" class="flex-1 min-w-0">
@@ -42,10 +42,11 @@
       class="file-browser-body border border-(--el-border-color-lighter) rounded-lg overflow-hidden"
       style="height: 380px"
     >
-      <ElEmpty
+      <FaEmptyState
         v-if="!loading && entries.length === 0"
-        description="该目录下没有文件"
-        :image-size="60"
+        icon="ri:inbox-line"
+        title="该目录下没有文件"
+        compact
       />
       <div v-else class="flex flex-col h-full">
         <div
@@ -56,8 +57,8 @@
           @dblclick="item.is_dir && navTo(joinPath(dir, item.name))"
         >
           <ElIcon :size="16" :color="item.is_dir ? '#e6a23c' : '#909399'">
-            <Folder v-if="item.is_dir" />
-            <Document v-else />
+            <FaSvgIcon v-if="item.is_dir" icon="ri:folder-2-line" />
+            <FaSvgIcon v-else icon="ri:file-text-line" />
           </ElIcon>
           <span class="flex-1 min-w-0 truncate" :title="item.name">{{ item.name }}</span>
           <span v-if="!item.is_dir && item.size" class="text-xs text-(--el-text-color-secondary)">{{
@@ -82,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { Document, Folder, Refresh } from "@element-plus/icons-vue";
+import { Refresh } from "@element-plus/icons-vue";
 import StorageAPI, { type StorageObject } from "@/api/module_storage/browse";
 
 interface Props {

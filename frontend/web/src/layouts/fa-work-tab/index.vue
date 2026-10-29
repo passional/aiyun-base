@@ -378,16 +378,20 @@ const useScrolling = () => {
 
     const { scrollWidth, ulWidth, offsetLeft, curTabRight, targetLeft } = positions;
 
+    /** 右侧有滚动箭头工具栏覆盖，按 96px 预留可视区 */
+    const rightGutter = 96;
+
     if (
-      (offsetLeft > Math.abs(scrollState.value.translateX) && curTabRight <= scrollWidth) ||
+      (offsetLeft > Math.abs(scrollState.value.translateX) &&
+        curTabRight <= scrollWidth - rightGutter) ||
       (scrollState.value.translateX < targetLeft && targetLeft < 0)
     ) {
       return;
     }
 
     requestAnimationFrame(() => {
-      if (curTabRight > scrollWidth) {
-        scrollState.value.translateX = Math.max(targetLeft - 6, scrollWidth - ulWidth);
+      if (curTabRight > scrollWidth - rightGutter) {
+        scrollState.value.translateX = Math.max(targetLeft - rightGutter, scrollWidth - ulWidth);
       } else if (offsetLeft < Math.abs(scrollState.value.translateX)) {
         scrollState.value.translateX = -offsetLeft;
       }
@@ -679,6 +683,15 @@ watch(tabOverflow, (overflow) => {
 
 watch(list, () => nextTick(measureTabOverflow));
 
+// 路由/激活页签变化后，等 DOM 更新再滚动到可见位置，避免激活页签停在可视区外
+watch(activeTab, () => {
+  setTransition();
+  nextTick(() => {
+    autoPositionTab();
+    measureTabOverflow();
+  });
+});
+
 watch(
   () => currentRoute.value,
   () => {
@@ -852,7 +865,7 @@ watch(
   border: 1px solid color-mix(in srgb, var(--fa-card-border) 80%, transparent) !important;
 
   /* 卡片模式圆角不要半圆：与默认一致 */
-  border-radius: calc(var(--custom-radius) / 2.5 + 2px) !important;
+  border-radius: var(--fa-radius-sm, 8px) !important;
   box-shadow:
     0 1px 2px rgb(0 0 0 / 5%),
     inset 0 1px 0 rgb(255 255 255 / 45%);
@@ -907,7 +920,7 @@ html:not(.dark) .worktab-tab.worktab-tab--card.activ-tab {
   background: transparent;
   border: none;
   border-radius: 6px;
-  opacity: 0.45;
+  opacity: 0.62;
   transition:
     opacity 0.15s ease,
     color 0.15s ease,

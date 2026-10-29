@@ -4,7 +4,7 @@
   - 暴露 `elTableRef`、`scrollToTop`；formatter 列见 TableFormatterOutlet 注释。
 -->
 <template>
-  <div class="fa-table" :class="{ 'is-empty': isEmpty }">
+  <div class="fa-table" :class="{ 'is-empty': isEmpty, 'no-pagination': !showPagination }">
     <div class="fa-table__main">
       <!-- 初始加载骨架屏：仅在 loading 且无数据时显示 -->
       <div v-if="loading && isEmpty" class="fa-table-skeleton">
@@ -29,6 +29,59 @@
           </template>
         </ElSkeleton>
       </div>
+      <!-- 通用移动端卡片：由列配置自动渲染 -->
+      <div v-else-if="mobileCardsActive" class="fa-table__mobile-cards pb-12">
+        <div v-if="data && data.length" class="flex items-center gap-2 px-1">
+          <ElCheckbox
+            :model-value="mobileAllSelected"
+            :indeterminate="mobilePartiallySelected"
+            @change="toggleMobileAll"
+          >
+            {{ $t("common.selectAll") }}
+          </ElCheckbox>
+        </div>
+        <div v-if="!(data && data.length)" class="py-10 text-center text-sm text-g-500">
+          暂无数据
+        </div>
+        <div
+          v-for="(row, rowIndex) in data ?? []"
+          :key="rowIndex"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <ElCheckbox
+              class="mt-0.5 shrink-0"
+              :model-value="isMobileRowSelected(row)"
+              @change="toggleMobileRow(row)"
+            />
+            <div class="min-w-0 flex-1 text-sm font-medium truncate">
+              <component :is="() => mobileCell(mobileTitleColumn as ColumnOption, row)" />
+            </div>
+            <div v-if="mobileOperationColumn" class="mobile-card-actions mt-0! shrink-0">
+              <component :is="() => mobileCell(mobileOperationColumn as ColumnOption, row)" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+            <div
+              v-for="col in mobileFieldColumns"
+              :key="col.prop"
+              class="min-w-0"
+              :class="{
+                'col-span-2': [
+                  'created_time',
+                  'updated_time',
+                  'login_time',
+                  'request_path',
+                  'description',
+                ].includes(col.prop ?? ''),
+              }"
+            >
+              <span class="text-g-500">{{ col.label }}：</span>
+              <component :is="() => mobileCell(col, row)" />
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- 数据表格 -->
       <template v-else>
         <VueDraggable
@@ -51,7 +104,7 @@
             @selection-change="(val: any[]) => emit('selection-change', val)"
             v-bind="mergedTableProps"
           >
-            <template v-for="col in columns" :key="col.prop || col.type">
+            <template v-for="col in displayColumns" :key="col.prop || col.type">
               <ElTableColumn v-if="col.type === 'globalIndex'" v-bind="{ ...col }">
                 <template #default="{ $index }">
                   <span>{{ getGlobalIndex($index) }}</span>
@@ -88,7 +141,9 @@
             <slot v-if="$slots.default" />
             <template #empty>
               <div v-if="loading"></div>
-              <ElEmpty v-else :description="emptyText" :image-size="80" />
+              <slot v-else name="empty">
+                <FaEmptyState icon="ri:inbox-line" :title="emptyText" compact />
+              </slot>
             </template>
           </ElTable>
         </VueDraggable>
@@ -130,8 +185,12 @@ import {
   isVNode,
   h,
   defineComponent,
+  onMounted,
+  onBeforeUnmount,
   type PropType,
 } from "vue";
+import { useI18n } from "vue-i18n";
+import { translateColumnLabels } from "@utils/table/columnLabelI18n";
 import type { ElTable, TableInstance, TableProps } from "element-plus";
 import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
@@ -205,6 +264,8 @@ interface Props extends TableProps<Record<string, any>> {
   loading?: boolean;
   /** 列渲染配置 */
   columns?: ColumnOption[];
+  /** 窄屏使用通用卡片列表（生成页/普通表格页可开启） */
+  mobileCards?: boolean;
   /** 分页状态 */
   pagination?: FaPaginationConfig;
   /** 分页配置 */
@@ -221,6 +282,7 @@ interface Props extends TableProps<Record<string, any>> {
 
 const props = withDefaults(defineProps<Props>(), {
   columns: () => [],
+  mobileCards: false,
   fit: true,
   showHeader: true,
   stripe: undefined,
@@ -340,6 +402,97 @@ const border = computed(() => props.border ?? isBorder.value);
 const stripe = computed(() => props.stripe ?? isZebra.value);
 // 表格尺寸
 const size = computed(() => props.size ?? tableSize.value);
+const { t: translate } = useI18n();
+const displayColumns = computed(() => translateColumnLabels(props.columns ?? [], translate));
+const mobileCardsActive = computed(() => props.mobileCards && width.value < 1025);
+
+function getRowValue(row: Record<string, unknown>, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[key];
+    return undefined;
+  }, row);
+}
+
+function mobileCell(col: ColumnOption, row: Record<string, unknown>) {
+  const slot = col.prop ? slots[col.prop] : undefined;
+  if (slot) {
+    const rendered = slot({ row });
+    return Array.isArray(rendered) ? h("span", rendered) : rendered;
+  }
+  if (col.formatter) {
+    const out = col.formatter(row);
+    return isVNode(out) ? out : h("span", String(out ?? "—"));
+  }
+  const value = col.prop ? getRowValue(row, col.prop) : "";
+  return h("span", value === null || value === undefined || value === "" ? "—" : String(value));
+}
+
+const mobileTitleColumn = computed(
+  () =>
+    displayColumns.value.find((col) =>
+      ["name", "title", "username", "notice_title", "request_path", "version"].includes(
+        col.prop ?? ""
+      )
+    ) ?? displayColumns.value.find((col) => col.prop && col.prop !== "operation")
+);
+
+const mobileFieldColumns = computed(() =>
+  displayColumns.value
+    .filter(
+      (col) =>
+        col.prop &&
+        col.prop !== "operation" &&
+        col.prop !== mobileTitleColumn.value?.prop &&
+        col.type !== "selection" &&
+        col.type !== "globalIndex" &&
+        col.type !== "expand"
+    )
+    .slice(0, 8)
+);
+
+const mobileOperationColumn = computed(() =>
+  displayColumns.value.find((col) => col.prop === "operation")
+);
+
+const mobileSelectedRows = ref<Record<string, unknown>[]>([]);
+
+const mobileAllSelected = computed(() => {
+  const rows = props.data ?? [];
+  return rows.length > 0 && mobileSelectedRows.value.length === rows.length;
+});
+
+const mobilePartiallySelected = computed(() => {
+  const count = mobileSelectedRows.value.length;
+  return count > 0 && count < (props.data?.length ?? 0);
+});
+
+function isMobileRowSelected(row: Record<string, unknown>): boolean {
+  return mobileSelectedRows.value.includes(row);
+}
+
+function emitMobileSelection(): void {
+  emit("selection-change", [...mobileSelectedRows.value]);
+}
+
+function toggleMobileRow(row: Record<string, unknown>): void {
+  const index = mobileSelectedRows.value.indexOf(row);
+  if (index >= 0) mobileSelectedRows.value.splice(index, 1);
+  else mobileSelectedRows.value.push(row);
+  emitMobileSelection();
+}
+
+function toggleMobileAll(checked: boolean | string | number): void {
+  mobileSelectedRows.value = checked ? [...(props.data ?? [])] : [];
+  emitMobileSelection();
+}
+
+watch(
+  () => props.data,
+  () => {
+    mobileSelectedRows.value = [];
+    if (mobileCardsActive.value) emitMobileSelection();
+  }
+);
 // 数据是否为空
 const isEmpty = computed(() => props.data?.length === 0);
 
@@ -408,7 +561,7 @@ const mergedTableProps = computed(() => {
     height: height.value,
     stripe: stripe.value,
     border: border.value,
-    size: hasExplicitTableProp("size") ? size.value : undefined,
+    size: size.value,
     headerCellStyle: headerCellStyle.value,
     highlightCurrentRow: highlightCurrentRow.value,
     // Element Plus 默认值为 true，未显式传入时不应被 FaTable 覆盖成 false。
@@ -480,6 +633,49 @@ const onExpandChange = (row: Record<string, unknown>, expandedRows: Record<strin
 
 // 是否显示分页器
 const showPagination = computed(() => !!props.pagination);
+
+// 无分页树形表：最后一条“可见”行不画底边；隐藏行可能排在最后，不能只靠 :last-child
+let lastRowObserver: MutationObserver | null = null;
+let lastRowFrame = 0;
+const markLastVisibleRow = () => {
+  const table = elTableRef.value?.$el as HTMLElement | undefined;
+  if (!table || showPagination.value) return;
+  const rows = table.querySelectorAll<HTMLElement>(".el-table__body tr");
+  let lastVisible: HTMLElement | undefined;
+  rows.forEach((row) => {
+    row.classList.remove("fa-table-last-visible-row");
+    if (row.getClientRects().length > 0) lastVisible = row;
+  });
+  lastVisible?.classList.add("fa-table-last-visible-row");
+};
+const scheduleMarkLastRow = () => {
+  cancelAnimationFrame(lastRowFrame);
+  lastRowFrame = requestAnimationFrame(markLastVisibleRow);
+};
+onMounted(() => {
+  nextTick(() => {
+    const table = elTableRef.value?.$el as HTMLElement | undefined;
+    if (!table) return;
+    lastRowObserver = new MutationObserver(scheduleMarkLastRow);
+    lastRowObserver.observe(table, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+    scheduleMarkLastRow();
+  });
+});
+onBeforeUnmount(() => {
+  lastRowObserver?.disconnect();
+  lastRowObserver = null;
+  cancelAnimationFrame(lastRowFrame);
+});
+watch(
+  () => [props.data, props.loading, props.pagination?.current, props.pagination?.size],
+  () => nextTick(scheduleMarkLastRow),
+  { deep: false }
+);
 
 // Element Plus 在部分场景会先用 $index = -1 进行预渲染。
 // 这对普通展示无影响，但会让 ElForm 错误注册出 lineList.-1.xxx 这类字段。
@@ -606,6 +802,28 @@ const cleanBodyColumnProps = (col: ColumnOption) => {
   if (isOpCol && isMobile.value) {
     columnProps.width = 80;
   }
+  // 数字类列默认右对齐（金额/数量/大小/比率等），可用 align 显式覆盖
+  const NUMERIC_PROP_RE =
+    /(price|amount|total|count|qty|quantity|size|score|rate|usage|percent|salary|balance|cost|fee|weight|duration|cpu|memory|disk)/i;
+  const NUMERIC_LABEL_RE =
+    /(金额|价格|数量|总数|次数|大小|占比|比率|百分比|容量|时长|内存|磁盘|使用率|得分|费用|余额)/;
+  if (
+    columnProps.align === undefined &&
+    !isOpCol &&
+    (NUMERIC_PROP_RE.test(String(col.prop || "")) || NUMERIC_LABEL_RE.test(String(col.label || "")))
+  ) {
+    columnProps.align = "right";
+  }
+  // 普通文本列默认省略 + 悬停显示完整内容（状态/格式化/操作列除外）
+  if (
+    columnProps.showOverflowTooltip === undefined &&
+    !isOpCol &&
+    !col.formatter &&
+    !col.status &&
+    !col.type
+  ) {
+    columnProps.showOverflowTooltip = true;
+  }
   // 创建人 / 更新人列：自动生成表头筛选选项，无需调用方手写 filters
   if (isPersonFilterColumn(col)) {
     columnProps.filters = getColumnFilterOptions(col);
@@ -687,6 +905,28 @@ defineExpose({
 <style lang="scss" scoped>
 .fa-table {
   position: relative;
+  /* 无分页时不需要“表格 → 分页”的分隔线；覆盖普通/固定列/树形表最后一行 */
+  &.no-pagination {
+    :deep(.el-table__body tr:last-child > td),
+    :deep(.el-table__body tr:last-child > th),
+    :deep(.el-table__row:last-child > td) {
+      border-bottom: 0 !important;
+      box-shadow: none !important;
+    }
+
+    :deep(.el-table__inner-wrapper::before),
+    :deep(.el-table__inner-wrapper::after),
+    :deep(.el-table__body-wrapper::after) {
+      content: none !important;
+    }
+
+    /* 树形表/折叠行会在可见行后保留隐藏行，:last-child 不一定是最后可见行 */
+    :deep(.fa-table-last-visible-row > td) {
+      border-bottom: 0 !important;
+      box-shadow: none !important;
+    }
+  }
+
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -786,7 +1026,7 @@ defineExpose({
 
     :deep(.el-empty) {
       .el-empty__image {
-        width: 72px;
+        width: var(--fa-empty-size, 60px);
       }
 
       .el-empty__description {
@@ -854,6 +1094,24 @@ defineExpose({
   :deep(.el-table__column-filter-trigger .fa-filter-icon.is-opened),
   :deep(.cell.highlight .fa-filter-icon) {
     color: var(--theme-color);
+  }
+}
+
+.fa-table__mobile-cards {
+  height: 100%;
+  overflow-y: auto;
+}
+
+@media (width >= 800px) and (width <= 1200px) {
+  .fa-table__mobile-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 16px;
+  }
+
+  .fa-table__mobile-cards > .py-10 {
+    grid-column: 1 / -1;
   }
 }
 </style>

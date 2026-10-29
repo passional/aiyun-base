@@ -1,6 +1,7 @@
 <!-- 布局内容 -->
 <template>
   <div id="app-scroll-main" class="layout-content" :style="containerStyle">
+    <a class="fa-skip-link" href="#app-content">跳到主内容</a>
     <div id="app-content-header">
       <!-- 节日滚动 -->
       <FaFestivalTextScroll />
@@ -78,6 +79,8 @@ function routeViewCacheKey(r: RouteLocationNormalizedLoaded): string {
 
 const route = useRoute();
 const router = useRouter();
+
+/** 常驻宣传条只在首页出现 */
 
 /**
  * 解析 path 在本出口（depth=1）实际渲染的组件名。
@@ -182,6 +185,7 @@ const containerStyle = computed(
     width: "100%",
     minWidth: 0,
     maxWidth: containerWidth.value,
+    marginInline: "auto",
     flex: "1",
     minHeight: "0",
     display: "flex",

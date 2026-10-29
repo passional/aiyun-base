@@ -202,7 +202,7 @@ onLoad(() => loadData())
         </wd-search>
       </wd-col>
       <wd-col :span="24">
-        <wd-tabs v-model="activeTab" line-theme="text" sticky :offset-top="0" @change="handleTabChange">
+        <wd-tabs v-model="activeTab" line-theme="text" sticky :offset-top="0" class="ticket-tabs" @change="handleTabChange">
           <wd-tab v-for="opt in TAB_OPTIONS" :key="opt.titleKey" :title="t(opt.titleKey)" />
         </wd-tabs>
       </wd-col>
@@ -213,7 +213,7 @@ onLoad(() => loadData())
     <template v-else>
       <view class="mt-2 px-3">
         <wd-empty v-if="!loading && list.length === 0" :tip="hasFilter ? t('tickets.emptyWithFilter') : t('tickets.empty')" />
-        <wd-cell-group v-else border custom-class="rounded-2! overflow-hidden">
+        <wd-cell-group v-else border custom-class="rounded-3! overflow-hidden">
           <wd-swipe-action
             v-for="item in list"
             :key="item.id"
@@ -226,17 +226,12 @@ onLoad(() => loadData())
             </template>
             <wd-cell
               :title="item.title"
-              :label="typeLabel(item.ticket_type) + (item.ticket_content ? ` · ${item.ticket_content}` : '')"
+              :label="typeLabel(item.ticket_type) + (item.ticket_content ? ` · ${item.ticket_content}` : '') + (item.created_time ? ` · ${item.created_time.slice(0, 10)}` : '')"
+              :value="statusLabel(item.status)"
               is-link
               border
               @click="navigateToDetail(item.id!)"
             >
-              <template #value>
-                <view class="flex flex-col items-end gap-1">
-                  <wd-text class="wot-text-text-auxiliary text-2.5" :text="(item.created_time || '').slice(0, 10)" />
-                  <StatusBadge :status="item.status" :map="TICKET_STATUS_MAP" />
-                </view>
-              </template>
             </wd-cell>
           </wd-swipe-action>
         </wd-cell-group>
@@ -290,3 +285,11 @@ onLoad(() => loadData())
     </wd-popup>
   </view>
 </template>
+
+<style lang="scss">
+/* 工单状态页签：5 个状态在 375px 下保持单行可读 */
+.ticket-tabs {
+  --wot-tabs-nav-item-font-size: 13px;
+  --wot-tabs-nav-item-padding: 5px 6px;
+}
+</style>

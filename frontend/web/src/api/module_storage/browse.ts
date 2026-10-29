@@ -21,6 +21,15 @@ const StorageAPI = {
     });
   },
 
+  /** 创建存储桶（对象存储；COS 的桶名需带 -appid 后缀） */
+  createBucket(body: { source_id?: number | null; bucket: string }) {
+    return request<ApiResponse<null>>({
+      url: `${API_PATH}/create-bucket`,
+      method: "post",
+      data: body,
+    });
+  },
+
   /** 上传文件（可传 onProgress 回调获取 0-100 进度百分比） */
   uploadFile(formData: FormData, onProgress?: (percent: number) => void) {
     return request<ApiResponse<Record<string, unknown>>>({

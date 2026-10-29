@@ -55,7 +55,7 @@
               <span class="block mt-0.5 text-xs text-g-500 truncate">{{ displayEmail }}</span>
             </div>
           </div>
-          <ul class="py-4 mt-3 border-t border-g-300/80">
+          <ul class="py-4 mt-3 border-t border-line/80">
             <li
               class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--el-color-primary)/10"
               @click="goPage('/fastlink/profile')"
@@ -72,7 +72,7 @@
             </li>
             <div class="w-full h-px my-2 bg-g-300/80"></div>
             <li
-              class="flex p-2 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200) justify-center mt-5 mb-0 py-1.5 text-xs border border-g-400 hover:text-(--el-color-danger) hover:border-(--el-color-danger-light-3)"
+              class="flex p-2 select-none rounded-md cursor-pointer last:mb-0 justify-center mt-5 mb-0 py-1.5 text-xs border border-(--el-color-danger-light-5) bg-transparent text-(--el-color-danger) hover:bg-(--el-color-danger)/10 hover:border-(--el-color-danger-light-3)"
               @click="handleLogout"
             >
               {{ $t("topBar.user.logout") }}

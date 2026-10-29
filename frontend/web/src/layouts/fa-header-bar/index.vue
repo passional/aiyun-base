@@ -38,6 +38,7 @@
         <FaIconButton
           v-if="isLeftMenu && shouldShowMenuButton"
           icon="ri:menu-2-fill"
+          aria-label="折叠或展开菜单"
           class="ml-3 max-sm:ml-1.75"
           @click="visibleMenu"
         />
@@ -46,6 +47,7 @@
         <FaIconButton
           v-if="shouldShowRefreshButton"
           icon="ri:refresh-line"
+          aria-label="刷新页面"
           class="ml-3! refresh-btn max-sm:hidden!"
           :style="{ marginLeft: !isLeftMenu ? '10px' : '0' }"
           @click="reload"
@@ -53,7 +55,7 @@
 
         <!-- 快速入口 -->
         <FaFastEnter v-if="shouldShowFastEnter && width >= headerBarFastEnterMinWidth">
-          <FaIconButton icon="ri:function-line" class="ml-3" />
+          <FaIconButton icon="ri:function-line" class="ml-3" aria-label="快速入口" />
         </FaFastEnter>
 
         <!-- 面包屑 -->
@@ -90,6 +92,7 @@
         <FaIconButton
           v-if="shouldShowFullscreen"
           :icon="isFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-fill'"
+          :aria-label="isFullscreen ? '退出全屏' : '进入全屏'"
           :class="[!isFullscreen ? 'full-screen-btn' : 'exit-full-screen-btn', 'ml-3']"
           class="max-md:hidden!"
           @click="toggleFullScreen"
@@ -105,11 +108,16 @@
 
         <!-- 国际化按钮 -->
         <ElDropdown
+          trigger="click"
           @command="changeLanguage"
           popper-class="langDropDownStyle"
           v-if="shouldShowLanguage"
         >
-          <FaIconButton icon="ri:translate-2" class="language-btn text-[19px]" />
+          <FaIconButton
+            icon="ri:translate-2"
+            class="language-btn text-[19px]"
+            :aria-label="$t('common.switchLanguage')"
+          />
           <template #dropdown>
             <ElDropdownMenu>
               <div v-for="item in languageOptions" :key="item.value" class="lang-btn-item">
@@ -129,6 +137,7 @@
         <FaIconButton
           v-if="shouldShowNotification"
           icon="ri:notification-2-line"
+          aria-label="通知中心"
           class="notice-button relative"
           @click="visibleNotice"
         >
@@ -147,7 +156,12 @@
           <ElPopover :visible="showSettingGuide" placement="bottom-start" :width="190" :offset="0">
             <template #reference>
               <div class="flex items-center justify-center">
-                <FaIconButton icon="ri:settings-line" class="setting-btn" @click="openSetting" />
+                <FaIconButton
+                  icon="ri:settings-line"
+                  class="setting-btn"
+                  aria-label="打开设置"
+                  @click="openSetting"
+                />
               </div>
             </template>
             <template #default>
@@ -167,6 +181,7 @@
           v-if="shouldShowThemeToggle"
           @click="themeAnimation"
           :icon="isDark ? 'ri:sun-fill' : 'ri:moon-line'"
+          :aria-label="isDark ? '切换浅色主题' : '切换深色主题'"
         />
 
         <!-- 用户头像、菜单 -->
@@ -198,7 +213,7 @@ import {
 } from "@stores";
 import AppConfig from "@/config";
 import { languageOptions } from "@/locales";
-import { mittBus, themeAnimation } from "@utils";
+import { mittBus, normalizeBrandName, themeAnimation } from "@utils";
 import { useCommon } from "@/hooks/core/useCommon";
 import { useHeaderBar } from "@/hooks/core/useHeaderBar";
 import { ElMessage } from "element-plus";
@@ -227,7 +242,7 @@ const headerLogoSrc = computed(() => {
 
 const headerSystemName = computed(() => {
   const raw = configStore.configData.sys_name?.config_value;
-  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (typeof raw === "string" && raw.trim()) return normalizeBrandName(raw);
   return AppConfig.systemInfo.name;
 });
 

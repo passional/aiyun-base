@@ -37,24 +37,24 @@
             :aria-label="`移除 ${item.title}`"
             @click.stop="handleRemove(item)"
           >
-            <ElIcon :size="10"><Close /></ElIcon>
+            <ElIcon :size="10"><FaSvgIcon icon="ri:close-line" /></ElIcon>
           </button>
         </div>
       </div>
     </ElScrollbar>
-    <ElEmpty
-      v-else
-      class="absolute inset-0 flex items-center justify-center"
-      description="暂无链接"
-      :image-size="60"
-    />
+    <div
+      v-if="!quickLinks.length"
+      class="flex flex-1 items-center justify-center px-4 text-xs text-center text-(--el-text-color-placeholder)"
+    >
+      点击顶部标签左侧 ☆ 收藏常用页面
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onScopeDispose, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Close, QuestionFilled } from "@element-plus/icons-vue";
+import { QuestionFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { quickStartManager, type QuickLink } from "@utils";
 

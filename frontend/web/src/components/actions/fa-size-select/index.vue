@@ -3,7 +3,11 @@
   <ElTooltip :content="t('sizeSelect.tooltip')" effect="dark" placement="bottom">
     <ElDropdown trigger="click" @command="handleSizeChange">
       <span class="inline-flex outline-none leading-none">
-        <FaIconButton :icon="resolveIconForFaSvgIcon('size')" class="size-select-btn text-[19px]" />
+        <FaIconButton
+          :icon="resolveIconForFaSvgIcon('size')"
+          class="size-select-btn text-[19px]"
+          aria-label="组件尺寸"
+        />
       </span>
       <template #dropdown>
         <ElDropdownMenu>

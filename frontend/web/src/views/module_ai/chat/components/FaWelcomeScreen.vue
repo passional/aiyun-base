@@ -130,4 +130,30 @@ const handlePromptClick = (prompt: string) => {
     }
   }
 }
+
+@media (width <= 640px) {
+  .welcome-screen {
+    padding: 16px;
+  }
+
+  .welcome-content {
+    width: 100%;
+    max-width: 100%;
+
+    h1 {
+      font-size: 24px !important;
+    }
+
+    .welcome-subtitle {
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .example-prompts {
+      grid-template-columns: 1fr !important;
+      max-width: none !important;
+      width: 100%;
+    }
+  }
+}
 </style>

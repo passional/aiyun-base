@@ -65,17 +65,17 @@ class ChannelEvalRunService:
     async def create(self, data: ChannelEvalRunCreateSchema) -> ChannelEvalRunOutSchema:
         """创建运行：组合清单 + 参数快照持久化；同平台串行约束；随后启动异步执行。"""
         if not data.combos:
-            raise CustomException(msg="至少选择一个「渠道 × 模型」组合", code=400, status_code=400)
+            raise CustomException(msg="至少选择一个「渠道 × 模型」组合", code=400)
 
         platform = await self.db.get(ChannelEvalPlatformModel, data.platform_id)
         if platform is None:
-            raise CustomException(msg="平台不存在", code=400, status_code=400)
+            raise CustomException(msg="平台不存在", code=400)
         if platform.status != 0:
-            raise CustomException(msg="平台已停用，无法发起测试运行", code=400, status_code=400)
+            raise CustomException(msg="平台已停用，无法发起测试运行", code=400)
 
         # 同平台串行：存在 pending/running/cancelling 运行则拒绝（避免日志时间窗交叉污染）
         if await self.crud.has_active_run(data.platform_id):
-            raise CustomException(msg="该平台存在待执行/执行中的运行，请等待其完成后再创建（同平台串行执行）", code=400, status_code=400)
+            raise CustomException(msg="该平台存在待执行/执行中的运行，请等待其完成后再创建（同平台串行执行）", code=400)
 
         params: dict[str, Any] = {
             "request_count": data.request_count,
@@ -104,10 +104,10 @@ class ChannelEvalRunService:
             try:
                 token_key = await ensure_eval_token(self.db, platform, run)
             except ProvisionError as e:
-                raise CustomException(msg=str(e), code=400, status_code=400) from e
+                raise CustomException(msg=str(e), code=400) from e
             ok, message = await probe_pin_capability(platform.base_url, token_key)
             if not ok:
-                raise CustomException(msg=message, code=400, status_code=400)
+                raise CustomException(msg=message, code=400)
             await self.db.flush()
         self._launch_after_commit(run.id)
         return await self._to_out(run)
@@ -203,7 +203,7 @@ class ChannelEvalRunService:
         """取消执行中的运行：置 cancelling，引擎在组合/请求边界检查并退出；已产生样本保留。"""
         run = await self.crud.get_or_404(id=id, msg="运行不存在")
         if run.status not in ("pending", "running"):
-            raise CustomException(msg=f"当前状态（{run.status}）不可取消", code=400, status_code=400)
+            raise CustomException(msg=f"当前状态（{run.status}）不可取消", code=400)
         run.status = "cancelling"
         await self.db.flush()
         run_task_registry.mark_cancel(id)

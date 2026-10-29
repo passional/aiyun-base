@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    FaPuzzleCaptcha: typeof import('./components/fa-puzzle-captcha/index.vue')['default']
     GlobalDialog: typeof import('./components/GlobalDialog.vue')['default']
     GlobalLoading: typeof import('./components/GlobalLoading.vue')['default']
     GlobalMessage: typeof import('./components/GlobalMessage.vue')['default']
@@ -59,7 +60,6 @@ declare module 'vue' {
     WdSearch: typeof import('@wot-ui/ui/components/wd-search/wd-search.vue')['WdSearch']
     WdSkeleton: typeof import('@wot-ui/ui/components/wd-skeleton/wd-skeleton.vue')['WdSkeleton']
     WdSlider: typeof import('@wot-ui/ui/components/wd-slider/wd-slider.vue')['WdSlider']
-    WdSlideVerify: typeof import('@wot-ui/ui/components/wd-slide-verify/wd-slide-verify.vue')['WdSlideVerify']
     WdStep: typeof import('@wot-ui/ui/components/wd-step/wd-step.vue')['WdStep']
     WdSteps: typeof import('@wot-ui/ui/components/wd-steps/wd-steps.vue')['WdSteps']
     WdSwipeAction: typeof import('@wot-ui/ui/components/wd-swipe-action/wd-swipe-action.vue')['WdSwipeAction']

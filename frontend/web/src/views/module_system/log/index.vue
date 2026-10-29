@@ -2,7 +2,7 @@
 <template>
   <div class="fa-full-height">
     <ElTabs v-model="activeTab" class="fa-tabs-fill">
-      <ElTabPane label="操作日志" name="operation">
+      <ElTabPane :label="$t('common.operationLog')" name="operation">
         <FaSearchBar
           v-show="opShowSearchBar"
           ref="opSearchBarRef"
@@ -40,7 +40,77 @@
             </template>
           </FaTableHeader>
 
+          <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+            <div v-if="opData.length" class="flex items-center gap-2 px-1">
+              <ElCheckbox
+                :model-value="opAllCardsSelected"
+                :indeterminate="opSelectedRows.length > 0 && !opAllCardsSelected"
+                @change="toggleOpAllCards"
+              >
+                {{ $t("common.selectAll") }}
+              </ElCheckbox>
+            </div>
+            <div v-if="!opData.length" class="py-12">
+              <FaEmptyState icon="ri:file-list-3-line" title="暂无操作日志" />
+            </div>
+            <div
+              v-for="row in opData"
+              :key="row.id"
+              class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <ElCheckbox
+                  class="mt-0.5 shrink-0"
+                  :model-value="isOpCardSelected(row)"
+                  @change="(val) => toggleOpCardRow(row, val)"
+                />
+                <div class="text-sm font-medium min-w-0 flex-1 truncate">
+                  {{ row.request_path }}
+                </div>
+                <div class="flex gap-1 shrink-0">
+                  <FaStatusTag type="info" :label="String(row.request_method ?? '—')" />
+                  <FaStatusTag
+                    :type="responseTagType(row.response_code)"
+                    :label="String(row.response_code ?? '—')"
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+                <span class="truncate">IP：{{ row.request_ip || "—" }}</span>
+                <span>{{ $t("common.col.processTime") }}：{{ row.process_time ?? "—" }}</span>
+                <span class="col-span-2 truncate"
+                  >{{ $t("common.table.description") }}：{{ row.description || "—" }}</span
+                >
+                <span class="col-span-2"
+                  >{{ $t("common.time") }}：{{ formatDateTime(row.created_time) }}</span
+                >
+              </div>
+              <div class="mobile-card-actions">
+                <ElButton
+                  link
+                  type="primary"
+                  size="small"
+                  @click="buildOpRowActions(row)[0]?.run()"
+                >
+                  {{ $t("common.detail") }}
+                </ElButton>
+                <ElButton link type="danger" size="small" @click="buildOpRowActions(row)[1]?.run()">
+                  {{ $t("common.delete") }}
+                </ElButton>
+              </div>
+            </div>
+            <ElPagination
+              v-if="opData.length"
+              class="justify-center mt-1"
+              layout="prev, pager, next"
+              :current-page="opPagination.current"
+              :page-size="opPagination.size"
+              :total="opPagination.total"
+              @current-change="opHandleCurrentChange"
+            />
+          </div>
           <FaTable
+            v-else
             ref="opTableRef"
             :loading="opLoading"
             :data="opData"
@@ -55,11 +125,11 @@
         <FaDialog
           v-model="opDialogVisible.visible"
           :title="opDialogVisible.title"
-          width="960px"
           dialog-class="crud-embed-dialog"
           modal-class="crud-embed-dialog"
           form-mode="detail"
           @close="handleOpCloseDialog"
+          size="xl"
         >
           <FaDescriptions
             :column="8"
@@ -102,7 +172,7 @@
         />
       </ElTabPane>
 
-      <ElTabPane label="登录日志" name="login">
+      <ElTabPane :label="$t('common.loginLog')" name="login">
         <FaSearchBar
           v-show="loginShowSearchBar"
           ref="loginSearchBarRef"
@@ -138,7 +208,85 @@
             </template>
           </FaTableHeader>
 
+          <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+            <div v-if="loginData.length" class="flex items-center gap-2 px-1">
+              <ElCheckbox
+                :model-value="loginAllCardsSelected"
+                :indeterminate="loginSelectedRows.length > 0 && !loginAllCardsSelected"
+                @change="toggleLoginAllCards"
+              >
+                {{ $t("common.selectAll") }}
+              </ElCheckbox>
+            </div>
+            <div v-if="!loginData.length" class="py-12">
+              <FaEmptyState icon="ri:login-box-line" title="暂无登录日志" />
+            </div>
+            <div
+              v-for="row in loginData"
+              :key="row.id"
+              class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <ElCheckbox
+                  class="mt-0.5 shrink-0"
+                  :model-value="isLoginCardSelected(row)"
+                  @change="(val) => toggleLoginCardRow(row, val)"
+                />
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium truncate">{{ row.username }}</div>
+                  <div class="mt-0.5 text-xs text-g-600">{{ row.login_ip || "—" }}</div>
+                </div>
+                <FaStatusTag
+                  :type="row.status === 1 ? 'success' : 'danger'"
+                  :label="row.status === 1 ? '成功' : '失败'"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+                <span class="truncate"
+                  >{{ $t("common.col.loginLocation") }}：{{ row.login_location || "—" }}</span
+                >
+                <span class="truncate">{{ $t("common.col.os") }}：{{ row.request_os || "—" }}</span>
+                <span class="col-span-2 truncate"
+                  >{{ $t("common.col.browser") }}：{{ row.request_browser || "—" }}</span
+                >
+                <span class="col-span-2 truncate"
+                  >{{ $t("common.message") }}：{{ row.msg || "—" }}</span
+                >
+                <span class="col-span-2"
+                  >{{ $t("common.time") }}：{{ formatDateTime(row.created_time) }}</span
+                >
+              </div>
+              <div class="mobile-card-actions">
+                <ElButton
+                  link
+                  type="primary"
+                  size="small"
+                  @click="buildLoginRowActions(row)[0]?.run()"
+                >
+                  {{ $t("common.detail") }}
+                </ElButton>
+                <ElButton
+                  link
+                  type="danger"
+                  size="small"
+                  @click="buildLoginRowActions(row)[1]?.run()"
+                >
+                  {{ $t("common.delete") }}
+                </ElButton>
+              </div>
+            </div>
+            <ElPagination
+              v-if="loginData.length"
+              class="justify-center mt-1"
+              layout="prev, pager, next"
+              :current-page="loginPagination.current"
+              :page-size="loginPagination.size"
+              :total="loginPagination.total"
+              @current-change="loginHandleCurrentChange"
+            />
+          </div>
           <FaTable
+            v-else
             ref="loginTableRef"
             :loading="loginLoading"
             :data="loginData"
@@ -153,11 +301,11 @@
         <FaDialog
           v-model="loginDialogVisible.visible"
           :title="loginDialogVisible.title"
-          width="640px"
           dialog-class="crud-embed-dialog"
           modal-class="crud-embed-dialog"
           form-mode="detail"
           @close="handleLoginCloseDialog"
+          size="md"
         >
           <FaDescriptions
             :column="4"
@@ -179,6 +327,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import OperationLogAPI, {
   type OperationLogPageQuery,
   type OperationLogTable,
@@ -187,6 +336,7 @@ import OperationLogAPI, {
 } from "@/api/module_system/log";
 import {
   renderTableOperationCell,
+  formatDateTime,
   resolveStatusColumns,
   stripPaginationParams,
   cleanEmptyArrayParams,
@@ -328,9 +478,10 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
         sortable: true,
         showOverflowTooltip: true,
+        formatter: (row: { created_time?: string }) => formatDateTime(row.created_time),
       },
       {
         prop: "operation",
@@ -419,6 +570,51 @@ async function deleteOpRow(id: number, name: string) {
   } catch {
     /* 用户取消 */
   }
+}
+
+const { width: viewportWidth } = useWindowSize();
+
+const opAllCardsSelected = computed(
+  () => opData.value.length > 0 && opSelectedRows.value.length === opData.value.length
+);
+const loginAllCardsSelected = computed(
+  () => loginData.value.length > 0 && loginSelectedRows.value.length === loginData.value.length
+);
+
+function isOpCardSelected(row: OperationLogTable) {
+  return opSelectedRows.value.some((item) => item.id === row.id);
+}
+function toggleOpCardRow(row: OperationLogTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...opSelectedRows.value.filter((item) => item.id !== row.id), row]
+    : opSelectedRows.value.filter((item) => item.id !== row.id);
+  onOpTableSelectionChange(next);
+}
+function toggleOpAllCards(checked: boolean | string | number) {
+  onOpTableSelectionChange(checked ? [...opData.value] : []);
+}
+
+function isLoginCardSelected(row: LoginLogTable) {
+  return loginSelectedRows.value.some((item) => item.id === row.id);
+}
+function toggleLoginCardRow(row: LoginLogTable, checked: boolean | string | number) {
+  const next = checked
+    ? [...loginSelectedRows.value.filter((item) => item.id !== row.id), row]
+    : loginSelectedRows.value.filter((item) => item.id !== row.id);
+  onLoginTableSelectionChange(next);
+}
+function toggleLoginAllCards(checked: boolean | string | number) {
+  onLoginTableSelectionChange(checked ? [...loginData.value] : []);
+}
+
+const isNarrow = computed(() => viewportWidth.value < 1025);
+
+function responseTagType(code?: number | string): "success" | "warning" | "danger" | "info" {
+  const value = Number(code);
+  if (value >= 200 && value < 300) return "success";
+  if (value >= 400 && value < 500) return "warning";
+  if (value >= 500) return "danger";
+  return "info";
 }
 
 function buildOpRowActions(row: OperationLogTable): TableOperationAction[] {
@@ -544,6 +740,7 @@ function buildLoginReplaceParams(p: LoginSearchForm): Record<string, unknown> {
 
 const loginTableRef = ref<{ elTableRef?: { clearSelection: () => void } } | null>(null);
 const {
+  selectedRows: loginSelectedRows,
   selectedIds: loginSelectedIds,
   batchDeleting: loginBatchDeleting,
   onTableSelectionChange: onLoginTableSelectionChange,
@@ -606,7 +803,7 @@ const {
       {
         prop: "created_time",
         label: "登录时间",
-        width: 168,
+        width: 190,
         sortable: true,
         showOverflowTooltip: true,
       },

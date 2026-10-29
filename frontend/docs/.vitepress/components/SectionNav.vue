@@ -178,7 +178,7 @@ onUnmounted(() => {
   width: 10px;
   height: 10px;
   background: var(--vp-brand-gradient);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 12px rgba(109, 91, 255, 0.6);
 }
 
 .section-nav-label {
@@ -243,7 +243,7 @@ onUnmounted(() => {
   }
 
   .section-nav-dot.active {
-    background: rgba(139, 92, 246, 0.18);
+    background: rgba(109, 91, 255, 0.18);
   }
 
   .section-nav-dot-inner {

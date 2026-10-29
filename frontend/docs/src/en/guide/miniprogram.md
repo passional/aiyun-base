@@ -8,7 +8,7 @@ description: "Mobile dev guide: UniApp + Vue3 + Wot Design, H5/WeChat/Alipay min
 
 ## 📋Project Overview
 
-FastApp is the mobile application component of FastApiAdmin, based on **Uni App + Vue3 + TypeScript + Wot Design Uni**, supporting multi-platform deployment including WeChat Mini Program, Alipay Mini Program, Web H5, iOS, and Android.
+FastApp is the mobile application component of FastapiAdmin, based on **Uni App + Vue3 + TypeScript + Wot Design Uni**, supporting multi-platform deployment including WeChat Mini Program, Alipay Mini Program, Web H5, iOS, and Android.
 
 ### Core Features
 
@@ -19,7 +19,7 @@ FastApp is the mobile application component of FastApiAdmin, based on **Uni App 
 - **Personal Center**: User information management, avatar upload
 - **Workbench**: Quick access to commonly used functions
 - **Message Push**: Real-time message notification
-- **API Integration**: Seamless integration with FastApiAdmin backend
+- **API Integration**: Seamless integration with FastapiAdmin backend
 - **Responsive Design**: Adaptive layout for different screen sizes
 - **Performance Optimization**: Code splitting, lazy loading, etc.
 
@@ -1319,7 +1319,7 @@ Auto-import is configured for the following — no manual import needed:
 
 ## 🎉Conclusion
 
-FastApp provides a comprehensive mobile application solution for FastApiAdmin, leveraging the power of Uni App to achieve cross-platform deployment. By following the guidelines in this document, you can develop high-quality, performant, and maintainable mobile applications that seamlessly integrate with the FastApiAdmin backend.
+FastApp provides a comprehensive mobile application solution for FastapiAdmin, leveraging the power of Uni App to achieve cross-platform deployment. By following the guidelines in this document, you can develop high-quality, performant, and maintainable mobile applications that seamlessly integrate with the FastapiAdmin backend.
 
 For more detailed information about Uni App, Vue3, or Wot Design Uni, please refer to their official documentation:
 

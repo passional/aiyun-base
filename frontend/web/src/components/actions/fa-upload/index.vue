@@ -4,9 +4,9 @@
     <FaDialog
       v-model="cropVisible"
       :title="cropDialogTitle"
-      width="960px"
       :draggable="false"
       @closed="onCropDialogClosed"
+      size="xl"
     >
       <FaCutterImg
         v-if="cropVisible && cropSourceUrl"
@@ -52,7 +52,16 @@
             :preview-src-list="props.enablePreview ? [internalFileList[0]!.url] : []"
             :preview-teleported="true"
             @click.stop="handleImageClick"
-          />
+          >
+            <template #error>
+              <div
+                class="flex flex-col items-center justify-center w-full h-full gap-1 bg-(--el-fill-color-light)"
+              >
+                <FaSvgIcon icon="ri:image-line" class="text-xl text-g-400" />
+                <span class="text-xs text-g-400">加载失败</span>
+              </div>
+            </template>
+          </ElImage>
           <ElIcon
             v-if="!props.disabled"
             class="single-upload__delete-btn"
@@ -63,7 +72,7 @@
         </template>
         <template v-else>
           <ElIcon class="single-upload__add-btn">
-            <Plus />
+            <FaSvgIcon icon="ri:add-line" />
           </ElIcon>
         </template>
       </template>
@@ -80,7 +89,7 @@ defineOptions({ name: "FaUpload" });
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type { UploadRawFile, UploadRequestOptions, UploadUserFile } from "element-plus";
-import { CircleCloseFilled, Plus } from "@element-plus/icons-vue";
+import { CircleCloseFilled } from "@element-plus/icons-vue";
 import ParamsAPI from "@/api/module_system/params";
 import { dataURLToFile } from "@utils";
 

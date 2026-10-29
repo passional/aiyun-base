@@ -26,9 +26,14 @@
     </div>
 
     <!-- Empty -->
-    <ElEmpty v-else-if="!plans.length" description="暂无可用套餐">
+    <FaEmptyState
+      v-else-if="!plans.length"
+      icon="ri:vip-crown-line"
+      title="暂无可用套餐"
+      description="检查网络后重新加载"
+    >
       <ElButton type="primary" @click="loadPackages">重新加载</ElButton>
-    </ElEmpty>
+    </FaEmptyState>
 
     <!-- Pricing Cards -->
     <TransitionGroup
@@ -44,7 +49,7 @@
         :style="{ '--card-delay': `${idx * 0.08}s` }"
       >
         <ElCard
-          class="relative flex flex-col h-full pricing-card rounded-2xl!"
+          class="relative flex flex-col h-full pricing-card rounded-xl!"
           :class="{
             'is-current': plan.isCurrent,
             'is-recommended': plan.isRecommended,
@@ -61,7 +66,7 @@
             </h3>
 
             <p
-              class="h-10 pb-5 mb-5 overflow-hidden text-sm text-g-600 text-ellipsis border-b border-g-300/80 line-clamp-2"
+              class="h-10 pb-5 mb-5 overflow-hidden text-sm text-g-600 text-ellipsis border-b border-line/80 line-clamp-2"
             >
               {{ plan.summary }}
             </p>
@@ -92,7 +97,7 @@
                 class="mr-2.5 mt-0.5 shrink-0"
                 :class="feat.highlight ? 'text-theme!' : 'text-g-400!'"
               >
-                <Check />
+                <FaSvgIcon icon="ri:check-line" />
               </ElIcon>
               <span>{{ feat.text }}</span>
             </div>
@@ -123,7 +128,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import { Check } from "@element-plus/icons-vue";
 
 // 与路由 name 一致：KeepAlive 的 include/exclude 按组件 name 匹配
 defineOptions({ name: "FastlinkPricing" });

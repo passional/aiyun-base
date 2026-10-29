@@ -31,6 +31,41 @@ export const setPageTitle = (to: RouteLocationNormalized): void => {
   document.title = `${formatMenuTitle(String(title))} - ${siteName}`;
 };
 
+const MENU_TITLE_KEYS: Record<string, string> = {
+  首页: "common.menuTitle.home",
+  仪表盘: "common.menuTitle.dashboard",
+  系统管理: "common.menuTitle.system",
+  监控管理: "common.menuTitle.monitor",
+  接口管理: "common.menuTitle.api",
+  代码生成: "common.menuTitle.generator",
+  AI管理: "common.menuTitle.ai",
+  任务管理: "common.menuTitle.task",
+  运维管理: "common.menuTitle.ops",
+  菜单管理: "common.menuTitle.menu",
+  字典管理: "common.menuTitle.dict",
+  参数管理: "common.menuTitle.params",
+  部门管理: "common.menuTitle.dept",
+  岗位管理: "common.menuTitle.position",
+  角色管理: "common.menuTitle.role",
+  用户管理: "common.menuTitle.user",
+  日志管理: "common.menuTitle.log",
+  公告管理: "common.menuTitle.notice",
+  工单管理: "common.menuTitle.ticket",
+  版本管理: "common.menuTitle.version",
+  在线用户: "common.menuTitle.online",
+  服务器监控: "common.menuTitle.server",
+  缓存监控: "common.menuTitle.cache",
+  定时任务: "common.menuTitle.cron",
+  存储管理: "common.menuTitle.storage",
+  文件浏览: "common.menuTitle.browse",
+  节点管理: "common.menuTitle.node",
+  传输任务: "common.menuTitle.transfer",
+  流程管理: "common.menuTitle.workflow",
+  "SSH 运维": "common.menuTitle.ssh",
+  "SQL 控制台": "common.menuTitle.sql",
+  个人中心: "common.menuTitle.profile",
+};
+
 export const formatMenuTitle = (title: string): string => {
   if (!title) return "";
 
@@ -38,6 +73,9 @@ export const formatMenuTitle = (title: string): string => {
     if (i18n.global.te(title)) return $t(title);
     return title.split(".").pop() || title;
   }
+
+  const key = MENU_TITLE_KEYS[title];
+  if (key && i18n.global.te(key)) return $t(key);
 
   return title;
 };

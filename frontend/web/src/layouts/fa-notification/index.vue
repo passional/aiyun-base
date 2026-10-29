@@ -169,7 +169,7 @@ watch(
 }
 
 .fa-notification-panel.fa-notification-panel {
-  border-radius: calc(var(--custom-radius) + 2px) !important;
+  border-radius: var(--fa-radius-lg, 16px) !important;
 }
 
 .scrollbar-thin::-webkit-scrollbar {

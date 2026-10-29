@@ -1,6 +1,6 @@
 <!-- 列表页左侧工具栏：perm 预设「新增/导入/导出/批删/更多」，默认插槽可整块替换 -->
 <template>
-  <div class="data-table__toolbar--left inline-flex flex-wrap items-center gap-2">
+  <div class="data-table__toolbar--left inline-flex max-w-full flex-wrap items-center gap-2">
     <slot>
       <!-- 默认插槽回退内容：预设按钮 -->
       <ElSpace>
@@ -13,31 +13,29 @@
           @click="$emit('add')"
           plain
         >
-          新增
+          {{ $t("common.addNew") }}
         </ElButton>
         <ElButton
           v-if="permImport"
           v-hasPerm="permImport"
           v-ripple
-          type="success"
           :loading="importLoading"
           :icon="Upload"
           @click="$emit('import')"
           plain
         >
-          导入
+          {{ $t("common.import") }}
         </ElButton>
         <ElButton
           v-if="permExport"
           v-hasPerm="permExport"
           v-ripple
-          type="warning"
           :loading="exportLoading"
           :icon="Download"
           @click="$emit('export')"
           plain
         >
-          导出
+          {{ $t("common.export") }}
         </ElButton>
         <ElButton
           v-if="permDelete"
@@ -49,7 +47,11 @@
           @click="$emit('delete')"
           plain
         >
-          {{ removeIds.length > 0 ? `批量删除 (${removeIds.length})` : "批量删除" }}
+          {{
+            removeIds.length > 0
+              ? `${$t("common.batchDelete")} (${removeIds.length})`
+              : $t("common.batchDelete")
+          }}
         </ElButton>
         <ElDropdown
           v-if="permPatch"
@@ -58,19 +60,19 @@
           type="info"
           :disabled="removeIds.length === 0 || deleteLoading || moreLoading"
         >
-          <ElButton type="info" plain :loading="moreLoading">
-            更多
+          <ElButton :loading="moreLoading">
+            {{ $t("common.more") }}
             <ElIcon class="el-icon--right">
               <ArrowDown />
             </ElIcon>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
-              <ElDropdownItem icon="Check" @click="$emit('more', 'enable')"
-                >批量启用</ElDropdownItem
-              >
+              <ElDropdownItem icon="Check" @click="$emit('more', 'enable')">{{
+                $t("common.batchEnable")
+              }}</ElDropdownItem>
               <ElDropdownItem icon="CircleClose" @click="$emit('more', 'disable')">
-                批量停用
+                {{ $t("common.batchDisable") }}
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>

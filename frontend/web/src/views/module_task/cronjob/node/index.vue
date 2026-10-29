@@ -42,6 +42,7 @@
       </FaTableHeader>
 
       <FaTable
+        mobile-cards
         ref="faTableRef"
         row-key="id"
         :loading="loading"
@@ -57,12 +58,12 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="1000px"
       @close="handleCloseDialog"
       @opened="handleDialogOpened"
+      size="xl"
     >
-      <ElSplitter direction="horizontal" :style="'height: 500px'">
-        <ElSplitterPanel size="300px" :min="200" :max="400">
+      <div class="flex h-[min(500px,60vh)] min-h-0 gap-4">
+        <div class="h-full w-[300px] shrink-0">
           <ElScrollbar :style="'height: 100%'">
             <FaForm
               :key="nodeFormRenderKey"
@@ -71,7 +72,7 @@
               :items="nodeDialogFormItems"
               :rules="rules"
               label-suffix=":"
-              label-width="85px"
+              label-width="96px"
               :span="24"
               :gutter="16"
               :show-reset="false"
@@ -105,7 +106,7 @@
                     :key="index"
                     class="flex gap-2 items-center [&_.el-input]:flex-1"
                   >
-                    <ElInput v-model="argsList[index]" placeholder="参数值" />
+                    <ElInput v-model="argsList[index]" placeholder="参数值" aria-label="参数值" />
                     <ElButton
                       type="danger"
                       :icon="Delete"
@@ -125,8 +126,8 @@
                     :key="item.key || index"
                     class="flex gap-2 items-center [&_.el-input]:flex-1"
                   >
-                    <ElInput v-model="item.key" placeholder="键" />
-                    <ElInput v-model="item.value" placeholder="值" />
+                    <ElInput v-model="item.key" placeholder="键" aria-label="键" />
+                    <ElInput v-model="item.value" placeholder="值" aria-label="值" />
                     <ElButton
                       type="danger"
                       :icon="Delete"
@@ -164,6 +165,7 @@
                     placeholder="请输入 * * * * * ? *"
                     readonly
                     @click="openCron = true"
+                    aria-label="* * * * * ? *"
                   />
                   <FaDialog
                     v-model="openCron"
@@ -191,6 +193,7 @@
                         v-model="formData.trigger_args"
                         placeholder="请点击设置间隔时间"
                         @click="openInterval = true"
+                        aria-label="请点击设置间隔时间"
                       />
                     </template>
                     <FaIntervalTab
@@ -213,9 +216,9 @@
               </template>
             </FaForm>
           </ElScrollbar>
-        </ElSplitterPanel>
+        </div>
 
-        <ElSplitterPanel>
+        <div class="h-full min-w-0 flex-1">
           <div class="flex flex-col h-full pl-4">
             <div class="flex items-center justify-between py-2.5">
               <span class="text-sm font-semibold">处理器</span>
@@ -230,8 +233,8 @@
               width="100%"
             />
           </div>
-        </ElSplitterPanel>
-      </ElSplitter>
+        </div>
+      </div>
 
       <template #footer>
         <div class="dialog-footer">
@@ -573,7 +576,7 @@ const {
       {
         prop: "operation",
         label: "操作",
-        width: 250,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: NodeTable) => formatNodeOperationCell(row),

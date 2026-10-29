@@ -86,8 +86,8 @@
 
 /* 悬浮卡片：玻璃拟态，圆角透明 */
 .login-auth-split--center .auth-right-wrap {
-  width: min(480px, calc(100vw - 2rem)) !important;
-  max-width: min(480px, calc(100vw - 2rem));
+  width: min(440px, calc(100vw - 2rem)) !important;
+  max-width: min(440px, calc(100vw - 2rem));
   height: auto;
   max-height: calc(100dvh - 8rem);
   padding: 1.25rem 1.75rem;
@@ -163,8 +163,8 @@ html.dark .login-page-footer--floating-layout {
 
   /* 窄屏横排切竖排：恢复插画；居中模式本身无插画，不受影响 */
   .login-auth-split--center .auth-right-wrap {
-    width: min(420px, calc(100vw - 1.5rem)) !important;
-    max-width: min(420px, calc(100vw - 1.5rem));
+    width: min(440px, calc(100vw - 1.5rem)) !important;
+    max-width: min(440px, calc(100vw - 1.5rem));
     max-height: calc(100dvh - 6rem);
   }
 }
@@ -216,7 +216,7 @@ html.dark .login-page-footer--floating-layout {
 
   .sub-title {
     margin-top: 10px;
-    font-size: 0.875rem;
+    font-size: 12px;
     line-height: 1.25rem;
     color: var(--fa-gray-600);
   }
@@ -241,9 +241,11 @@ html.dark .login-page-footer--floating-layout {
   }
 }
 
-// 登录页下拉选择框桌面端高度
-.el-select.custom-height .el-select__wrapper {
-  height: 40px;
+// 登录页下拉选择框：仅桌面端固定 40px，移动端跟随 ConfigProvider small 与输入框一致
+@media (width >= 768px) {
+  .el-select.custom-height .el-select__wrapper {
+    height: 40px;
+  }
 }
 
 .login-page-panel {

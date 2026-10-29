@@ -77,6 +77,7 @@
       >
         <div
           class="btn language-btn auth-top-bar__action h-8 w-8 cursor-pointer flex items-center justify-center transition duration-300"
+          aria-label="切换语言"
         >
           <FaSvgIcon
             icon="ri:translate-2"
@@ -116,7 +117,7 @@ import { LanguageEnum } from "@/enums/appEnum";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSettingsStore, useUserStore, useConfigStore } from "@stores";
-import { themeAnimation } from "@utils";
+import { themeAnimation, normalizeBrandName } from "@utils";
 import { languageOptions } from "@/locales";
 
 import AppConfig from "@/config";
@@ -177,7 +178,8 @@ const webLogoSrc = computed(
 );
 
 const siteTitle = computed(
-  () => configStore.configData.sys_name?.config_value?.trim() || AppConfig.systemInfo.name
+  () =>
+    normalizeBrandName(configStore.configData.sys_name?.config_value) || AppConfig.systemInfo.name
 );
 
 const displayVersion = computed(() => {
@@ -216,7 +218,7 @@ const changeThemeColor = (color: string) => {
 .logo-version-pill {
   display: inline-block;
   padding: 0.28rem 0.6rem;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
@@ -287,7 +289,12 @@ const changeThemeColor = (color: string) => {
 .color-dot {
   box-shadow: 0 2px 4px rgb(0 0 0 / 15%);
   transform: translateX(20px) scale(0.8);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transition-delay: calc(var(--index) * 0.05s);
 }
 

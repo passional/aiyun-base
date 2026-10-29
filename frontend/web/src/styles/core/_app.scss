@@ -88,7 +88,7 @@
   min-width: 0;
   min-height: 0;
   margin-top: 12px;
-  border-radius: calc(var(--custom-radius) / 2 + 2px) !important;
+  border-radius: var(--fa-radius-md, 12px) !important;
 
   .el-card__body {
     display: flex;
@@ -188,7 +188,7 @@
   color: #fff;
   text-align: center;
   background: #fd4e4e;
-  border-radius: 4px;
+  border-radius: var(--fa-radius-xs, 6px);
 }
 
 @keyframes breathe {
@@ -228,17 +228,20 @@
 
 // 表格按钮悬浮效果
 .hover-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
-    filter: brightness(1.1);
-    transform: translateY(-2px) scale(1.05);
+    color: var(--el-color-primary) !important;
+    background-color: var(--el-fill-color-light) !important;
   }
 
   &:active {
-    box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
-    transform: translateY(-1px) scale(1.02);
+    background-color: var(--el-fill-color) !important;
   }
 }
 
@@ -260,21 +263,52 @@
   color: var(--fa-gray-500);
 
   .fa-empty-state__icon {
-    margin-bottom: 16px;
-    font-size: 48px;
-    opacity: 0.5;
+    margin-bottom: var(--fa-space-4, 16px);
+    font-size: var(--fa-empty-size, 60px);
+    color: var(--el-color-primary);
+    opacity: 0.9;
   }
 
   .fa-empty-state__title {
-    margin-bottom: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--fa-gray-600);
+    margin-bottom: var(--fa-space-2, 8px);
+    font-size: var(--fa-font-md, 14px);
+    font-weight: 600;
+    color: var(--el-text-color-primary);
   }
 
   .fa-empty-state__desc {
-    font-size: 13px;
-    color: var(--fa-gray-500);
+    font-size: var(--fa-font-sm, 12px);
+    color: var(--el-text-color-secondary);
+  }
+
+  .fa-empty-state__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  &.fa-empty-state--compact {
+    min-height: 120px;
+    padding: 16px 12px;
+
+    .fa-empty-state__icon {
+      margin-bottom: 8px;
+      font-size: 32px;
+    }
+
+    .fa-empty-state__title {
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .fa-empty-state__desc {
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .fa-empty-state__actions {
+      margin-top: 10px;
+    }
   }
 }
 
@@ -377,5 +411,77 @@
       0 8px 24px rgb(0 0 0 / 6%),
       0 2px 8px rgb(0 0 0 / 3%);
     transform: translateY(-2px);
+  }
+}
+
+// 数字/日期等宽，避免表格里数字跳动
+.el-table .cell,
+.el-pagination,
+.el-descriptions__content,
+.el-statistic__number {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 工作区内容区：表格卡片不再叠一层“卡中卡” */
+.fa-workbench__main .el-card.fa-table-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* 防止 1px 级横向溢出在视口底部生成浏览器横向滚动条 */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* 移动端卡片操作区：按钮右对齐、可换行，避免长按钮行溢出卡片 */
+.mobile-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  justify-content: flex-end;
+  margin-top: 16px;
+
+  .el-button {
+    flex: 0 0 auto;
+    margin-left: 0 !important;
+    font-size: 13px;
+  }
+}
+
+/* 移动端表格工具栏：按自然宽度换行，避免按钮被裁切 */
+@media (width <= 800px) {
+  .data-table__toolbar--left {
+    display: flex !important;
+    width: 100%;
+    flex-wrap: wrap !important;
+  }
+
+  .data-table__toolbar--left .el-space {
+    display: flex !important;
+    width: 100%;
+    flex-wrap: wrap !important;
+    gap: 8px;
+  }
+
+  .data-table__toolbar--left .el-button {
+    flex: 0 0 auto;
+    width: auto;
+    margin-left: 0 !important;
+  }
+}
+
+/* 平板宽度：卡片列表改为两列，避免单列过宽 */
+@media (width >= 800px) and (width <= 1200px) {
+  .mobile-card-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .mobile-card-list > .el-pagination,
+  .mobile-card-list > .py-12 {
+    grid-column: 1 / -1;
   }
 }

@@ -7,7 +7,7 @@ description: "Team dev guidelines: code style, Git workflow, code review, commit
 
 ## 📚 Guidelines Overview
 
-To ensure project code consistency, readability, and maintainability, the FastApiAdmin project has established the following development guidelines. All developers participating in the project should follow these guidelines.
+To ensure project code consistency, readability, and maintainability, the FastapiAdmin project has established the following development guidelines. All developers participating in the project should follow these guidelines.
 
 ## 🎨 Frontend Development Guidelines
 
@@ -447,4 +447,4 @@ If you have any suggestions or improvements for the development guidelines, plea
 
 ## 📄 License Agreement
 
-This development guidelines document adopts the MIT License, consistent with the FastApiAdmin project.
+This development guidelines document adopts the MIT License, consistent with the FastapiAdmin project.

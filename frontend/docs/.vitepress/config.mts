@@ -6,7 +6,7 @@ const zhGuideSidebar = [
     text: '快速开始',
     items: [
       { text: '项目概述', link: '/guide/overview' },
-      { text: '为什么选择 FastApiAdmin？', link: '/guide/why' },
+      { text: '为什么选择 FastapiAdmin？', link: '/guide/why' },
       { text: '快速开始', link: '/guide/start' },
     ],
   },
@@ -34,7 +34,7 @@ const enGuideSidebar = [
     text: 'Getting Started',
     items: [
       { text: 'Project Overview', link: '/en/guide/overview' },
-      { text: 'Why FastApiAdmin?', link: '/en/guide/why' },
+      { text: 'Why FastapiAdmin?', link: '/en/guide/why' },
       { text: 'Quick Start', link: '/en/guide/start' },
     ],
   },
@@ -59,7 +59,7 @@ const enGuideSidebar = [
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/',
-  title: 'FastApiAdmin',
+  title: 'FastapiAdmin',
   description: '基于 FastAPI + Vue3 + TypeScript 构建的企业级中后台解决方案,AI 驱动的全栈开发平台。',
   srcDir: 'src',
   outDir: 'dist',
@@ -67,6 +67,10 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
   metaChunk: true,
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg?v=3' }],
+    ['link', { rel: 'shortcut icon', href: '/favicon.ico?v=3' }],
+  ],
   themeConfig: {
     search: {
       provider: 'local',
@@ -114,7 +118,7 @@ export default defineConfig({
             text: '快速开始',
             items: [
               { text: '项目概述', link: '/guide/overview' },
-              { text: '为什么选择 FastApiAdmin？', link: '/guide/why' },
+              { text: '为什么选择 FastapiAdmin？', link: '/guide/why' },
               { text: '快速开始', link: '/guide/start' },
             ],
           },
@@ -175,7 +179,7 @@ export default defineConfig({
             text: 'Quick Start',
             items: [
               { text: 'Project Overview', link: '/en/guide/overview' },
-              { text: 'Why FastApiAdmin?', link: '/en/guide/why' },
+              { text: 'Why FastapiAdmin?', link: '/en/guide/why' },
               { text: 'Quick Start', link: '/en/guide/start' },
             ],
           },

@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import type { FormSchema } from '@wot-ui/ui/components/wd-form/types'
-import type { SlideVerifyInstance } from '@wot-ui/ui/components/wd-slide-verify/types'
 import type { CaptchaInfo, LoginFormData, OAuthProvider } from '@/api/module_system/auth'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
@@ -17,7 +16,7 @@ useI18nNavTitle('login.navTitle')
 
 const { t } = useI18n()
 const loginFormRef = ref()
-const sliderCaptchaRef = ref<SlideVerifyInstance>()
+const sliderCaptchaRef = ref<{ reset?: () => void }>()
 const loading = ref(false)
 const userStore = useUserStore()
 const configStore = useConfigStore()
@@ -27,8 +26,18 @@ const redirect = ref('/pages/index/index')
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`
 
 /** 品牌区参数（来自后端系统参数，带默认值兜底；web 端消费方式：configData?.[key]?.config_value） */
-const brandLogo = computed(() => configStore.configData?.logo_url?.config_value?.trim() || `${BASE_PATH}static/logo.png`)
-const brandTitle = computed(() => configStore.configData?.sys_name?.config_value?.trim() || 'FastapiAdmin')
+// 官方默认 Logo 统一使用内置新品牌标识；管理员自定义上传的 Logo 仍优先
+const OFFICIAL_LOGO_HOST = 'service.fastapiadmin.com'
+const brandLogo = computed(() => {
+  const custom = configStore.configData?.logo_url?.config_value?.trim()
+  if (!custom || custom.includes(OFFICIAL_LOGO_HOST)) return `${BASE_PATH}static/logo.png`
+  return custom
+})
+const brandTitle = computed(() => {
+  const raw = configStore.configData?.sys_name?.config_value?.trim()
+  if (!raw) return 'FastapiAdmin'
+  return /^fastapiadmin\s*系统$/i.test(raw) ? 'FastapiAdmin' : raw
+})
 const brandSubtitle = computed(() => configStore.configData?.login_title?.config_value?.trim() || t('login.brandSubtitle'))
 
 /** 表单验证 schema — 用户名/密码字段级错误提示（wot-ui 函数式校验） */
@@ -58,29 +67,17 @@ const loginFormData = reactive<LoginFormData>({
   login_type: '移动端',
 })
 
-const captchaState = reactive<CaptchaInfo>({ enable: false, key: '', img_base: '' })
-
-/**
- * wd-slide-verify 在小程序端 onMounted 时容器可能尚未完成布局，
- * getRect 测量到 0 宽高 → maxPosition=0 → 滑块无法拖动。
- * 渲染完成后延迟重试 init()，直至组件实例就绪并重新测量。
- */
-watch(() => captchaState.enable, async (enabled) => {
-  if (!enabled)
-    return
-  await nextTick()
-  retrySliderInit()
+const captchaState = reactive<CaptchaInfo>({
+  enable: false,
+  key: '',
+  img_base: '',
+  piece_base: '',
+  piece_y: 0,
+  piece_width: 55,
+  piece_height: 48,
+  bg_width: 320,
+  bg_height: 160,
 })
-
-function retrySliderInit(retry = 0) {
-  const verify = sliderCaptchaRef.value
-  if (!verify) {
-    if (retry < 5)
-      setTimeout(() => retrySliderInit(retry + 1), 120)
-    return
-  }
-  verify.init()
-}
 
 /** 滑块验证是否已通过（后端返回 verified=true 后置位） */
 const sliderPassed = ref(false)
@@ -101,6 +98,13 @@ async function getLoginCaptcha() {
       captchaState.enable = Boolean(result.enable)
       captchaState.key = result.key || ''
       captchaState.img_base = result.img_base || ''
+      captchaState.piece_base = result.piece_base || ''
+      captchaState.piece_y = result.piece_y ?? 0
+      captchaState.piece_width = result.piece_width ?? 55
+      captchaState.piece_height = result.piece_height ?? 48
+      captchaState.bg_width = result.bg_width ?? 320
+      captchaState.bg_height = result.bg_height ?? 160
+      sliderPassed.value = false
       if (captchaState.enable) {
         loginFormData.captcha_key = captchaState.key
         // 重置滑块到初始状态
@@ -121,17 +125,17 @@ async function getLoginCaptcha() {
  * wd-slide-verify 拖动到终点触发 success — 调用后端 slider_complete 接口标记验证完成
  * 后端仅标记 captcha_key 状态为 verified，不校验 x 坐标
  */
-async function handleSliderSuccess() {
+async function handleSliderSuccess(position: number) {
   if (!captchaState.key) {
     uni.showToast({ title: t('login.captchaExpired'), icon: 'none' })
-    sliderCaptchaRef.value?.reset()
+    sliderCaptchaRef.value?.reset?.()
     return
   }
 
   try {
     const result = await AuthAPI.completeSliderCaptcha({
       captcha_key: captchaState.key,
-      x: 100, // 占位值，后端未使用
+      position,
     })
     if (result?.verified) {
       sliderPassed.value = true
@@ -139,13 +143,14 @@ async function handleSliderSuccess() {
     }
     else {
       uni.showToast({ title: t('login.sliderFailed'), icon: 'none' })
-      sliderCaptchaRef.value?.reset()
+      sliderCaptchaRef.value?.reset?.()
     }
   }
   catch (e) {
     console.error('滑块验证失败', e)
     uni.showToast({ title: t('login.sliderFailed'), icon: 'none' })
-    sliderCaptchaRef.value?.reset()
+    sliderCaptchaRef.value?.reset?.()
+    void getLoginCaptcha()
   }
 }
 
@@ -153,7 +158,7 @@ async function handleSliderSuccess() {
 function resetSliderCaptcha() {
   sliderPassed.value = false
   loginFormData.captcha = ''
-  sliderCaptchaRef.value?.reset()
+  sliderCaptchaRef.value?.reset?.()
 }
 
 onLoad((options) => {
@@ -288,12 +293,21 @@ async function handleOAuth(provider: OAuthProvider) {
 
         <!-- Slider Captcha — wd-slide-verify 滑块拖动验证（条件显示） -->
         <wd-form-item v-if="captchaState.enable" custom-style="margin-bottom: 14rpx; padding-left: 0; padding-right: 0;">
-          <wd-slide-verify
+          <FaPuzzleCaptcha
             ref="sliderCaptchaRef"
-            :text="t('login.sliderText')"
+            :bg-image="captchaState.img_base"
+            :piece-image="captchaState.piece_base"
+            :piece-y="captchaState.piece_y"
+            :piece-width="captchaState.piece_width"
+            :piece-height="captchaState.piece_height"
+            :bg-width="captchaState.bg_width"
+            :bg-height="captchaState.bg_height"
+            :passed="sliderPassed"
+            :loading="loading"
+            :text="t('login.puzzleText')"
             :success-text="t('login.sliderSuccessText')"
-            @success="handleSliderSuccess"
-            @fail="resetSliderCaptcha"
+            @verify="handleSliderSuccess"
+            @refresh="getLoginCaptcha"
           />
         </wd-form-item>
 
@@ -307,9 +321,9 @@ async function handleOAuth(provider: OAuthProvider) {
 
         <!-- Submit -->
         <wd-button
+          class="login-submit"
           type="primary"
           :loading="loading"
-          round
           block
           @click="handleSubmit"
         >
@@ -380,7 +394,8 @@ async function handleOAuth(provider: OAuthProvider) {
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
   /* 接入全局水滴渐变（--drop-bg 由 App.vue 按主题色定义，暗色回退纯色由下方规则接管） */
   background: var(--drop-bg, #F9F9F9);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
@@ -408,7 +423,7 @@ async function handleOAuth(provider: OAuthProvider) {
     font-size: var(--font-3xl, 48rpx);
     font-weight: 700;
     /* 亮色下使用主题色渐变文字，品牌识别度更高（background-clip 不生效时回退主题主色） */
-    background: linear-gradient(135deg, var(--wot-primary-5, #4480FF) 0%, var(--wot-primary-7, #164ED1) 100%);
+    background: linear-gradient(135deg, var(--fa-brand-blue, #4F6BFF) 0%, var(--fa-brand-violet, #6D5BFF) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -439,11 +454,11 @@ async function handleOAuth(provider: OAuthProvider) {
 .login-card {
   width: 100%;
   /* 亮色下默认带主题色最浅阶，避免一片纯白；--card-bg-color 可被外部覆盖 */
-  background: var(--card-bg-color, var(--wot-primary-1, #FFFFFF));
-  border-radius: var(--radius-xl, 32rpx);
-  padding: 28rpx 36rpx;
-  /* 边框跟随主题色浅阶，替代中性灰，让卡片更有主题感 */
-  border: 2rpx solid var(--border-color, var(--wot-primary-2, #EAECF0));
+  background: var(--card-bg-color, var(--wot-bg-filled-content, #FFFFFF));
+  border-radius: var(--fa-radius-md, 24rpx);
+  padding: 32rpx;
+  /* 与 Web 卡片一致：中性描边，不跟随主题色 */
+  border: 2rpx solid var(--fa-border, #E6E8EC);
   box-shadow: var(--shadow-md, 0 8rpx 32rpx rgba(15, 23, 42, 0.04));
   margin-bottom: 12rpx;
   flex-shrink: 0;
@@ -469,9 +484,17 @@ async function handleOAuth(provider: OAuthProvider) {
   }
 }
 
+.login-submit :deep(.wd-button) {
+  border-radius: var(--fa-radius-sm, 16rpx);
+}
+
+.login-submit {
+  border-radius: var(--fa-radius-sm, 16rpx);
+}
+
 /* 输入框微调 — 圆角加大 + 主题色边框 + 轻阴影，从"方方正正"变"圆润悬浮" */
 :deep(.wd-input) {
-  border-radius: 24rpx;
+  border-radius: var(--fa-radius-sm, 16rpx);
   /* 亮色下主题色浅阶边框与卡片边框呼应，白色底在淡色卡片上形成浮层 */
   border: 2rpx solid var(--wot-primary-2, var(--wot-border-main, #EAECF0));
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
@@ -503,8 +526,19 @@ async function handleOAuth(provider: OAuthProvider) {
   --wot-slide-verify-button-color: var(--wot-primary-6, #1C64FD);
   --wot-slide-verify-button-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.12);
   /* 与输入框呼应的边框 + 浮层阴影 */
+  overflow: hidden;
   border: 2rpx solid var(--wot-primary-2, var(--wot-border-main, #EAECF0));
+  border-radius: var(--fa-radius-sm, 16rpx);
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.05);
+}
+
+/* 成功文案默认隐藏：Wot 初始轨道宽度不为 0 时会从滑块两侧漏出 */
+:deep(.wd-slide-verify__track-text) {
+  opacity: 0;
+}
+
+:deep(.wd-slide-verify.is-success .wd-slide-verify__track-text) {
+  opacity: 1;
 }
 
 .wot-theme-dark .login-page :deep(.wd-input) {

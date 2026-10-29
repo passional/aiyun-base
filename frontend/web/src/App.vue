@@ -15,7 +15,7 @@
 import { computed, onBeforeMount, onErrorCaptured, onMounted, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useWindowSize } from "@vueuse/core";
-import { useAppStore } from "./store";
+import { useAppStore, useSettingsStore } from "./store";
 import { ComponentSize } from "./enums/settings/layout.enum";
 import { MOBILE_BREAKPOINT } from "./utils/constants/definitions";
 import { toggleTransition } from "./utils/ui";
@@ -25,9 +25,9 @@ import en from "element-plus/es/locale/lang/en";
 import zhCn from "element-plus/es/locale/lang/zh-cn";
 import { router } from "@/router";
 import { ElNotification } from "element-plus";
-import { initIconifyAsync } from "./plugins/iconify";
 
 const appStore = useAppStore();
+const settingStore = useSettingsStore();
 const { width } = useWindowSize();
 
 // H5 用小尺寸，桌面用用户设置的大小
@@ -116,6 +116,12 @@ const handleOnline = () => {
 };
 
 onMounted(() => {
+  // 一次性迁移：把历史“关闭节日文本”的持久化状态重置为显示，之后用户仍可手动关闭
+  if (!localStorage.getItem("fa-notice-migrated")) {
+    settingStore.setShowFestivalText(true);
+    localStorage.setItem("fa-notice-migrated", "1");
+  }
+
   bootstrap();
 
   // 存储检测到异常并已清除数据 → 由路由守卫完成登出清理
@@ -125,8 +131,6 @@ onMounted(() => {
   window.addEventListener("offline", handleOffline);
   window.addEventListener("online", handleOnline);
 
-  // 异步加载图标集，避免阻塞首屏
-  initIconifyAsync();
 });
 
 onUnmounted(() => {

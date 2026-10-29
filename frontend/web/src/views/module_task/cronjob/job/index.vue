@@ -66,7 +66,7 @@
             <div class="flex flex-wrap gap-1 items-center">
               <ElButton
                 v-hasPerm="['module_task:cronjob:job:scheduler']"
-                type="success"
+                type="primary"
                 :icon="VideoPlay"
                 :disabled="schedulerStatus.status !== '停止'"
                 size="small"
@@ -76,7 +76,6 @@
               </ElButton>
               <ElButton
                 v-hasPerm="['module_task:cronjob:job:scheduler']"
-                type="warning"
                 :icon="VideoPause"
                 :disabled="schedulerStatus.status !== '运行中'"
                 size="small"
@@ -86,7 +85,6 @@
               </ElButton>
               <ElButton
                 v-hasPerm="['module_task:cronjob:job:scheduler']"
-                type="primary"
                 :icon="RefreshRight"
                 :disabled="schedulerStatus.status !== '暂停'"
                 size="small"
@@ -97,6 +95,7 @@
               <ElButton
                 v-hasPerm="['module_task:cronjob:job:scheduler']"
                 type="danger"
+                plain
                 :icon="SwitchButton"
                 :disabled="schedulerStatus.status === '停止'"
                 size="small"
@@ -118,7 +117,6 @@
               </ElButton>
               <ElButton
                 v-hasPerm="['module_task:cronjob:job:query']"
-                type="info"
                 :icon="Monitor"
                 size="small"
                 @click="handleOpenConsole"
@@ -145,10 +143,11 @@
       </ElSkeleton>
 
       <ElScrollbar v-else class="job-cards-container mt-3 min-h-0 flex-1">
-        <ElEmpty
+        <FaEmptyState
           v-if="!jobLoading && (!jobList || jobList.length === 0)"
-          :image-size="80"
-          description="暂无数据"
+          icon="ri:inbox-line"
+          title="暂无数据"
+          compact
         />
         <ElRow v-else :gutter="16">
           <ElCol
@@ -195,7 +194,6 @@
                   <ElCol :span="6">
                     <ElButton
                       v-hasPerm="['module_task:cronjob:job:task']"
-                      :type="job.status === 1 ? 'primary' : 'warning'"
                       size="small"
                       plain
                       class="w-full"
@@ -209,7 +207,6 @@
                   <ElCol :span="6">
                     <ElButton
                       v-hasPerm="['module_task:cronjob:job:task']"
-                      type="success"
                       size="small"
                       plain
                       class="w-full"
@@ -223,7 +220,6 @@
                   <ElCol :span="6">
                     <ElButton
                       v-hasPerm="['module_task:cronjob:job:task']"
-                      type="primary"
                       size="small"
                       plain
                       class="w-full"
@@ -256,7 +252,7 @@
       </ElScrollbar>
     </ElCard>
 
-    <FaDialog v-model="consoleVisible" title="调度器控制台" width="900px">
+    <FaDialog v-model="consoleVisible" title="调度器控制台" size="xl">
       <div class="terminal-wrapper">
         <Terminal name="scheduler-console" :show-header="false" theme="dark" />
       </div>
@@ -300,6 +296,7 @@
             </template>
           </FaTableHeader>
           <FaTable
+            mobile-cards
             ref="logfaTableRef"
             row-key="id"
             :loading="logLoading"
@@ -315,7 +312,7 @@
       </div>
     </FaDrawer>
 
-    <FaDialog v-model="jobStateVisible" title="执行元数据" width="800px">
+    <FaDialog v-model="jobStateVisible" title="执行元数据" size="xl">
       <FaJsonPretty :value="jobStateData" height="400px" />
       <template #footer>
         <ElButton type="primary" @click="jobStateVisible = false">关闭</ElButton>
@@ -326,14 +323,14 @@
     <FaDialog
       v-model="modifyDialog.visible"
       :title="`修改任务 - ${modifyDialog.jobName}`"
-      width="480px"
       :confirm-loading="modifyDialog.loading"
       @confirm="handleModifyJob"
       @close="modifyDialog.visible = false"
+      size="sm"
     >
-      <ElForm :model="modifyForm" label-width="100px" label-suffix=":">
+      <ElForm :model="modifyForm" label-width="96px" label-suffix=":">
         <ElFormItem label="任务名称">
-          <ElInput v-model="modifyForm.name" placeholder="请输入任务名称" />
+          <ElInput v-model="modifyForm.name" placeholder="请输入任务名称" aria-label="任务名称" />
         </ElFormItem>
         <ElFormItem label="合并运行">
           <ElRadioGroup v-model="modifyForm.coalesce">
@@ -357,9 +354,9 @@
     <FaDialog
       v-model="logDetailDialog.visible"
       title="执行记录详情"
-      width="720px"
       form-mode="detail"
       @close="logDetailDialog.visible = false"
+      size="lg"
     >
       <FaDescriptions
         :column="4"

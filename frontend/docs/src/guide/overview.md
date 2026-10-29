@@ -1,7 +1,7 @@
 ---
 layout: doc
 title: 项目概述
-description: FastApiAdmin 项目概述,基于 FastAPI + Vue3 + UniApp 的全栈中后台快速开发平台,支持 Web、移动端、小程序三端融合与模块化开发。
+description: FastapiAdmin 项目概述,基于 FastAPI + Vue3 + UniApp 的全栈中后台快速开发平台,支持 Web、移动端、小程序三端融合与模块化开发。
 outline: "deep"
 ---
 
@@ -9,12 +9,12 @@ outline: "deep"
   <div align="center">
      <img src="/logo.svg" width="150" height="150" alt="logo" />
   </div>
-  <h1>FastApiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v3.1.0</sup></h1>
+  <h1>FastapiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v3.1.0</sup></h1>
   <h3>一套现代、开源、全栈融合的中后台快速开发平台</h3>
   <p>如果你喜欢这个项目，给个 ⭐️ 支持一下吧！</p>
   <p align="center" style="display: flex; justify-content: center; align-items: center; margin-top: 10px;">
-    <a href="https://gitee.com/fastapiadmin/FastApiAdmin"><img src="https://gitee.com/fastapiadmin/FastapiAdmin/badge/star.svg?theme=dark" alt="Gitee Stars"></a>
-    <a href="https://github.com/fastapiadmin/FastApiAdmin"><img src="https://img.shields.io/github/stars/fastapiadmin/FastApiAdmin?style=social" alt="GitHub Stars"></a>
+    <a href="https://gitee.com/fastapiadmin/FastapiAdmin"><img src="https://gitee.com/fastapiadmin/FastapiAdmin/badge/star.svg?theme=dark" alt="Gitee Stars"></a>
+    <a href="https://github.com/fastapiadmin/FastapiAdmin"><img src="https://img.shields.io/github/stars/fastapiadmin/FastapiAdmin?style=social" alt="GitHub Stars"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License"></a>
     <img src="https://img.shields.io/badge/Python-≥3.10-blue" alt="Python">
     <img src="https://img.shields.io/badge/NodeJS-≥20.0-blue" alt="NodeJS">
@@ -25,7 +25,7 @@ outline: "deep"
 
 ## 📘项目介绍
 
-**FastApiAdmin** 是一套 **完全开源、高度模块化、技术先进的现代化快速开发平台**，旨在帮助开发者高效搭建高质量的企业级中后台系统。该项目采用 **前后端分离架构**，融合 Python 后端框架 `FastAPI` 和前端主流框架 `Vue3` 实现多端统一开发，提供了一站式开箱即用的开发体验。
+**FastapiAdmin** 是一套 **完全开源、高度模块化、技术先进的现代化快速开发平台**，旨在帮助开发者高效搭建高质量的企业级中后台系统。该项目采用 **前后端分离架构**，融合 Python 后端框架 `FastAPI` 和前端主流框架 `Vue3` 实现多端统一开发，提供了一站式开箱即用的开发体验。
 
 > **设计初心**: 以模块化、松耦合为核心，追求丰富的功能模块、简洁易用的接口、详尽的开发文档和便捷的维护方式。通过统一框架和组件，降低技术选型成本，遵循开发规范和设计模式，构建强大的代码分层模型，搭配完善的本地中文化支持，专为团队和企业开发场景量身定制。
 

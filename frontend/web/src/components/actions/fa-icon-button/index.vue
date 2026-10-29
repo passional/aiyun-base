@@ -1,12 +1,15 @@
 <!-- 按钮组件 -->
 <template>
-  <div
-    class="fa-icon-button size-8.5 inline-flex items-center justify-center cursor-pointer text-g-600 dark:text-g-800 text-xl rounded transition duration-300 hover:bg-hover-color"
+  <button
+    type="button"
+    class="fa-icon-button size-8.5 inline-flex items-center justify-center cursor-pointer border-0 bg-transparent p-0 text-g-600 dark:text-g-800 text-xl rounded-lg transition duration-300 hover:bg-hover-color"
     :class="{ 'rounded-full': circle }"
+    :aria-label="ariaLabel || icon"
+    :title="ariaLabel || icon"
   >
     <FaSvgIcon :icon="icon"></FaSvgIcon>
     <slot></slot>
-  </div>
+  </button>
 </template>
 
 <script lang="ts" setup>
@@ -17,6 +20,8 @@ interface Props {
   icon: string;
   /** 圆角按钮 */
   circle?: boolean;
+  /** 无障碍标签 / 悬停说明 */
+  ariaLabel?: string;
 }
 
 withDefaults(defineProps<Props>(), {});

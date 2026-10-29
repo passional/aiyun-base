@@ -13,7 +13,7 @@
           {{ formatMenuTitle(item.meta.title) }}
         </span>
         <div
-          v-if="item.meta.showBadge && !item.meta.showTextBadge"
+          v-if="item.meta.showBadge && !item.meta.showTextBadge && !hasVisitedChild(item)"
           class="fa-badge"
           :style="'right: 10px'"
         />
@@ -50,9 +50,17 @@
         <span class="menu-name">
           {{ formatMenuTitle(item.meta.title) }}
         </span>
-        <div v-if="item.meta.showBadge && !item.meta.showTextBadge" class="fa-badge" />
         <div
-          v-if="item.meta.showBadge && item.meta.showTextBadge && (level > 0 || menuOpen)"
+          v-if="item.meta.showBadge && !item.meta.showTextBadge && !isVisited(item)"
+          class="fa-badge"
+        />
+        <div
+          v-if="
+            item.meta.showBadge &&
+            item.meta.showTextBadge &&
+            (level > 0 || menuOpen) &&
+            !isVisited(item)
+          "
           class="fa-text-badge"
         >
           {{ item.meta.showTextBadge }}
@@ -63,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { formatMenuTitle, handleMenuJump } from "@utils";
 import { useSettingsStore } from "@stores";
 import type { AppRouteRecord } from "@/types/router";
@@ -113,7 +121,36 @@ const filteredMenuItems = computed(() => filterRoutes(props.list));
  * 跳转到指定页面
  * @param item 菜单项数据
  */
+const visitedVersion = ref(0);
+const visitedKey = (item: AppRouteRecord): string =>
+  `fa:menu-visited:${item.path || item.meta?.title || ""}`;
+
+/** 菜单是否已访问过（用于隐藏 NEW 角标） */
+function isVisited(item: AppRouteRecord): boolean {
+  // 建立响应式依赖：visitedVersion 变化时重新读取
+  void visitedVersion.value;
+  try {
+    return localStorage.getItem(visitedKey(item)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function hasVisitedChild(item: AppRouteRecord): boolean {
+  return (item.children || []).some((child) => isVisited(child));
+}
+
+function markVisited(item: AppRouteRecord): void {
+  try {
+    localStorage.setItem(visitedKey(item), "1");
+    visitedVersion.value += 1;
+  } catch {
+    // 隐私模式忽略
+  }
+}
+
 const goPage = (item: AppRouteRecord): void => {
+  markVisited(item);
   closeMenu();
   handleMenuJump(item);
 };

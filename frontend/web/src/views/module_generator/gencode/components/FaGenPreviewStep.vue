@@ -1,25 +1,23 @@
 <template>
   <ElRow v-loading="previewLoading" element-loading-text="正在加载预览…">
     <ElCol v-if="!previewLoading && isTreeEmpty" :span="24">
-      <ElEmpty>
-        <template #description>
-          <p class="mb-1 font-medium">暂无预览文件</p>
-          <p class="m-0 mb-2 text-xs leading-normal text-(--el-text-color-secondary)">
-            若刚保存过仍为空，可将「预览范围」改为「全部」；或返回上一步检查字段与主子表后重新进入。
-          </p>
-        </template>
-      </ElEmpty>
+      <FaEmptyState
+        icon="ri:file-list-3-line"
+        title="暂无预览文件"
+        description="若刚保存过仍为空，可将「预览范围」改为「全部」；或返回上一步检查字段与主子表后重新进入。"
+        compact
+      />
     </ElCol>
     <template v-else>
       <ElCol :span="24" class="mb-2">
         <div class="flex items-center gap-3">
-          <span class="text-sm text-[#909399]">预览范围</span>
+          <span class="text-sm text-(--el-text-color-secondary)">预览范围</span>
           <ElRadioGroup v-model="previewScope" size="small">
             <ElRadioButton value="all">全部</ElRadioButton>
             <ElRadioButton value="frontend">前端</ElRadioButton>
             <ElRadioButton value="backend">后端</ElRadioButton>
           </ElRadioGroup>
-          <span class="ml-3 text-sm text-[#909399]">类型</span>
+          <span class="ml-3 text-sm text-(--el-text-color-secondary)">类型</span>
           <ElCheckboxGroup v-model="previewTypes" size="small">
             <ElCheckboxButton v-for="t in previewTypeOptions" :key="t" :value="t">
               {{ t }}
@@ -61,7 +59,7 @@
           <div class="absolute z-36 right-5 top-2">
             <ElLink type="primary" @click="emit('copy-code')">
               <ElIcon>
-                <CopyDocument />
+                <FaSvgIcon icon="ri:file-copy-line" />
               </ElIcon>
               复制代码
             </ElLink>
@@ -91,7 +89,6 @@ import Codemirror from "codemirror-editor-vue3";
 import type { EditorConfiguration } from "codemirror";
 import type { CmComponentRef } from "codemirror-editor-vue3";
 import { resolveLocalIconUrl, resolveIconForFaSvgIcon } from "@utils";
-import { CopyDocument } from "@element-plus/icons-vue";
 import { GENCODE_CM_KEY } from "../gencodeInjectionKeys";
 import type { TreeNode } from "../types";
 

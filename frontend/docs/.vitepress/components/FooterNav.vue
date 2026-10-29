@@ -260,7 +260,7 @@ const linkColumns = computed(() => isEn.value ? enColumns : zhColumns)
 
 .fn-social-link:hover {
   color: var(--vp-home-text-1);
-  border-color: rgba(139, 92, 246, 0.35);
+  border-color: rgba(109, 91, 255, 0.35);
   background: var(--vp-home-card-hover-bg);
 }
 
@@ -286,7 +286,7 @@ const linkColumns = computed(() => isEn.value ? enColumns : zhColumns)
   width: 0.95em;
   height: 0.95em;
   vertical-align: -0.12em;
-  color: #ec4899;
+  color: #6D5BFF;
   margin: 0 0.15em;
 }
 

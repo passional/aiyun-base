@@ -7,7 +7,7 @@
   >
     <div class="node-body" :style="{ '--node-color': color }">
       <span class="node-flag" :style="{ background: color }" />
-      <ElIcon :size="16" :color="color"><Folder /></ElIcon>
+      <ElIcon :size="16" :color="color"><FaSvgIcon icon="ri:folder-2-line" /></ElIcon>
       <div class="node-text">
         <span
           ref="labelRef"
@@ -65,7 +65,7 @@
 <script lang="ts" setup>
 import { Handle, Position, useNodeConnections } from "@vue-flow/core";
 import { ElIcon, ElTooltip } from "element-plus";
-import { Folder, FolderOpened } from "@element-plus/icons-vue";
+import { FolderOpened } from "@element-plus/icons-vue";
 import { protocolColor, protocolLabel } from "./protocol";
 
 interface Props {

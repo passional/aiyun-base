@@ -128,7 +128,7 @@
 import AppConfig from "@/config";
 import { useConfigStore, useSettingsStore, useMenuStore } from "@stores";
 import { MenuWidth, MenuTypeEnum } from "@/enums/appEnum";
-import { isIframe, handleMenuJump, formatMenuTitle } from "@utils";
+import { isIframe, handleMenuJump, formatMenuTitle, normalizeBrandName } from "@utils";
 import SidebarSubmenu from "./widgets/FaSidebarSubmenu.vue";
 import { useCommon } from "@/hooks/core/useCommon";
 import { useWindowSize, useTimeoutFn } from "@vueuse/core";
@@ -152,7 +152,7 @@ const sidebarLogoSrc = computed(() => {
 
 const sidebarTitle = computed(() => {
   const raw = configStore.configData.sys_name?.config_value;
-  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (typeof raw === "string" && raw.trim()) return normalizeBrandName(raw);
   return AppConfig.systemInfo.name;
 });
 
@@ -324,16 +324,20 @@ const toggleDualMenuMode = (): void => {
 /**
  * 监听窗口尺寸变化，自动处理移动端菜单
  */
-watch(width, (newWidth) => {
-  if (newWidth < MOBILE_BREAKPOINT) {
-    settingStore.setMenuOpen(false);
-    if (!menuOpen.value) {
+watch(
+  width,
+  (newWidth) => {
+    if (newWidth < MOBILE_BREAKPOINT) {
+      settingStore.setMenuOpen(false);
+      if (!menuOpen.value) {
+        showMobileModal.value = false;
+      }
+    } else {
       showMobileModal.value = false;
     }
-  } else {
-    showMobileModal.value = false;
-  }
-});
+  },
+  { immediate: true }
+);
 
 /**
  * 监听菜单开关状态变化
@@ -493,7 +497,12 @@ watch(menuOpen, (isMenuOpen: boolean) => {
         bottom: 0;
         left: -4px;
         margin: auto;
-        transition: all 0.3s;
+        transition:
+          background-color 0.3s,
+          border-color 0.3s,
+          color 0.3s,
+          box-shadow 0.3s,
+          transform 0.3s;
       }
     }
   }

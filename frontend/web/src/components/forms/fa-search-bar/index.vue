@@ -116,7 +116,7 @@
               >
                 <ElButton class="reset-button" @click="handleReset" v-ripple>
                   <template #icon>
-                    <Refresh />
+                    <FaSvgIcon icon="ri:refresh-line" />
                   </template>
                   {{ t("table.searchBar.reset") }}
                 </ElButton>
@@ -134,7 +134,7 @@
                   :disabled="disabledSearch"
                 >
                   <template #icon>
-                    <Search />
+                    <FaSvgIcon icon="ri:search-line" />
                   </template>
                   {{ t("table.searchBar.search") }}
                 </ElButton>
@@ -157,9 +157,11 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowUpBold, ArrowDownBold, Refresh, Search } from "@element-plus/icons-vue";
+import { ArrowUpBold, ArrowDownBold } from "@element-plus/icons-vue";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
+import { translateFormLabels } from "@utils/table/columnLabelI18n";
+import { useRoute } from "vue-router";
 import { type Component } from "vue";
 import FaDatePicker from "@/components/forms/fa-search-bar/FaDatePicker.vue";
 import FaUserTableSelect from "./FaUserTableSelect.vue";
@@ -346,9 +348,32 @@ const getProps = getPropsShared;
 const getSlots = getSlotsShared;
 
 /**
- * 是否展开状态
+ * 是否展开状态：按路由记忆用户选择，刷新/切回后保持
  */
-const isExpanded = ref(props.defaultExpanded);
+const route = useRoute();
+const expandedStorageKey = computed(() => `fa:search-expanded:${route.path}`);
+const readStoredExpanded = (): boolean | null => {
+  if (!props.showExpand || props.isExpand) return null;
+  try {
+    const v = localStorage.getItem(expandedStorageKey.value);
+    return v === "1" ? true : v === "0" ? false : null;
+  } catch {
+    return null;
+  }
+};
+const isExpanded = ref(readStoredExpanded() ?? props.defaultExpanded);
+watch(isExpanded, (v) => {
+  if (!props.showExpand || props.isExpand) return;
+  try {
+    localStorage.setItem(expandedStorageKey.value, v ? "1" : "0");
+  } catch {
+    // 隐私模式忽略
+  }
+});
+watch(expandedStorageKey, () => {
+  const stored = readStoredExpanded();
+  if (stored !== null) isExpanded.value = stored;
+});
 
 // 当外部控制 isExpand 为 true 时，同步内部展开状态
 watch(
@@ -411,10 +436,10 @@ const visibleFormItems = computed(() => {
   if (shouldShowLess) {
     // 收起时：只显示非 expandOnly 的字段，且不超过最大数量
     const nonExpandOnlyItems = filteredItems.filter((item) => !item.expandOnly);
-    return nonExpandOnlyItems.slice(0, maxItemsPerRow.value);
+    return translateFormLabels(nonExpandOnlyItems.slice(0, maxItemsPerRow.value), t);
   }
   // 展开时：显示所有字段
-  return filteredItems;
+  return translateFormLabels(filteredItems, t);
 });
 
 /**

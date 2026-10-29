@@ -24,13 +24,70 @@
       >
         <template #left>
           <ElButton type="primary" @click="handleAdd">
-            <ElIcon><Plus /></ElIcon>
+            <ElIcon><FaSvgIcon icon="ri:add-line" /></ElIcon>
             新增版本
           </ElButton>
         </template>
       </FaTableHeader>
 
+      <div v-if="isNarrow" class="mobile-card-list mt-4 flex flex-col gap-4">
+        <div v-if="!data.length" class="py-12">
+          <FaEmptyState
+            icon="ri:git-branch-line"
+            title="暂无版本"
+            description="发布第一个版本后在这里展示"
+          />
+        </div>
+        <div
+          v-for="row in data"
+          :key="row.id"
+          class="p-4 rounded-lg bg-(--default-box-color) border border-(--default-border)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-sm font-medium truncate">{{ row.title }}</div>
+              <div class="mt-0.5 text-xs text-g-600">{{ row.version }}</div>
+            </div>
+            <FaStatusTag
+              :type="row.status === 1 ? 'success' : row.status === 2 ? 'warning' : 'info'"
+              :label="row.status === 1 ? '已发布' : row.status === 2 ? '已回滚' : '草稿'"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs text-g-600">
+            <span class="col-span-2">
+              发布：{{ row.date || "—" }} · {{ $t("common.sort") }}：{{ row.sort ?? "—" }}
+            </span>
+            <span class="col-span-2"
+              >{{ $t("common.create") }}：{{ formatDateTime(row.created_time) }}</span
+            >
+          </div>
+          <div class="mobile-card-actions">
+            <ElButton link type="primary" size="small" @click="openDetailDialog(row)">
+              {{ $t("common.detail") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="openEditDialog('edit', row)">
+              {{ $t("common.edit") }}
+            </ElButton>
+            <ElButton link type="primary" size="small" @click="handleChangeStatus(row)">
+              {{ $t("common.changeStatus") }}
+            </ElButton>
+            <ElButton link type="danger" size="small" @click="deleteVersionRow(row)">
+              {{ $t("common.delete") }}
+            </ElButton>
+          </div>
+        </div>
+        <ElPagination
+          v-if="data.length"
+          class="justify-center mt-1"
+          layout="prev, pager, next"
+          :current-page="pagination.current"
+          :page-size="pagination.size"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+        />
+      </div>
       <FaTable
+        v-else
         ref="faTableRef"
         :loading="loading"
         :data="data"
@@ -44,7 +101,6 @@
     <FaDialog
       v-model="dialogVisible.visible"
       :title="dialogVisible.title"
-      width="1100px"
       dialog-class="crud-embed-dialog"
       modal-class="crud-embed-dialog"
       :form-mode="dialogVisible.type"
@@ -52,6 +108,7 @@
       @cancel="handleCloseDialog"
       @close="handleCloseDialog"
       @confirm="handleSubmit()"
+      size="xl"
     >
       <template v-if="dialogVisible.type === 'detail'">
         <FaDescriptions
@@ -87,7 +144,7 @@
           :items="versionDialogFormItems"
           :rules="rules"
           label-suffix=":"
-          :label-width="100"
+          :label-width="96"
           label-position="right"
           :span="24"
           :gutter="16"
@@ -127,7 +184,7 @@
         </ElRadio>
       </ElRadioGroup>
       <template #footer>
-        <ElButton @click="statusDialog.visible = false">取消</ElButton>
+        <ElButton @click="statusDialog.visible = false">{{ $t("common.cancel") }}</ElButton>
         <ElButton type="primary" :loading="statusDialog.loading" @click="confirmChangeStatus">
           确定
         </ElButton>
@@ -137,9 +194,14 @@
 </template>
 
 <script setup lang="ts">
-import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
+import { useWindowSize } from "@vueuse/core";
+import {
+  formatDateTime,
+  renderTableOperationCell,
+  resolveStatusColumns,
+  type TableOperationAction,
+} from "@utils";
 import VersionAPI, { type VersionForm, type VersionTable } from "@/api/module_system/version";
-import { Plus } from "@element-plus/icons-vue";
 import type { AuditSearchFormParams } from "@/components/forms/fa-search-bar/auditSearchFormItems";
 import type { FormItem } from "@/components/forms/fa-form/index.vue";
 import type { ColumnOption } from "@/types/component";
@@ -242,7 +304,7 @@ const {
         status: {
           0: { type: "info", text: "草稿" },
           1: { type: "success", text: "已发布" },
-          2: { type: "danger", text: "已回滚" },
+          2: { type: "warning", text: "已回滚" },
         },
       },
       { prop: "date", label: "发布日期", width: 120, showOverflowTooltip: true },
@@ -250,21 +312,25 @@ const {
       {
         prop: "created_time",
         label: "创建时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.created_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "updated_time",
         label: "更新时间",
-        width: 168,
+        width: 190,
+        formatter: (row: { created_time?: string | null; updated_time?: string | null }) =>
+          formatDateTime(row.updated_time),
         sortable: true,
         showOverflowTooltip: true,
       },
       {
         prop: "operation",
         label: "操作",
-        width: 340,
+        width: 200,
         fixed: "right",
         align: "center",
         formatter: (row: VersionTable) => renderVersionOperationCell(row),
@@ -274,6 +340,9 @@ const {
 });
 
 const faTableRef = ref<{ elTableRef?: { clearSelection: () => void } } | null>(null);
+
+const { width: viewportWidth } = useWindowSize();
+const isNarrow = computed(() => viewportWidth.value < 1025);
 
 function buildVersionRowActions(row: VersionTable): TableOperationAction[] {
   return [

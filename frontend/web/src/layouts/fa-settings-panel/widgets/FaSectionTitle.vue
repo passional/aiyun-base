@@ -1,9 +1,6 @@
 <template>
-  <p
-    class="relative mt-7.5 mb-5.5 text-sm text-center text-g-800 before:absolute before:top-2.5 before:left-0 before:w-12.5 before:m-auto before:content-[''] before:border-b before:border-(--fa-gray-300) after:absolute after:top-2.5 after:right-0 after:w-12.5 after:m-auto after:content-[''] after:border-b after:border-g-300"
-    :style="style"
-  >
-    {{ title }}
+  <p class="fa-section-title" :style="style">
+    <span>{{ title }}</span>
   </p>
 </template>
 
@@ -19,3 +16,23 @@ withDefaults(defineProps<Props>(), {
   style: () => ({}),
 });
 </script>
+
+<style scoped lang="scss">
+.fa-section-title {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 24px 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  letter-spacing: 0.04em;
+
+  &::after {
+    flex: 1;
+    height: 1px;
+    content: "";
+    background: var(--el-border-color-lighter);
+  }
+}
+</style>

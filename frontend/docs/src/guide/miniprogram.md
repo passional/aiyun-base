@@ -8,7 +8,7 @@ description: FastApp 移动端开发指南,基于 UniApp + Vue3 + Wot Design Uni
 
 ## 📱项目概述
 
-**FastApp** 是 FastApiAdmin 项目的移动端应用，基于 **Uni App** 框架开发，支持一套代码多端运行（包括 H5、微信小程序、支付宝小程序、App 等）。采用 Vue 3 + TypeScript + Vite 等现代化技术栈，集成了完善的代码规范和开发工具链，为开发者提供开箱即用的移动端开发解决方案。
+**FastApp** 是 FastapiAdmin 项目的移动端应用，基于 **Uni App** 框架开发，支持一套代码多端运行（包括 H5、微信小程序、支付宝小程序、App 等）。采用 Vue 3 + TypeScript + Vite 等现代化技术栈，集成了完善的代码规范和开发工具链，为开发者提供开箱即用的移动端开发解决方案。
 
 ### 核心功能
 

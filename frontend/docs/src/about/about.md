@@ -7,11 +7,11 @@ lastUpdated: true
 
 ## 项目背景
 
-FastApiAdmin 诞生于企业级中后台开发中反复出现的痛点：前后端分离架构下，一个简单的 CRUD 页面需要跨越多个目录、多个文件、多种技术栈，开发体验割裂，协作成本高昂。
+FastapiAdmin 诞生于企业级中后台开发中反复出现的痛点：前后端分离架构下，一个简单的 CRUD 页面需要跨越多个目录、多个文件、多种技术栈，开发体验割裂，协作成本高昂。
 
 传统的 Admin 方案（如 Django Admin）功能受限且难以定制；纯前端模板（如 AdminLTE、Ant Design Pro）没有后端支撑，仍需从零搭建 API 层。市场缺少一个**真正开箱即用、全栈一体、且具备 AI 能力**的企业级后台解决方案。
 
-FastApiAdmin 的目标是:用 15-30 分钟跑通一个可演示的 MVP,核心 CRUD 不用手写,团队聚焦业务定制。
+FastapiAdmin 的目标是:用 15-30 分钟跑通一个可演示的 MVP,核心 CRUD 不用手写,团队聚焦业务定制。
 
 ## 技术理念
 
@@ -72,7 +72,7 @@ FastApiAdmin 的目标是:用 15-30 分钟跑通一个可演示的 MVP,核心 CR
 
 ## 展望未来
 
-FastApiAdmin 将持续在以下方向深耕：
+FastapiAdmin 将持续在以下方向深耕：
 
 - **深度 AI 集成** — 从代码生成延伸到智能测试、自动部署、智能运维
 - **低代码能力** — 可视化表单设计、工作流编排、报表配置
@@ -102,8 +102,8 @@ FastApiAdmin 将持续在以下方向深耕：
 
 | 平台 | 地址 |
 | ------ | ------ |
-| GitHub | [FastApiAdmin](https://github.com/fastapiadmin/FastApiAdmin) |
-| Gitee | [FastApiAdmin](https://gitee.com/fastapiadmin/FastApiAdmin) |
-| GitCode | [FastApiAdmin](https://gitcode.com/qq_36002987/FastApiAdmin) |
+| GitHub | [FastapiAdmin](https://github.com/fastapiadmin/FastapiAdmin) |
+| Gitee | [FastapiAdmin](https://gitee.com/fastapiadmin/FastapiAdmin) |
+| GitCode | [FastapiAdmin](https://gitcode.com/qq_36002987/FastapiAdmin) |
 
-如果 FastApiAdmin 对你有帮助，欢迎持续关注和支持项目发展 ❤️
+如果 FastapiAdmin 对你有帮助，欢迎持续关注和支持项目发展 ❤️

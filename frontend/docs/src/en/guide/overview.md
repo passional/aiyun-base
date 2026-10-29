@@ -2,21 +2,21 @@
 layout: doc
 outline: "deep"
 title: Project Overview
-description: "Project overview: what is FastApiAdmin, full-stack architecture, multi-end delivery."
+description: "Project overview: what is FastapiAdmin, full-stack architecture, multi-end delivery."
 ---
 
 <div style="text-align: center;">
   <div align="center">
      <img src="/logo.svg" width="150" height="150" alt="logo" />
   </div>
-  <h1>FastApiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v3.1.0</sup></h1>
+  <h1>FastapiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v3.1.0</sup></h1>
   <h3>Modern, Open Source, Full-Stack Rapid Development Platform</h3>
   <p>If you like this project, please give it a ⭐️!</p>
 </div>
 
 ## Project Introduction
 
-**FastApiAdmin** is a **completely open-source, highly modular, and technologically advanced modern rapid development platform** designed to help developers efficiently build high-quality enterprise-level systems. It adopts a **frontend-backend separation architecture**, integrating the Python backend framework `FastAPI` and the frontend framework `Vue3` for multi-platform unified development.
+**FastapiAdmin** is a **completely open-source, highly modular, and technologically advanced modern rapid development platform** designed to help developers efficiently build high-quality enterprise-level systems. It adopts a **frontend-backend separation architecture**, integrating the Python backend framework `FastAPI` and the frontend framework `Vue3` for multi-platform unified development.
 
 > **Design Philosophy**: With modularity and loose coupling at its core, pursuing rich functionality, clean APIs, comprehensive documentation, and easy maintenance.
 

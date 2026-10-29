@@ -1,6 +1,6 @@
 <!-- 数据列表卡片 -->
 <template>
-  <div class="fa-card p-5 h-110 overflow-hidden">
+  <div class="fa-card p-5 overflow-hidden" :class="autoHeight ? 'h-auto' : 'h-110'">
     <div class="pb-3.5">
       <p class="text-lg font-medium">{{ title }}</p>
       <p class="text-sm text-g-600">{{ subtitle }}</p>
@@ -41,6 +41,8 @@ interface Props {
   maxCount?: number;
   /** 是否显示更多按钮 */
   showMoreButton?: boolean;
+  /** 高度随内容自适应 */
+  autoHeight?: boolean;
 }
 
 interface Activity {
