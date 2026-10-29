@@ -1,10 +1,29 @@
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import path from "node:path";
 import { name, version } from "./package.json";
 
 export default defineConfig({
-  plugins: [vue()],
+  // 与 vite.config.ts 一致：组件依赖 ref/computed 等自动导入与组件自动注册，
+  // 缺了插件挂载应用组件会直接报「ref is not defined」。
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: ["vue", "vue-router", "pinia", "@vueuse/core", "vue-i18n"],
+      dirs: ["./src/hooks/core"],
+      dts: false,
+      resolvers: [ElementPlusResolver({ importStyle: false })],
+      vueTemplate: true,
+    }),
+    Components({
+      dirs: ["src/components", "src/layouts", "src/**/components"],
+      dts: false,
+      resolvers: [ElementPlusResolver({ importStyle: false })],
+    }),
+  ],
   // 与 vite.config.ts 一致：注入构建期常量，否则 import 到 utils/storage 等模块会报
   // 「__APP_INFO__ is not defined」。
   define: {

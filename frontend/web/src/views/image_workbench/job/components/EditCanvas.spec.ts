@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { computed, nextTick, ref, watch } from "vue";
+import { createI18n } from "vue-i18n";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JobArtifact } from "@/api/module_image_workbench/job";
@@ -32,9 +33,6 @@ beforeEach(() => {
   vi.stubGlobal("ref", ref);
   vi.stubGlobal("computed", computed);
   vi.stubGlobal("watch", watch);
-  vi.stubGlobal("useI18n", () => ({
-    t: (key: string) => (key === "image_workbench.canvas.noPicture" ? noPicture : key),
-  }));
   vi.stubGlobal("Image", LoadedImage);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     clearRect: vi.fn(),
@@ -74,7 +72,10 @@ describe("EditCanvas initial image", () => {
   ])("shows the $name image on first open", async ({ props, expectedSources }) => {
     const wrapper = mount(EditCanvas, {
       props: { range: 1000, ...props },
-      global: { stubs: { ElAlert: true, ElButton: true, ElTag: true } },
+      global: {
+        plugins: [createI18n({ legacy: false, locale: "zh", messages: { zh: {} } })],
+        stubs: { ElAlert: true, ElButton: true, ElTag: true },
+      },
     });
     await flushPromises();
     await nextTick();
