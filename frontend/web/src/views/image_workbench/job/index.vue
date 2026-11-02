@@ -48,17 +48,19 @@
                 :show-submit="false"
                 :disabled="submitting"
               >
-                <!-- 提示词：用自定义输入框是为了能拿到光标位置——占位符要插在用户当前落笔的地方 -->
+                <!--
+                  提示词：自定义输入框既要在光标处插入占位符，也要把「区域N」按选区颜色
+                  标出来（颜色与标签、画布框同源，见 components/RegionPromptInput.vue）
+                -->
                 <template #prompt>
-                  <ElInput
+                  <RegionPromptInput
                     ref="promptInputRef"
                     v-model="generateForm.prompt"
-                    type="textarea"
                     :rows="4"
                     :maxlength="4000"
-                    show-word-limit
                     :placeholder="t('image_workbench.job.promptPlaceholder')"
                     :disabled="submitting"
+                    :placeholder-template="coordinateMarker?.placeholder"
                   />
                 </template>
 
@@ -138,14 +140,14 @@
                   :key="item.index"
                   class="mb-1 flex items-center gap-2 text-xs"
                 >
-                  <ElTag size="small" type="success">
+                  <RegionTag :index="item.index">
                     {{
                       t("image_workbench.canvas.selectionTag", {
                         index: item.index,
                         bbox: selectionBboxText(item),
                       })
                     }}
-                  </ElTag>
+                  </RegionTag>
                   <span class="text-(--el-text-color-secondary)">
                     {{
                       item.artifact_id
@@ -313,6 +315,8 @@
         :reference-path="canvasReferencePath"
         :range="coordinateMarker.range"
         :selections="selections"
+        :placeholder-template="coordinateMarker.placeholder"
+        :active-index="activeSelectionIndex"
         @pick="onCanvasPick"
         @composed="onCanvasComposed"
       />
@@ -360,7 +364,7 @@
         </template>
         <template #selections="{ row }">
           <div v-if="(asJob(row)?.selections ?? []).length > 0" class="flex flex-wrap gap-1">
-            <ElTag v-for="item in asJob(row)?.selections" :key="item.index" size="small">
+            <RegionTag v-for="item in asJob(row)?.selections" :key="item.index" :index="item.index">
               {{
                 t("image_workbench.canvas.selectionSource", {
                   index: item.index,
@@ -369,7 +373,7 @@
                     : t("image_workbench.canvas.fromDraw"),
                 })
               }}
-            </ElTag>
+            </RegionTag>
           </div>
           <span v-else class="text-xs text-(--el-text-color-secondary)">
             {{ t("image_workbench.job.noSelection") }}
@@ -475,6 +479,8 @@ import FaTableHeaderLeft from "@/components/tables/fa-table-header-left/index.vu
 import ParamValueInput from "../components/ParamValueInput.vue";
 import JobArtifacts from "./components/JobArtifacts.vue";
 import EditCanvas from "./components/EditCanvas.vue";
+import RegionPromptInput from "./components/RegionPromptInput.vue";
+import RegionTag from "./components/RegionTag.vue";
 import { staticUrl } from "../values";
 import {
   acceptsValue,
@@ -854,6 +860,8 @@ const canvasReferencePath = ref<string | null>(null);
 
 /** 已指定的位置：序号与提示词里的区域占位符一一对应 */
 const selections = ref<JobSelectionInput[]>([]);
+/** 画布上最近点选的选区序号——只用来加粗强调，颜色仍由序号决定 */
+const activeSelectionIndex = ref<number | undefined>(undefined);
 /** 最后一次由画布导出并上传得到的参考图路径 */
 const composedReferencePath = ref<string | null>(null);
 
@@ -948,6 +956,7 @@ function onCanvasPick(payload: { bbox: [number, number, number, number]; artifac
     ...selections.value,
     { index, bbox: payload.bbox, artifact_id: payload.artifactId },
   ];
+  activeSelectionIndex.value = index;
   insertPlaceholder(index);
   ElMessage.success(t("image_workbench.canvas.picked", { index }));
 }
@@ -959,6 +968,11 @@ function selectionBboxText(item: JobSelectionInput) {
 
 function removeSelection(index: number) {
   selections.value = selections.value.filter((item) => item.index !== index);
+  if (activeSelectionIndex.value === index) {
+    // 强调只跟随仍然存在的选区；全部删完就回到「无强调」
+    activeSelectionIndex.value =
+      selections.value.reduce((max, item) => Math.max(max, item.index), 0) || undefined;
+  }
 }
 
 async function onCanvasComposed(payload: { filePath: string; hasAlpha: boolean }) {
@@ -977,6 +991,7 @@ function handleCloseCanvas() {
 
 function resetCanvasState() {
   selections.value = [];
+  activeSelectionIndex.value = undefined;
   composedReferencePath.value = null;
   canvasArtifacts.value = [];
   canvasJobId.value = null;

@@ -7,8 +7,24 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../..");
-const tokens = JSON.parse(readFileSync(resolve(root, "design/tokens.json"), "utf8"));
-const { brand, brandRamp, neutral, radius, space, font, fontFamily, shadow, control, table, layout, component } = tokens;
+const tokens = JSON.parse(
+  readFileSync(resolve(root, "design/tokens.json"), "utf8"),
+);
+const {
+  brand,
+  brandRamp,
+  neutral,
+  radius,
+  space,
+  font,
+  fontFamily,
+  shadow,
+  control,
+  table,
+  layout,
+  component,
+  region,
+} = tokens;
 
 function write(path, content) {
   mkdirSync(dirname(path), { recursive: true });
@@ -29,6 +45,15 @@ const controlVars = Object.entries(control)
   .map(([k, v]) => `  --fa-control-h-${k}: ${v}px;`)
   .join("\n");
 
+/**
+ * 标注区域调色板：按序号循环取色（见 views/image_workbench/job/regions.ts）。
+ * 深色模式单独给一组更亮的取值，保证在深色画布与卡片上仍然可读。
+ */
+const regionVars = (values) =>
+  values
+    .map((value, index) => `  --fa-region-${index + 1}: ${value};`)
+    .join("\n");
+
 // ---- Web ----
 write(
   resolve(root, "frontend/web/src/styles/core/_brand-tokens.generated.scss"),
@@ -38,6 +63,7 @@ write(
   --fa-brand-violet: ${brand.violet};
   --fa-brand-gradient: ${brand.gradient};
   --fa-canvas: ${neutral.canvas};
+${regionVars(region.light)}
 ${radiusVars}
 ${spaceVars}
 ${fontVars}
@@ -63,6 +89,7 @@ ${controlVars}
 
 html.dark {
   --fa-canvas: ${neutral.canvasDark};
+${regionVars(region.dark)}
   --fa-surface: ${neutral.darkSurface1};
   --fa-surface-2: ${neutral.darkSurface2};
   --fa-border: ${neutral.darkBorder};
@@ -78,12 +105,15 @@ html.dark {
   --fa-popover-bg: ${component.popoverBgDark};
   --fa-overlay-bg: ${component.overlayDark};
 }
-`
+`,
 );
 
 // ---- Docs ----
 write(
-  resolve(root, "frontend/docs/.vitepress/theme/styles/brand-tokens.generated.css"),
+  resolve(
+    root,
+    "frontend/docs/.vitepress/theme/styles/brand-tokens.generated.css",
+  ),
   `/* 由 design/tokens.json 生成，请勿手改。 */
 :root {
   --fa-brand-blue: ${brand.blue};
@@ -104,7 +134,7 @@ write(
   --vp-c-text-2: ${neutral.darkText2};
   --vp-c-text-3: ${neutral.darkText3};
 }
-`
+`,
 );
 
 // ---- App（CSS 变量，App.vue 引入一次）----
@@ -133,9 +163,11 @@ page {
 /* 品牌色映射到 wot-ui 主色阶（浅/深主题都生效） */
 page.wot-theme-light,
 page.wot-theme-dark {
-${Object.entries(brandRamp).map(([k,v]) => `  --wot-primary-${k}: ${v};`).join("\n")}
+${Object.entries(brandRamp)
+  .map(([k, v]) => `  --wot-primary-${k}: ${v};`)
+  .join("\n")}
 }
-`
+`,
 );
 
 // ---- App dark（wot 主题变量覆写，单独引入一次）----
@@ -155,7 +187,7 @@ write(
   --wot-primary-5: ${brand.blue};
   --wot-primary-6: ${brand.blue};
 }
-`
+`,
 );
 
 console.log("done");

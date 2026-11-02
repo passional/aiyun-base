@@ -54,9 +54,6 @@
         {{ hintText }}
       </span>
       <div class="flex items-center gap-2">
-        <ElButton v-if="isComposition" size="small" @click="clearHighlight">
-          {{ t("image_workbench.canvas.clearHighlight") }}
-        </ElButton>
         <ElButton
           type="primary"
           size="small"
@@ -69,11 +66,11 @@
       </div>
     </div>
 
-    <!-- 已指定的位置：序号与提示词里的区域占位符一一对应 -->
+    <!-- 已指定的位置：颜色与提示词里的区域占位符、画布上的框同源 -->
     <div v-if="selections.length > 0" class="flex flex-wrap gap-2">
-      <ElTag v-for="item in selections" :key="item.index" size="small" type="success">
+      <RegionTag v-for="item in selections" :key="item.index" :index="item.index">
         {{ t("image_workbench.canvas.selectionTag", { index: item.index, bbox: bboxText(item) }) }}
-      </ElTag>
+      </RegionTag>
     </div>
   </div>
 </template>
@@ -83,7 +80,9 @@ import { onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import JobAPI, { type JobArtifact, type JobSelectionInput } from "@/api/module_image_workbench/job";
 import { absoluteBox, planComposition } from "../composition";
+import { formatRegionLabel, resolveRegionColor } from "../regions";
 import { staticUrl } from "../../values";
+import RegionTag from "./RegionTag.vue";
 
 defineOptions({
   name: "ImageWorkbenchEditCanvas",
@@ -99,8 +98,12 @@ const props = defineProps<{
   referencePath?: string | null;
   /** 该模型声明的坐标区间（0..range-1）；画布据此把像素换算成坐标 */
   range: number;
-  /** 已指定的选区（只用于呈现序号） */
+  /** 已指定的选区：全部常驻画出，颜色按序号决定 */
   selections?: JobSelectionInput[];
+  /** 能力声明里的占位形态（`区域{n}`），用于画布标签 */
+  placeholderTemplate?: string | null;
+  /** 最近点选的序号：只用于加粗强调 */
+  activeIndex?: number;
 }>();
 
 const emit = defineEmits<{
@@ -119,8 +122,6 @@ const overlayCanvasRef = ref<HTMLCanvasElement | null>(null);
 const loading = ref(false);
 const exporting = ref(false);
 const ready = ref(false);
-/** 当前高亮的图层（点选或吸附中的那个） */
-const highlighted = ref<JobArtifact | null>(null);
 /** 拖拽中的橡皮筋（画布像素坐标） */
 const dragRect = ref<{ x: number; y: number; w: number; h: number } | null>(null);
 
@@ -239,24 +240,53 @@ function syncOverlaySize() {
   overlay.height = size.value.height;
 }
 
-/** 叠层：高亮框与拖拽中的橡皮筋（都不进导出的合成图） */
+/** 画布上的一个选区：序号 + 合成图像素坐标 */
+interface DrawnSelection {
+  index: number;
+  box: [number, number, number, number];
+}
+
+/** 归一化坐标（0..range-1）→ 合成图像素框；缺失或退化（面积为 0）时返回 null */
+function selectionCanvasBox(
+  bbox: JobSelectionInput["bbox"]
+): [number, number, number, number] | null {
+  if (!bbox || bbox.length !== 4) return null;
+  const scaleX = size.value.width / props.range;
+  const scaleY = size.value.height / props.range;
+  const left = Math.min(bbox[0], bbox[2]) * scaleX;
+  const top = Math.min(bbox[1], bbox[3]) * scaleY;
+  const right = Math.max(bbox[0], bbox[2]) * scaleX;
+  const bottom = Math.max(bbox[1], bbox[3]) * scaleY;
+  if (![left, top, right, bottom].every(Number.isFinite)) return null;
+  if (right - left <= 0 || bottom - top <= 0) return null;
+  return [left, top, right, bottom];
+}
+
+/**
+ * 叠层：所有已选区域的彩色框 + 拖拽中的橡皮筋（都不进导出的合成图）。
+ *
+ * 框的颜色与编号一一对应，与提示词里的区域占位符同色；最近点选的那个最后画，
+ * 描边更粗，但它仍然用**序号决定的颜色**——强调不改变颜色。
+ */
 function drawOverlay() {
   const overlay = overlayCanvasRef.value;
   const ctx = overlay?.getContext("2d");
   if (!overlay || !ctx) return;
   ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-  const box = highlighted.value ? absoluteBox(highlighted.value) : null;
-  if (box) {
-    const [x1, y1, x2, y2] = box;
-    ctx.save();
-    ctx.lineWidth = Math.max(2, overlay.width / 400);
-    ctx.strokeStyle = "rgba(64, 158, 255, 1)";
-    ctx.fillStyle = "rgba(64, 158, 255, 0.22)";
-    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
-    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-    ctx.restore();
+  const boxes: DrawnSelection[] = [];
+  for (const item of selections.value) {
+    const box = selectionCanvasBox(item.bbox);
+    if (box) boxes.push({ index: item.index, box });
   }
+  boxes.sort((left, right) => left.index - right.index);
+
+  const active = boxes.find((item) => item.index === props.activeIndex);
+  for (const item of boxes) {
+    if (item === active) continue;
+    drawSelectionBox(ctx, overlay, item, false);
+  }
+  if (active) drawSelectionBox(ctx, overlay, active, true);
 
   if (dragRect.value) {
     const { x, y, w, h } = dragRect.value;
@@ -269,9 +299,68 @@ function drawOverlay() {
   }
 }
 
-function clearHighlight() {
-  highlighted.value = null;
-  drawOverlay();
+function drawSelectionBox(
+  ctx: CanvasRenderingContext2D,
+  overlay: HTMLCanvasElement,
+  item: DrawnSelection,
+  active: boolean
+) {
+  const [x1, y1, x2, y2] = item.box;
+  const color = resolveRegionColor(item.index);
+  ctx.save();
+  ctx.lineWidth = Math.max(2, overlay.width / 400) * (active ? 2 : 1);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = active ? 0.22 : 0.1;
+  ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  ctx.globalAlpha = 1;
+  ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  drawRegionLabel(ctx, overlay, item, color);
+  ctx.restore();
+}
+
+/** 框的左上角画一枚同色小标签：`区域N`，白/深色文字按底色亮度取 */
+function drawRegionLabel(
+  ctx: CanvasRenderingContext2D,
+  overlay: HTMLCanvasElement,
+  item: DrawnSelection,
+  color: string
+) {
+  const label = formatRegionLabel(props.placeholderTemplate, item.index);
+  const fontSize = Math.max(12, Math.round(overlay.width / 64));
+  const padding = Math.max(3, Math.round(fontSize / 4));
+  ctx.save();
+  ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
+  ctx.textBaseline = "middle";
+  const width = ctx.measureText(label).width + padding * 2;
+  const height = fontSize + padding * 2;
+  const [x1, y1, , y2] = item.box;
+  const x = Math.min(Math.max(0, x1), Math.max(0, overlay.width - width));
+  const y = Math.min(Math.max(0, y1), Math.max(0, y2 - height));
+  ctx.fillStyle = color;
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 3);
+    ctx.fill();
+  } else {
+    ctx.fillRect(x, y, width, height);
+  }
+  ctx.fillStyle = contrastTextColor(color);
+  ctx.fillText(label, x + padding, y + height / 2);
+  ctx.restore();
+}
+
+/** 标签文字与底色：优先白字，浅底色（橙、绿）改用深色字 */
+function contrastTextColor(color: string): string {
+  const hex = color.trim().replace(/^#/, "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return "white";
+  const channel = (value: number) =>
+    value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  const luminance =
+    0.2126 * channel(Number.parseInt(hex.slice(0, 2), 16) / 255) +
+    0.7152 * channel(Number.parseInt(hex.slice(2, 4), 16) / 255) +
+    0.0722 * channel(Number.parseInt(hex.slice(4, 6), 16) / 255);
+  return luminance > 0.22 ? "black" : "white";
 }
 
 // ── 指针交互：点选图层（命中测试）与拖拽划框 ──
@@ -347,14 +436,13 @@ function onPointerUp(event: PointerEvent) {
   if (isClick) {
     const artifact = hitTest(toCanvasPoint(event));
     if (!artifact) {
-      highlighted.value = null;
       drawOverlay();
       ElMessage.info(t("image_workbench.canvas.noLayerHit"));
       return;
     }
-    highlighted.value = artifact;
-    drawOverlay();
+    // 选区由父组件追加后经 `selections` 传回，画布统一按序号上色
     emit("pick", { bbox: normalizedBoxOf(artifact), artifactId: artifact.id });
+    drawOverlay();
     return;
   }
 
@@ -415,6 +503,13 @@ watch(
   () => {
     void compose();
   },
+  { deep: true }
+);
+
+// 选区增减或最近点选变化时重画叠层（画面本身不变）
+watch(
+  () => [props.selections, props.activeIndex],
+  () => drawOverlay(),
   { deep: true }
 );
 

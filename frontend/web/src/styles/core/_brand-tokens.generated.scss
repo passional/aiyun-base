@@ -4,6 +4,14 @@
   --fa-brand-violet: #6D5BFF;
   --fa-brand-gradient: linear-gradient(135deg, #4F6BFF 0%, #6D5BFF 100%);
   --fa-canvas: #F5F6F8;
+  --fa-region-1: #4F6BFF;
+  --fa-region-2: #F08C00;
+  --fa-region-3: #9C36B5;
+  --fa-region-4: #0C8599;
+  --fa-region-5: #C2255C;
+  --fa-region-6: #2F9E44;
+  --fa-region-7: #5F3DC4;
+  --fa-region-8: #A05A2C;
   --fa-radius-xs: 6px;
   --fa-radius-sm: 8px;
   --fa-radius-md: 12px;
@@ -45,6 +53,14 @@
 
 html.dark {
   --fa-canvas: #15181E;
+  --fa-region-1: #7B8FFF;
+  --fa-region-2: #FFA94D;
+  --fa-region-3: #DA77F2;
+  --fa-region-4: #3BC9DB;
+  --fa-region-5: #F06595;
+  --fa-region-6: #69DB7C;
+  --fa-region-7: #9775FA;
+  --fa-region-8: #D4A373;
   --fa-surface: #15181E;
   --fa-surface-2: #191D24;
   --fa-border: #262B34;

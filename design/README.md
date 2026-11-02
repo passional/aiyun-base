@@ -27,6 +27,7 @@ node scripts/design-tokens/generate.mjs
 | brand.blue | `#4F6BFF` |
 | brand.violet | `#6D5BFF` |
 | brand.gradient | `135deg #4F6BFF → #6D5BFF` |
+| region | 8 色标注调色板（浅色/深色各一组），Web 生成 `--fa-region-1..8` |
 | neutral.ink | `#141824` |
 | neutral.border | `#E6E8EC` |
 | neutral.canvas | `#F5F6F8` / 深色 `#15181E` |
