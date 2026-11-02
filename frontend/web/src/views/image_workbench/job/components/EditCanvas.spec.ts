@@ -13,6 +13,8 @@ vi.mock("@/api/module_image_workbench/job", () => ({
 const noPicture = "请先上传参考图，或从历史任务打开一次图层拆分结果";
 const imageSources: string[] = [];
 const drawImage = vi.fn();
+const fillText = vi.fn();
+const strokeRect = vi.fn();
 
 class LoadedImage {
   naturalWidth = 1086;
@@ -30,6 +32,8 @@ class LoadedImage {
 beforeEach(() => {
   imageSources.length = 0;
   drawImage.mockClear();
+  fillText.mockClear();
+  strokeRect.mockClear();
   vi.stubGlobal("ref", ref);
   vi.stubGlobal("computed", computed);
   vi.stubGlobal("watch", watch);
@@ -37,6 +41,16 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     clearRect: vi.fn(),
     drawImage,
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect,
+    fillText,
+    measureText: (text: string) => ({ width: text.length * 8 }),
+    roundRect: vi.fn(),
+    setLineDash: vi.fn(),
   } as unknown as CanvasRenderingContext2D);
 });
 
@@ -84,6 +98,34 @@ describe("EditCanvas initial image", () => {
     }
     expect(drawImage).toHaveBeenCalled();
     expect(wrapper.text()).not.toContain(noPicture);
+    wrapper.unmount();
+  });
+});
+
+describe("EditCanvas selections", () => {
+  it("draws every selection with its region label", async () => {
+    const wrapper = mount(EditCanvas, {
+      props: {
+        range: 1000,
+        referencePath: "static/upload/file/reference.png",
+        placeholderTemplate: "区域{n}",
+        activeIndex: 2,
+        selections: [
+          { index: 1, bbox: [10, 10, 200, 200] },
+          { index: 2, bbox: [300, 300, 500, 500] },
+        ],
+      },
+      global: {
+        plugins: [createI18n({ legacy: false, locale: "zh", messages: { zh: {} } })],
+        stubs: { ElAlert: true, ElButton: true, ElTag: true },
+      },
+    });
+    await flushPromises();
+    await nextTick();
+
+    expect(strokeRect.mock.calls.length).toBeGreaterThanOrEqual(2);
+    const labels = new Set(fillText.mock.calls.map(([label]) => String(label)));
+    expect(labels).toEqual(new Set(["区域1", "区域2"]));
     wrapper.unmount();
   });
 });
