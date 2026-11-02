@@ -88,9 +88,18 @@ class InitializeData:
         else:
             # 先把数据库带到最新版本，否则 autogenerate 会因
             # "Target database is not up to date" 无法对比模型与库结构
-            await InitializeData.__clear_unresolvable_alembic_version(alembic_cfg)
-            await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-            logger.info("✅ 数据库迁移已应用（alembic upgrade head）")
+            has_resolvable_version = await InitializeData.__clear_unresolvable_alembic_version(alembic_cfg)
+            if has_resolvable_version:
+                await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+                logger.info("✅ 数据库迁移已应用（alembic upgrade head）")
+            else:
+                # 表结构已存在，但没有任何可解析的迁移版本（从未 stamp，或版本号来自别的分支／
+                # 对应脚本已被清理）。此时 upgrade 会从 base 重放全部迁移，对已存在的表执行
+                # CREATE TABLE 直接失败（1050 Table already exists），整个后端启动不了。
+                # 按“自举库结构即模型结构”的既有假设标记为 head；dev 环境随后会用 autogen
+                # 对比模型并消解真实漂移（生产环境不自建迁移，需人工核对）。
+                await asyncio.to_thread(command.stamp, alembic_cfg, "head")
+                logger.warning("⚠️ 数据库已有表结构但迁移版本为空或全部失效，已标记为 head（alembic stamp head）；生产库请手动核对 schema 是否缺少增量迁移")
 
         # dev 环境：模型有变更时自动生成迁移文件（无变更时 env.py 的 process_revision_directives 会拦截，不产出文件）
         if settings.ENVIRONMENT == EnvironmentEnum.DEV:
@@ -104,13 +113,16 @@ class InitializeData:
                 logger.info("✅ dev 环境自动迁移检查完成（模型无变更）")
 
     @staticmethod
-    async def __clear_unresolvable_alembic_version(alembic_cfg) -> None:
+    async def __clear_unresolvable_alembic_version(alembic_cfg) -> bool:
         """清掉数据库里无法被仓库迁移脚本解析的版本号（僵尸 revision）。
 
-        本仓库不提交迁移历史（versions/ 仅保留 __init__.py），库里却可能残留早前
-        dev 自动生成、随后被当作未跟踪文件清理掉的迁移版本号。此时 upgrade 会抛
-        "Can't locate revision identified by 'xxx'"，让整个后端启动失败。
+        库里可能残留别的分支（或早前 dev 自动生成、随后被清理）的迁移版本号。此时
+        upgrade 会抛 "Can't locate revision identified by 'xxx'"，让整个后端启动失败。
         这里只删除解析不了的版本号，保留可解析的，交由后续自动迁移按当前模型重新对齐。
+
+        返回:
+        - True: 清理后仍有可解析的版本号，可从该版本增量 upgrade
+        - False: 版本表不存在、为空，或全部版本号都无法解析（没有增量起点）
         """
         from alembic.script import ScriptDirectory
         from sqlalchemy import text
@@ -119,15 +131,14 @@ class InitializeData:
         async with async_engine.begin() as conn:
             has_version_table = await conn.run_sync(lambda sync_conn: inspect(sync_conn).has_table("alembic_version"))
             if not has_version_table:
-                return
+                return False
             current = {row[0] for row in await conn.execute(text("select version_num from alembic_version"))}
             stale = current - known
-            if not stale:
-                return
-            for rev in stale:
-                await conn.execute(text("delete from alembic_version where version_num = :rev"), {"rev": rev})
-            hint = "；仓库存在迁移历史时请手动核对是否需要 alembic stamp" if known else ""
-            logger.warning(f"⚠️ 已清理无法解析的迁移版本记录 {sorted(stale)}（对应脚本已不存在）{hint}")
+            if stale:
+                for rev in stale:
+                    await conn.execute(text("delete from alembic_version where version_num = :rev"), {"rev": rev})
+                logger.warning(f"⚠️ 已清理无法解析的迁移版本记录 {sorted(stale)}（对应脚本已不存在）")
+            return bool(current - stale)
 
     @staticmethod
     def __autogen_migration(alembic_cfg) -> bool | None:
