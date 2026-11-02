@@ -425,7 +425,6 @@ async def _pull_and_pair_logs(run_id: int) -> None:
         if run is None:
             return
         platform = await db.get(ChannelEvalPlatformModel, run.platform_id)
-        combos = (await db.execute(select(ChannelEvalRunComboModel).where(ChannelEvalRunComboModel.run_id == run_id))).scalars().all()
         samples = (
             (
                 await db.execute(
