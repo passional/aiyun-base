@@ -1,7 +1,7 @@
 """add channel_eval tables
 
 Revision ID: 32dcb7c36112
-Revises: 
+Revises:
 Create Date: 2026-09-14 14:42:31.925903
 
 """

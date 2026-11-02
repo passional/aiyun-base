@@ -146,7 +146,7 @@ async def test_ensure_eval_token_first_time_and_idempotent(eval_db: async_sessio
         async with eval_db() as db, db.begin():
             run_row = await db.get(ChannelEvalRunModel, run.id)
             key = await ensure_eval_token(db, platform, run_row)
-        assert key == "sk-eval-run%d-realkey0123456789abcdef" % run.id
+        assert key == f"sk-eval-run{run.id}-realkey0123456789abcdef"
         assert "*" not in key
         assert fake.create_calls == [(f"eval-run{run.id}", "default")]
 

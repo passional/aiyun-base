@@ -457,6 +457,19 @@ def test_localhost_hosts_are_configurable() -> None:
     assert restricted.ALLOWED_HOSTS == ["service.fastapiadmin.com", "*.fastapiadmin.com"]
 
 
+def test_prod_never_runs_in_debug_mode() -> None:
+    """生产环境即使漏配 .env.prod（DEBUG 落到代码默认 True）也强制关闭调试。
+
+    镜像构建会排除真实 .env.*，漏配 DEBUG 时线上以调试模式运行：未捕获异常返回
+    纯文本堆栈，前端只能显示通用「服务器繁忙」，真实原因被掩盖。
+    """
+    prod = Settings(_env_file=None, ENVIRONMENT=EnvironmentEnum.PROD, DEBUG=True)
+    assert prod.DEBUG is False
+
+    dev = Settings(_env_file=None, ENVIRONMENT=EnvironmentEnum.DEV, DEBUG=True)
+    assert dev.DEBUG is True
+
+
 def test_oauth_allowed_hosts_default_is_not_wildcard() -> None:
     """OAuth 回调域名白名单默认不再是 "*"（Host 注入不再自动放行）。"""
     defaults = Settings(_env_file=None)

@@ -1,5 +1,6 @@
 """FastapiAdmin 应用工厂：唯一的应用构建与生命周期定义点。"""
 
+import os
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -17,6 +18,21 @@ from .utils.common_util import import_module
 from .utils.console import console_end, console_start
 
 
+def _check_upload_dir_writable() -> None:
+    """启动自检：上传目录不可写时明确告警。
+
+    容器部署最常见的事故是绑定挂载源由 Docker 以 root 自动创建，而运行用户是
+    非 root（UID 1000）：启动一切正常，直到第一次上传才 500。这里提前把原因写进日志。
+    """
+    upload_dir = settings.UPLOAD_FILE_PATH
+    try:
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        if not os.access(upload_dir, os.W_OK):
+            logger.error("上传目录不可写: {}（检查绑定挂载源属主是否与容器运行用户一致）", upload_dir.resolve())
+    except OSError as exc:
+        logger.error("上传目录不可用: {} | {}", upload_dir.resolve(), exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     from app.core.ap_scheduler import SchedulerUtil
@@ -31,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
 
     await InitializeData().init_db()
     logger.info(f"✅ {settings.DATABASE_TYPE} 连接初始化完成")
+    _check_upload_dir_writable()
     await init_agno_tables()
     logger.info("✅ AI 会话表 初始化完成")
     await redis_connect(app, status=True)

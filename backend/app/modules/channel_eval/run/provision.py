@@ -62,10 +62,8 @@ async def ensure_eval_token(db: AsyncSession, platform: ChannelEvalPlatformModel
         # 1. 先查后建（远端是事实来源）
         tokens = await client.list_tokens()
         token = next((t for t in tokens if t.get("name") == name), None)
-        created = False
         if token is None:
             token = await client.create_eval_token(name=name, group=_EVAL_TOKEN_GROUP)
-            created = True
             logger.info("渠道评估：运行 {} 已创建专用评估令牌 {}", run.id, name)
         # 2. 明文 key：列表/查询接口只回脱敏值（脱敏值发请求 401），必须经密钥接口取回
         key = str(token.get("key") or "")
