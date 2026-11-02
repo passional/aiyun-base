@@ -30,6 +30,10 @@ MODELS_API = "/image_workbench/models"
 _PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 # 真彩 + alpha 的 1x1 PNG（IHDR colour type = 6）
 _RGBA_PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==")
+# 8x8 无透明通道的 WebP：参考图校验声明支持 WebP，通用上传扩展名白名单也必须放行
+_WEBP_BYTES = base64.b64decode(
+    "UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoIAAgAAgA0JaACdLoB+AADsAD+8Oj3/yC5YXXI1/8gP+QH/ID/+PIAAAA="
+)
 _TERMINAL = {"success", "failed", "cancelled"}
 
 
@@ -823,6 +827,18 @@ def test_reference_upload_reports_alpha_channel(test_client: TestClient, auth_he
 
     for response in (opaque, transparent):
         Path(response.json()["data"]["file_path"]).unlink(missing_ok=True)
+
+
+def test_reference_upload_accepts_webp(test_client: TestClient, auth_headers: dict) -> None:
+    """参考图校验把 WebP 列为支持格式，通用上传扩展名白名单必须同步放行。"""
+    response = test_client.post(
+        f"{JOBS_API}/reference-images/upload",
+        files={"file": ("reference.webp", _WEBP_BYTES, "image/webp")},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["data"]["has_alpha"] is False
+    Path(response.json()["data"]["file_path"]).unlink(missing_ok=True)
 
 
 def test_cross_user_access_is_denied(test_client: TestClient, auth_headers: dict) -> None:

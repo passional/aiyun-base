@@ -225,6 +225,7 @@ class Settings(BaseSettings):
         ".jpg",
         ".jpeg",
         ".png",
+        ".webp",
         ".ico",
         ".svg",
         ".xls",
@@ -263,6 +264,20 @@ class Settings(BaseSettings):
                     self.ALLOWED_HOSTS.append(host)
         return self
 
+    @model_validator(mode="after")
+    def _force_prod_debug_off(self) -> "Settings":
+        """生产环境强制关闭调试模式。
+
+        镜像构建时 ``.dockerignore`` 会排除所有真实 ``.env.*``（含 ``.env.prod``），
+        容器内只剩代码默认值（``DEBUG=True``）。漏配时生产会以调试模式运行：
+        未捕获异常返回纯文本堆栈（前端只能显示通用「服务器繁忙」），且 uvicorn 开启 reload。
+        这里按环境强制收敛，避免线上静默跑在调试模式。
+        """
+        if self.ENVIRONMENT == EnvironmentEnum.PROD and self.DEBUG:
+            self.DEBUG = False
+            self._warn("生产环境检测到 DEBUG=True（通常因镜像内缺少 .env.prod），已强制关闭调试模式")
+        return self
+
     # ================================================= #
     # ******************* 动态配置 ******************* #
     # ================================================= #
@@ -283,7 +298,7 @@ class Settings(BaseSettings):
         origins = [origin.strip() for origin in (self.PROD_CORS_ORIGINS or "").split(",") if origin.strip()]
         if "*" in origins:
             origins = [origin for origin in origins if origin != "*"]
-            self._warn_insecure_cors(
+            self._warn(
                 "生产环境 CORS 不允许通配符 '*'（与 ALLOW_CREDENTIALS=True 组合会放行任意站点带凭据跨域），已忽略该值；请显式配置 PROD_CORS_ORIGINS",
             )
         if not origins:
@@ -291,12 +306,12 @@ class Settings(BaseSettings):
             if self.CORS_STRICT_STARTUP:
                 # 严格模式：宁可启动失败，也不要带着"跨域被全量拒绝"的隐性配置上线
                 raise RuntimeError(f"CORS_STRICT_STARTUP=True 且 {message}")
-            self._warn_insecure_cors(message)
+            self._warn(message)
         return origins
 
     @staticmethod
-    def _warn_insecure_cors(message: str) -> None:
-        """输出安全告警（日志不可用时静默，绝不影响配置读取）。
+    def _warn(message: str) -> None:
+        """输出配置告警（日志不可用时静默，绝不影响配置读取）。
 
         参数:
         - message (str): 告警内容。

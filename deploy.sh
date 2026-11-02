@@ -38,9 +38,19 @@ load_env() {
 }
 
 check_deps() {
-    for dir in "${DOCKER_DIR}/mysql/data" "${DOCKER_DIR}/redis/data" "${DOCKER_DIR}/mysql/init" "${DOCKER_DIR}/redis/conf" "${WORK_DIR}/backend/static/upload"; do
+    for dir in "${DOCKER_DIR}/mysql/data" "${DOCKER_DIR}/redis/data" "${DOCKER_DIR}/mysql/init" "${DOCKER_DIR}/redis/conf"; do
         [ -d "$dir" ] || mkdir -p "$dir"
     done
+
+    # 上传目录必须建在 compose 的挂载源上：docker-compose.yaml 里的相对路径
+    # ./backend/static/upload 相对于 docker/ 解析。之前误建在 ${WORK_DIR}/backend/static/upload，
+    # 真正的挂载源不存在时由 Docker 以 root:root 自动创建，容器内的 app（UID 1000）
+    # 无法写入 → 所有上传请求 500。这里显式建目录并按容器用户授权。
+    local upload_dir="${DOCKER_DIR}/backend/static/upload"
+    mkdir -p "${upload_dir}"
+    if [ "$(id -u)" -eq 0 ]; then
+        chown -R 1000:1000 "${upload_dir}"
+    fi
     local missing=()
     for cmd in docker; do
         command -v $cmd &>/dev/null || missing+=($cmd)

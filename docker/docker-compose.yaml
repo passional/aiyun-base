@@ -106,6 +106,10 @@ services:
       TZ: "Asia/Shanghai"
       # 运行环境，对应 backend/env/.env.{dev,prod}
       ENVIRONMENT: "${DEPLOY_ENV:-prod}"
+      # 镜像内不含 backend/env/.env.prod（.dockerignore 排除了所有真实 .env.*），
+      # 若不在运行时显式覆盖，DEBUG 会落到代码默认值 True：生产将以调试模式运行，
+      # 未捕获异常返回纯文本堆栈（前端只剩「服务器繁忙」）。这里显式关闭。
+      DEBUG: "false"
       # MySQL 连接配置
       DATABASE_HOST: "mysql"
       DATABASE_PORT: "3306"
