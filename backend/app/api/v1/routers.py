@@ -8,7 +8,6 @@ from app.modules.channel_eval.platform.controller import PlatformRouter as Chann
 from app.modules.channel_eval.report.controller import ReportRouter as ChannelEvalReportRouter
 from app.modules.channel_eval.run.controller import RunRouter as ChannelEvalRunRouter
 from app.modules.common.file.controller import FileRouter
-from app.modules.ops.dbconsole.controller import DbConsoleRouter
 from app.modules.generator.gencode.controller import GenRouter
 from app.modules.image_workbench.config.controller import ImageWorkbenchModelRouter, ImageWorkbenchServiceRouter
 from app.modules.image_workbench.job.controller import ImageWorkbenchJobRouter
@@ -16,6 +15,7 @@ from app.modules.monitor.cache.controller import CacheRouter
 from app.modules.monitor.health.controller import HealthRouter
 from app.modules.monitor.online.controller import OnlineRouter
 from app.modules.monitor.server.controller import ServerRouter
+from app.modules.ops.dbconsole.controller import DbConsoleRouter
 from app.modules.ops.ssh.controller import SshRouter
 from app.modules.system.auth.controller import AuthRouter
 from app.modules.system.dept.controller import DeptRouter
@@ -35,6 +35,11 @@ from app.modules.task.storage.browse.controller import StorageBrowseRouter
 from app.modules.task.storage.node.controller import StorageNodeRouter
 from app.modules.task.storage.transfer.controller import StorageTransferRouter
 from app.modules.task.storage.workflow.controller import StorageWorkflowRouter
+from app.modules.voice_workbench.config.controller import (
+    VoiceWorkbenchModelRouter,
+    VoiceWorkbenchServiceRouter,
+)
+from app.modules.voice_workbench.job.controller import VoiceWorkbenchJobRouter
 
 # 域前缀 → 该域 controller 清单（唯一路由事实来源）
 DOMAIN_CONTROLLERS: dict[str, list[APIRouter]] = {
@@ -79,6 +84,11 @@ DOMAIN_CONTROLLERS: dict[str, list[APIRouter]] = {
         ImageWorkbenchServiceRouter,
         ImageWorkbenchModelRouter,
         ImageWorkbenchJobRouter,
+    ],
+    "/voice_workbench": [
+        VoiceWorkbenchServiceRouter,
+        VoiceWorkbenchModelRouter,
+        VoiceWorkbenchJobRouter,
     ],
     "/ops": [SshRouter, DbConsoleRouter],
 }

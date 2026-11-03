@@ -1,0 +1,13 @@
+[
+  {
+    "service_name": "火山引擎语音",
+    "display_name": "豆包流式语音识别 2.0",
+    "model_name": "bigmodel",
+    "resource_id": "volc.seedasr.sauc.duration",
+    "endpoint_url": "wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_async",
+    "max_file_mb": 20,
+    "max_duration_sec": 300,
+    "status": 0,
+    "remark": "凭证留空待管理员填写后生效"
+  }
+]
