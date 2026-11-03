@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     from app.modules.image_workbench.job.engine import recover_interrupted_jobs
     from app.modules.system.dict.service import DictDataService
     from app.modules.system.params.service import ParamsService
+    from app.modules.voice_workbench.job.service import recover_interrupted_jobs as recover_interrupted_voice_jobs
     from app.scripts.initialize import InitializeData
 
     await InitializeData().init_db()
@@ -58,6 +59,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     interrupted_jobs = await recover_interrupted_jobs()
     if interrupted_jobs:
         logger.info("✅ 绘图工作台：已将 {} 个进程重启前进行中的绘图任务置为 failed", interrupted_jobs)
+    interrupted_voice_jobs = await recover_interrupted_voice_jobs()
+    if interrupted_voice_jobs:
+        logger.info("✅ 语音工作台：已将 {} 个进程重启前识别中的转写任务置为 failed", interrupted_voice_jobs)
     await ParamsService.init_cache(redis=app.state.redis)
     logger.info("✅ Redis系统参数 初始化完成")
     await DictDataService.init_cache(redis=app.state.redis)
