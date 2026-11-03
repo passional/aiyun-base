@@ -230,6 +230,15 @@ async def test_timeout_is_reported_as_readable_error() -> None:
         await client.transcribe(model_name="m", uid="1", audio=b"wav")
 
 
+async def test_stream_ending_without_final_packet_is_an_error() -> None:
+    """连接在末包前关闭不能当成功：否则空结果会被写成一次成功的转写。"""
+    ws, calls = _install([_server_frame({"result": {"text": "未完成"}})])
+    client = VoiceUpstreamClient("wss://asr.example.com/ws", api_key="k", resource_id="r", connect=lambda url, **kw: (calls.append((url, kw)), _FakeConnection(ws))[1])
+
+    with pytest.raises(VoiceUpstreamError, match="最终结果前关闭"):
+        await client.transcribe(model_name="m", uid="1", audio=b"wav")
+
+
 async def test_connection_error_is_reported_as_readable_error() -> None:
     def _connect(url: str, **kwargs: Any) -> Any:
         raise OSError("connection refused")

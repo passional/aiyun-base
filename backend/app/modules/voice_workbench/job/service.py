@@ -86,7 +86,7 @@ def _job_to_out(job: VoiceWorkbenchJobModel, *, service_name: str | None, model_
         status_label=status_label(job.status),
         error=job.error,
         elapsed_ms=job.elapsed_ms,
-        usage=job.usage_json,
+        usage=job.usage_json if isinstance(job.usage_json, dict) else None,
         started_at=job.started_at,
         finished_at=job.finished_at,
         created_id=job.created_id,

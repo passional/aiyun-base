@@ -174,6 +174,7 @@ class VoiceUpstreamClient:
         latest_utterances: list[Any] = []
         usage: dict | None = None
         logid: str | None = None
+        final_received = False
         try:
             async with asyncio.timeout(self.timeout_sec):
                 async with self._connect(
@@ -227,7 +228,11 @@ class VoiceUpstreamClient:
                                 usage = data.get("audio_info")
 
                         if flags & NEG_SEQUENCE or (sequence is not None and sequence < 0):
+                            final_received = True
                             break
+
+                    if not final_received:
+                        raise VoiceUpstreamError("上游连接在返回最终结果前关闭")
 
                     response = getattr(ws, "response", None)
                     headers_obj = getattr(response, "headers", None)

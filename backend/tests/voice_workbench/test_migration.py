@@ -6,16 +6,19 @@
 
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 from alembic import command
 from alembic.config import Config
-from alembic.script import ScriptDirectory
 
 from app.config.path_conf import BASE_DIR
 from app.config.setting import settings
 
 _VOICE_TABLES = {"voice_workbench_service", "voice_workbench_model", "voice_workbench_job"}
+
+# 固定本迁移的 revision，而不是取仓库当前 head：后续新增迁移时 head 会前移，
+# 从「新 head 的上一版」起跑会让空库跳过语音三张表的创建，测试随之失真。
+_VOICE_REVISION = "028cad380a37"
+_VOICE_PREVIOUS = "33b9db53200d"
 
 
 def _run_alembic(db_path: Path, action: str, target: str) -> None:
@@ -43,17 +46,8 @@ def _tables(db_path: Path) -> set[str]:
     return {row[0] for row in _exec(db_path, "select name from sqlite_master where type='table'")}
 
 
-def _revisions() -> tuple[str, str]:
-    config = Config(str(BASE_DIR / "alembic.ini"))
-    script = ScriptDirectory.from_config(config)
-    head = script.get_current_head()
-    previous: Any = script.get_revision(head).down_revision
-    assert isinstance(previous, str), f"本迁移应只有一个上一版，实际 {previous!r}"
-    return previous, head
-
-
 def test_migration_round_trip_and_tables(tmp_path: Path) -> None:
-    previous, head = _revisions()
+    previous, head = _VOICE_PREVIOUS, _VOICE_REVISION
     db_path = tmp_path / "voice_workbench_migration.db"
 
     _run_alembic(db_path, "stamp", previous)
