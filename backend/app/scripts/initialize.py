@@ -220,6 +220,7 @@ class InitializeData:
         # 已有环境重启即得菜单；新库由上方常规种子导入，此处跳过）
         await self.__ensure_seed_menu_merged(db, route_name="ChannelEval", title="评估中心")
         await self.__ensure_seed_menu_merged(db, route_name="ImageWorkbench", title="绘图工作台")
+        await self.__ensure_seed_menu_merged(db, route_name="Ops", title="运维管理")
         await self.__ensure_seed_child_menu_merged(
             db,
             parent_route_name="ChannelEval",
