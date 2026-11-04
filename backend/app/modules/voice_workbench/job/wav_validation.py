@@ -40,11 +40,19 @@ def inspect_wav(content: bytes) -> WavInfo:
             raise WavValidationError(f"WAV 块「{chunk_id.decode('latin-1')}」声明长度超出文件实际字节")
 
         if chunk_id == b"fmt ":
+            if fmt is not None:
+                # 多个 fmt 块让「按哪一块校验」失去唯一答案；解析器与上游可能各选一块，
+                # 因此拒绝而不是赌。合法编码器不会产出重复块。
+                raise WavValidationError("WAV 包含多个 fmt 块，无法确定有效格式")
             if size < 16:
                 raise WavValidationError("WAV fmt 块长度不合法")
             audio_format, channels, sample_rate, _byte_rate, _block_align, bits = struct.unpack("<HHIIHH", content[body_start : body_start + 16])
             fmt = (audio_format, channels, sample_rate, bits)
         elif chunk_id == b"data":
+            if data_size is not None:
+                # 只认第一块会放过「第二块藏真音频」的文件，只认最后一块又能用一小块
+                # 把时长压到限额以下；重复 data 块直接拒绝。
+                raise WavValidationError("WAV 包含多个 data 块，无法确定音频长度")
             data_size = size
 
         offset = body_end + (size & 1)

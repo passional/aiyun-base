@@ -87,6 +87,21 @@ def test_extended_fmt_chunk_is_allowed() -> None:
     assert info.duration_sec == 1
 
 
+def test_duplicate_data_chunk_rejected() -> None:
+    """重复 data 块可把真实时长藏在第二块，或用小尾块骗过时长校验。"""
+    body = b"WAVE" + _fmt() + _chunk(b"data", b"\x00" * 32000) + _chunk(b"data", b"\x00" * 2)
+    content = b"RIFF" + struct.pack("<I", len(body)) + body
+    with pytest.raises(WavValidationError, match="多个 data"):
+        inspect_wav(content)
+
+
+def test_duplicate_fmt_chunk_rejected() -> None:
+    body = b"WAVE" + _fmt() + _fmt(sample_rate=8000) + _chunk(b"data", b"\x00" * 32000)
+    content = b"RIFF" + struct.pack("<I", len(body)) + body
+    with pytest.raises(WavValidationError, match="多个 fmt"):
+        inspect_wav(content)
+
+
 def test_odd_sized_chunk_is_padding_aligned() -> None:
     """data 前的附加块长度为奇数时必须跳过 1 字节填充，否则 data 起始位置错位。"""
     list_chunk = _chunk(b"LIST", b"abc")

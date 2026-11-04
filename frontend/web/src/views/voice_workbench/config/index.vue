@@ -142,7 +142,7 @@ import ServiceAPI, {
   type ServiceForm,
   type ServiceTable,
 } from "@/api/module_voice_workbench/service";
-import ModelPanel from "./components/ModelPanel.vue";
+import ModelPanel from "./components/VoiceModelPanel.vue";
 import { renderTableOperationCell, resolveStatusColumns, type TableOperationAction } from "@utils";
 import { getColumnKey } from "@/hooks/core/useTableColumns";
 import type { ColumnOption } from "@/types/component";

@@ -147,14 +147,16 @@ class VoiceWorkbenchJobService:
                 crud = VoiceWorkbenchJobCRUD(self.auth, db)
                 model, service = await self._require_usable_model(db, model_id)
 
-                content = await file.read()
+                limit_bytes = model.max_file_mb * 1024 * 1024
+                # 只读到「上限 + 1」字节：超限文件不必整块进内存，也能在解析 WAV 前拒绝。
+                content = await file.read(limit_bytes + 1)
                 filename = _safe_filename(file.filename)
-                file_size = len(content)
-
-                if file_size > model.max_file_mb * 1024 * 1024:
+                if len(content) > limit_bytes:
+                    file_size = file.size if isinstance(file.size, int) and file.size >= 0 else len(content)
                     error = f"文件大小超过上限 {model.max_file_mb} MB"
                     await self._record_failed(crud, model=model, service=service, filename=filename, file_size=file_size, duration_sec=0, error=error)
                     raise CustomException(msg=error, code=400)
+                file_size = len(content)
 
                 try:
                     info = inspect_wav(content)
