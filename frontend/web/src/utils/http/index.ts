@@ -318,6 +318,10 @@ request.interceptors.response.use(
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
+    // `showErrorMessage: false` 让调用方自己呈现失败原因（如批量转写逐行报错），
+    // 网络错误与 HTTP 错误分支都必须遵守，否则每个失败文件仍会弹一条全局提示
+    const extConfig = error.config as ExtendedRequestConfig | undefined;
+
     // ── 请求被取消（ERR_CANCELED），静默处理，不弹错误提示 ──
     if (error.code === "ERR_CANCELED") {
       console.info("Request cancelled:", error.message);
@@ -337,7 +341,7 @@ request.interceptors.response.use(
       }
 
       console.error("网络请求失败:", error);
-      ElMessage.error(errorMessage);
+      if (extConfig?.showErrorMessage !== false) ElMessage.error(errorMessage);
       return Promise.reject(new Error(errorMessage));
     }
 
@@ -351,7 +355,7 @@ request.interceptors.response.use(
     if (status !== 401 && error.response.config.responseType === "blob" && data instanceof Blob) {
       const blobMessage = await readBlobErrorMessage(data);
       if (blobMessage) {
-        ElMessage.error(blobMessage);
+        if (extConfig?.showErrorMessage !== false) ElMessage.error(blobMessage);
         return Promise.reject(new HttpError(blobMessage, status || ApiStatus.error));
       }
       // 拿不到结构化错误体（真正的二进制内容 / 空内容 / 下载中断）：
@@ -411,7 +415,7 @@ request.interceptors.response.use(
 
     // ── 无权限（403）：保持既有分支与文案优先级不变 ──
     if (status === 403) {
-      ElMessage.error(data?.msg || $t("httpMsg.forbidden"));
+      if (extConfig?.showErrorMessage !== false) ElMessage.error(data?.msg || $t("httpMsg.forbidden"));
       return Promise.reject(
         new HttpError(data?.msg || $t("httpMsg.forbidden"), ApiStatus.forbidden)
       );
@@ -427,7 +431,7 @@ request.interceptors.response.use(
       (status ? getErrorMessage(status) : "") ||
       $t("httpMsg.requestFailed");
 
-    ElMessage.error(message);
+    if (extConfig?.showErrorMessage !== false) ElMessage.error(message);
     return Promise.reject(
       new HttpError(
         message,

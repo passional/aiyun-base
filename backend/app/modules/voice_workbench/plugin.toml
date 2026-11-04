@@ -1,0 +1,8 @@
+# 见 docs/PLUGIN_ARCHITECTURE.md
+
+name = "voice_workbench"
+title = "语音工作台"
+version = "1.0.0"
+description = "语音工作台：语音服务与识别模型配置、音频转写任务与历史。"
+optional = true
+tags = ["voice_workbench", "voice", "asr"]

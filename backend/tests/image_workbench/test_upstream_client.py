@@ -537,7 +537,7 @@ _MEASURED_LAYER_RESPONSE = {
 async def test_measured_shape_base_is_the_one_without_bounding_box(monkeypatch: pytest.MonkeyPatch) -> None:
     """实测形状：底图带 ``z_index = 0``，我们仍把它认成「没有层级」的那一张。
 
-    上游给每张都编号（底图是 0），而我们的表示是「底图没有层级」（CONTEXT.md）。若不在这里
+    上游给每张都编号（底图是 0），而我们的表示是「底图没有层级」（GLOSSARY.md）。若不在这里
     翻译掉，底图会以「层级 0」入库，``is_base`` 永远为假——列表缩略图、详情里的「底图」标记与
     画布合成会一起失灵（这正是真实环境上发生的故障）。
     """

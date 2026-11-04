@@ -1,0 +1,3 @@
+# 历史误报：d2e77e80 引入的语音工作台测试夹具凭据（合成值，非真实密钥）。
+# 当前值已在后续提交改为低熵占位；这里只豁免历史提交，避免改写已推送的分支。
+d2e77e80dfd1279f2a069151a5af44fa6204497f:backend/tests/voice_workbench/test_config_api.py:generic-api-key:46
