@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import func, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,18 +95,28 @@ class InitializeData:
         else:
             # 先把数据库带到最新版本，否则 autogenerate 会因
             # "Target database is not up to date" 无法对比模型与库结构
-            has_resolvable_version = await InitializeData.__clear_unresolvable_alembic_version(alembic_cfg)
-            if has_resolvable_version:
+            state, stale = await InitializeData.__alembic_version_state(alembic_cfg)
+            if state == "unresolvable":
+                # 版本号的脚本不在当前代码树里：通常是从带该迁移的分支切到了不含它的分支。
+                # 此时 upgrade 会抛 "Can't locate revision"；而删掉版本号再 stamp head 会把库
+                # 改标成更旧的版本，切回原分支后重放那段迁移，就会对已存在的表 CREATE TABLE
+                # （1050 Table already exists），后端起不来。版本号是「库比这棵树新」的唯一
+                # 证据，只能原样保留，等切回正确的分支后自然可解析。
+                logger.warning(
+                    f"⚠️ 数据库记录的迁移版本 {stale} 在当前代码树中找不到对应脚本（可能切换到了不含该迁移的分支），"
+                    "本次跳过迁移；请切回包含该迁移的分支，确认该版本已废弃后可执行 `uv run main.py stamp --env=dev`"
+                )
+                return
+            if state == "current":
                 await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
                 logger.info("✅ 数据库迁移已应用（alembic upgrade head）")
             else:
-                # 表结构已存在，但没有任何可解析的迁移版本（从未 stamp，或版本号来自别的分支／
-                # 对应脚本已被清理）。此时 upgrade 会从 base 重放全部迁移，对已存在的表执行
-                # CREATE TABLE 直接失败（1050 Table already exists），整个后端启动不了。
+                # 表结构已存在，但版本表为空（从未 stamp 的存量库／恢复的 dump）。此时 upgrade
+                # 会从 base 重放全部迁移，对已存在的表执行 CREATE TABLE 直接失败（1050）。
                 # 按“自举库结构即模型结构”的既有假设标记为 head；dev 环境随后会用 autogen
                 # 对比模型并消解真实漂移（生产环境不自建迁移，需人工核对）。
                 await asyncio.to_thread(command.stamp, alembic_cfg, "head")
-                logger.warning("⚠️ 数据库已有表结构但迁移版本为空或全部失效，已标记为 head（alembic stamp head）；生产库请手动核对 schema 是否缺少增量迁移")
+                logger.warning("⚠️ 数据库已有表结构但迁移版本为空，已标记为 head（alembic stamp head）；生产库请手动核对 schema 是否缺少增量迁移")
 
         # dev 环境：模型有变更时自动生成迁移文件（无变更时 env.py 的 process_revision_directives 会拦截，不产出文件）
         if settings.ENVIRONMENT == EnvironmentEnum.DEV:
@@ -120,32 +130,28 @@ class InitializeData:
                 logger.info("✅ dev 环境自动迁移检查完成（模型无变更）")
 
     @staticmethod
-    async def __clear_unresolvable_alembic_version(alembic_cfg) -> bool:
-        """清掉数据库里无法被仓库迁移脚本解析的版本号（僵尸 revision）。
-
-        库里可能残留别的分支（或早前 dev 自动生成、随后被清理）的迁移版本号。此时
-        upgrade 会抛 "Can't locate revision identified by 'xxx'"，让整个后端启动失败。
-        这里只删除解析不了的版本号，保留可解析的，交由后续自动迁移按当前模型重新对齐。
+    async def __alembic_version_state(alembic_cfg) -> tuple[Literal["current", "empty", "unresolvable"], list[str]]:
+        """读取库里的迁移版本状态（只读，不改动任何记录）。
 
         返回:
-        - True: 清理后仍有可解析的版本号，可从该版本增量 upgrade
-        - False: 版本表不存在、为空，或全部版本号都无法解析（没有增量起点）
+        - ("unresolvable", 无法解析的版本号列表): 存在当前代码树里找不到脚本的版本号，
+          没有增量起点，也不能把库改标成更旧的 head
+        - ("current", []): 版本号全部可解析，可从该版本增量 upgrade
+        - ("empty", []): 版本表不存在或为空，没有增量起点
         """
         from alembic.script import ScriptDirectory
         from sqlalchemy import text
 
         known = {script.revision for script in ScriptDirectory.from_config(alembic_cfg).walk_revisions()}
-        async with async_engine.begin() as conn:
+        async with async_engine.connect() as conn:
             has_version_table = await conn.run_sync(lambda sync_conn: inspect(sync_conn).has_table("alembic_version"))
             if not has_version_table:
-                return False
+                return "empty", []
             current = {row[0] for row in await conn.execute(text("select version_num from alembic_version"))}
-            stale = current - known
-            if stale:
-                for rev in stale:
-                    await conn.execute(text("delete from alembic_version where version_num = :rev"), {"rev": rev})
-                logger.warning(f"⚠️ 已清理无法解析的迁移版本记录 {sorted(stale)}（对应脚本已不存在）")
-            return bool(current - stale)
+        stale = sorted(current - known)
+        if stale:
+            return "unresolvable", stale
+        return ("current" if current else "empty"), []
 
     @staticmethod
     def __autogen_migration(alembic_cfg) -> bool | None:
