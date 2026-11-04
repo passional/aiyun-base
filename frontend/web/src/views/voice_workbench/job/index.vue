@@ -3,7 +3,7 @@
     <ElSplitter :style="'height: 100%'">
       <ElSplitterPanel size="42%" :min="480">
         <div class="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-2">
-          <ElCard class="fa-table-card" shadow="never">
+          <ElCard class="fa-table-card voice-job-card" shadow="never">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="font-semibold">{{ t("voice_workbench.job.title") }}</span>
@@ -91,7 +91,7 @@
             </template>
           </ElCard>
 
-          <ElCard class="fa-table-card" shadow="never">
+          <ElCard class="fa-table-card voice-job-card" shadow="never">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="font-semibold">{{ t("voice_workbench.job.queueTitle") }}</span>
@@ -174,7 +174,7 @@
             </ElTable>
           </ElCard>
 
-          <ElCard class="fa-table-card" shadow="never">
+          <ElCard class="fa-table-card voice-job-card" shadow="never">
             <template #header>
               <span class="font-semibold">{{ t("voice_workbench.job.resultTitle") }}</span>
             </template>
@@ -583,3 +583,14 @@ onActivated(() => {
   if (!firstLoad && !running.value) void loadModelOptions();
 });
 </script>
+
+<style scoped>
+/**
+ * 三张卡片纵向堆叠在可滚动列里，必须保持自身高度。
+ * `.fa-table-card` 的 `flex: 1` 会让卡片被压缩，而 `.el-card__body` 是
+ * `overflow: hidden`，于是「开始转写 / 清空列表」等底部操作会被裁掉。
+ */
+.voice-job-card {
+  flex: none;
+}
+</style>
