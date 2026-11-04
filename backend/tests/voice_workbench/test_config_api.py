@@ -43,7 +43,7 @@ def _db_exec(sql: str, params: tuple = ()) -> None:
 def _create_service(test_client: TestClient, auth_headers: dict, **overrides) -> dict:
     payload = {
         "name": _uniq("svc"),
-        "api_key": "sk-plain-abcdef1234",
+        "api_key": "aaaaaaaa1234",  # 测试夹具：故意低熵，避免密钥扫描误报
         "status": 0,
         "remark": "测试语音服务",
     }
@@ -115,16 +115,16 @@ def test_create_service_masked_response_and_encrypted_at_rest(test_client: TestC
     data = _create_service(test_client, auth_headers, name=_uniq("enc"))
     assert data["api_key_masked"] == "••••1234"
     assert data["has_api_key"] is True
-    assert "sk-plain-abcdef1234" not in str(data)
+    assert "aaaaaaaa1234" not in str(data)
 
     row = _db_row("select api_key_enc from voice_workbench_service where id = ?", (data["id"],))
     assert row and row[0].startswith("gAAAAA"), "凭证必须为 Fernet 密文"
-    assert "sk-plain-abcdef1234" not in row[0]
-    assert CryptoUtil.decrypt(row[0]) == "sk-plain-abcdef1234"
+    assert "aaaaaaaa1234" not in row[0]
+    assert CryptoUtil.decrypt(row[0]) == "aaaaaaaa1234"
 
     listed = test_client.get(f"{SERVICES_API}/list", params={"page_no": 1, "page_size": 100}, headers=auth_headers).json()["data"]["items"]
     target = next(item for item in listed if item["id"] == data["id"])
-    assert target["api_key_masked"] == "••••1234" and "sk-plain-abcdef1234" not in str(target)
+    assert target["api_key_masked"] == "••••1234" and "aaaaaaaa1234" not in str(target)
     detail = test_client.get(f"{SERVICES_API}/detail/{data['id']}", headers=auth_headers).json()["data"]
     assert detail["api_key_masked"] == "••••1234"
 
