@@ -16,6 +16,7 @@ import pytest
 from app.modules.voice_workbench.job import client as client_module
 from app.modules.voice_workbench.job.client import (
     AUDIO_CHUNK_BYTES,
+    CHUNK_INTERVAL_SEC,
     VoiceUpstreamClient,
     VoiceUpstreamError,
 )
@@ -144,12 +145,70 @@ async def test_audio_chunk_sequence_and_final_negative_sequence() -> None:
     frames = ws.sent[1:]
     assert len(frames) == 3
     expected_chunks = [audio[0:6400], audio[6400:12800], audio[12800:]]
+    # full client request 占用 1 号，音频帧从 2 号起；末帧是本帧本应拿到的
+    # 序号取负（3 帧音频：2、3、-4），不能从 1 起或写成 -(帧数)。
     for index, (frame, chunk) in enumerate(zip(frames, expected_chunks, strict=True), start=1):
-        assert _parse_header(frame) == (0x11, AUDIO_ONLY_REQUEST, POS_SEQUENCE if index < 3 else NEG_WITH_SEQUENCE, 0, GZIP_COMPRESSION)
+        is_final = index == 3
+        assert _parse_header(frame) == (0x11, AUDIO_ONLY_REQUEST, NEG_WITH_SEQUENCE if is_final else POS_SEQUENCE, 0, GZIP_COMPRESSION)
         sequence = struct.unpack(">i", frame[4:8])[0]
-        assert sequence == (index if index < 3 else -3)
+        assert sequence == (-4 if is_final else index + 1)
         length = struct.unpack(">I", frame[8:12])[0]
         assert gzip.decompress(frame[12 : 12 + length]) == chunk
+
+
+async def test_single_chunk_audio_uses_negative_2() -> None:
+    """单帧音频同样遵守「配置帧占 1 号」：正序号 2，末帧 -2。"""
+    audio = b"wav" * 10
+    ws, calls = _install([_server_frame({"result": {"text": "ok"}}, flags=NEG_SEQUENCE)])
+    client = VoiceUpstreamClient("wss://asr.example.com/ws", api_key="k", resource_id="r", connect=lambda url, **kw: (calls.append((url, kw)), _FakeConnection(ws))[1])
+
+    await client.transcribe(model_name="m", uid="1", audio=audio)
+
+    frame = ws.sent[1]
+    assert _parse_header(frame) == (0x11, AUDIO_ONLY_REQUEST, NEG_WITH_SEQUENCE, 0, GZIP_COMPRESSION)
+    assert struct.unpack(">i", frame[4:8])[0] == -2
+
+
+async def test_audio_is_sent_while_responses_are_read() -> None:
+    """发送必须与接收并行。
+
+    优化版双向流在音频发送期间就会回增量结果；若先发完再读，接收缓冲触顶后
+    websockets 会暂停读取，keepalive 的 pong 也读不到，长音频会 ping timeout。
+    这里的假上游要求「读到首个增量结果后」才允许继续发送，顺序执行会直接超时。
+    """
+    reader_started = asyncio.Event()
+    send_finished = asyncio.Event()
+
+    class _InterleavedWS(_FakeWS):
+        async def send(self, data: bytes) -> None:
+            await super().send(data)
+            if len(self.sent) == 2:  # 第一片音频：此时必须已经在读响应
+                await asyncio.wait_for(reader_started.wait(), timeout=0.5)
+            if len(self.sent) == 3:  # 末片音频
+                send_finished.set()
+
+        async def __anext__(self) -> bytes:
+            if len(self.frames) == 1:  # 末包只在音频发完后才下发
+                await asyncio.wait_for(send_finished.wait(), timeout=0.5)
+            reader_started.set()
+            return await super().__anext__()
+
+    frames = [
+        _server_frame({"result": {"text": "你"}}),
+        _server_frame({"result": {"text": "你好"}}, flags=NEG_SEQUENCE),
+    ]
+    ws = _InterleavedWS(frames)
+    client = VoiceUpstreamClient(
+        "wss://asr.example.com/ws",
+        api_key="k",
+        resource_id="r",
+        connect=lambda url, **kw: _FakeConnection(ws),
+    )
+
+    result = await client.transcribe(model_name="m", uid="1", audio=b"x" * (AUDIO_CHUNK_BYTES + 10))
+
+    assert result.text == "你好"
+    assert len(ws.sent) == 3  # 1 个 full request + 2 片音频
 
 
 async def test_success_response_aggregates_latest_text_segments_and_usage() -> None:
@@ -255,3 +314,5 @@ def test_default_connect_is_websockets_asyncio_client() -> None:
     client = VoiceUpstreamClient("wss://asr.example.com/ws", api_key="k", resource_id="r")
     assert client._connect is connect
     assert client_module.AUDIO_CHUNK_BYTES == 6400
+    # 上游要求 100~200ms 发包间隔；20ms 会在真实语音下触发 45000081。
+    assert CHUNK_INTERVAL_SEC == 0.1
