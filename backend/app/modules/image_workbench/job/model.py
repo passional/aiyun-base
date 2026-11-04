@@ -82,7 +82,7 @@ class ImageWorkbenchArtifactModel(ModelMixin):
     """绘图产物表（设计 D7）
 
     ``z_index`` **可空**：底图为 ``NULL``，图层存上游给的层级值。底图不是图层
-    （见 ``CONTEXT.md``），用「无层级」而非「层级 0」表达这一点——查询「取底图」
+    （见 ``GLOSSARY.md``），用「无层级」而非「层级 0」表达这一点——查询「取底图」
     就是 ``z_index IS NULL``。
 
     ``bounding_box_json`` 存上游的位置框（绝对与归一化两种表示都留），交互编辑将直接
