@@ -88,5 +88,31 @@ def upgrade(
     typer.echo(message="所有迁移已应用。")
 
 
+@fastapiadmin_cli.command(
+    name="stamp",
+    help="把数据库迁移版本标记为指定版本但不执行迁移, 运行 python(或uv run) main.py stamp --env=dev",
+)
+def stamp(
+    env: Annotated[EnvironmentEnum, typer.Option("--env", help="运行环境 (dev, prod)")] = EnvironmentEnum.DEV,
+    revision: Annotated[str, typer.Option("--revision", "-r", help="目标版本号，默认 head")] = "head",
+) -> None:
+    """在版本表里把数据库标记为指定版本，不执行任何迁移语句。
+
+    用于启动时提示「版本号在当前代码树中找不到对应脚本」的场景：确认该版本已废弃后，
+    把库对齐到当前代码树的版本。直接跑 `alembic stamp` 不会设置 ENVIRONMENT，会连到
+    默认配置里的另一个库，因此走这个命令。
+
+    参数:
+    - env (EnvironmentEnum): 运行环境。
+    - revision (str): 目标版本号，默认 head。
+
+    返回:
+    - None
+    """
+    os.environ["ENVIRONMENT"] = env.value
+    command.stamp(config=alembic_cfg, revision=revision)
+    typer.echo(message=f"数据库迁移版本已标记为 {revision}。")
+
+
 if __name__ == "__main__":
     fastapiadmin_cli()

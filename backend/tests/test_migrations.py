@@ -12,9 +12,8 @@ import asyncio
 
 from alembic import command
 from alembic.config import Config
-from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config.path_conf import ALEMBIC_VERSION_DIR, BASE_DIR
@@ -41,16 +40,15 @@ def test_bootstrap_matches_metadata(test_client: TestClient, versions_before_lay
     assert not produced, f"autogenerate 检出漂移并产出迁移文件: {sorted(produced)}"
 
 
-async def test_startup_recovers_when_alembic_version_is_unresolvable(test_client: TestClient, monkeypatch) -> None:
-    """库已有表结构、版本号却来自其它分支时，启动必须自愈为 head，而非从 base 重放迁移。
+async def test_startup_keeps_version_from_a_checkout_without_its_script(test_client: TestClient, monkeypatch) -> None:
+    """库记录的版本号在当前代码树里没有脚本时，启动必须原样保留它，并跳过迁移。
 
-    故障路径：在带 dev 自动迁移的分支上跑过库 → 切回不含该迁移脚本的分支 →
-    initialize 清掉失效版本号后版本表为空 → upgrade 从 base 重放，对已存在的表
-    CREATE TABLE，抛 1050 导致整个后端启动失败。
+    故障路径：在带迁移 M 的分支上跑过库（版本 = M，表已建）→ 切回不含 M 的分支 →
+    旧逻辑删掉版本号并 stamp 成当前的 head（比 M 旧）→ 切回原分支 upgrade 重放 M，
+    对已存在的表 CREATE TABLE，抛 1050，后端起不来。
+
+    版本号是「库比这棵树新」的唯一证据，抹掉它就无法恢复；因此这里只能跳过迁移。
     """
-    cfg = Config(str(BASE_DIR / "alembic.ini"))
-    head = ScriptDirectory.from_config(cfg).get_current_head()
-
     # 用当前事件循环自己的 engine：全局 engine 的连接属于 TestClient 的 loop，
     # 跨 loop 复用会报 "attached to a different loop"。
     engine = create_async_engine(f"sqlite+aiosqlite:///{settings.DATABASE_NAME}")
@@ -63,7 +61,9 @@ async def test_startup_recovers_when_alembic_version_is_unresolvable(test_client
 
         async with engine.connect() as conn:
             version = (await conn.execute(text("select version_num from alembic_version"))).scalar()
+            tables = await conn.run_sync(lambda sync_conn: inspect(sync_conn).get_table_names())
     finally:
         await engine.dispose()
 
-    assert version == head
+    assert version == "deadbeefdead", "来自其它分支的版本号必须保留，不能被 stamp 成更旧的 head"
+    assert "voice_workbench_service" in tables, "跳过迁移不得动已有表结构"
