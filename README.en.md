@@ -186,6 +186,8 @@ ENABLED_MODULES = ["generator", "task", "storage"]
 - **Key security**: Configure all third-party keys (AI, cloud storage, etc.) in the `backend/env/.env.*` environment variables. **Never commit them to the repository or store them in the database**.
 - **Database migrations**: Manage schema changes with Alembic migrations in production (`uv run alembic upgrade head`); `create_all` is only a fallback for first-time initialization.
 
+> For intranet production deployment and operations (self-signed certificates, port forwarding, upload and rollback), see [DEPLOYMENT.md](./DEPLOYMENT.md); Docker details are in [docker/README.md](./docker/README.md).
+
 ## 📷 More Screenshots
 
 | Login + puzzle verification | Code Generator | AI Assistant |

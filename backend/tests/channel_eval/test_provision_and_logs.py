@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import httpx
 import pytest
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.modules.channel_eval.platform.model import ChannelEvalPlatformModel

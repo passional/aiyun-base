@@ -260,7 +260,7 @@ src/views/voice_workbench/
 - 音频转码逻辑写成纯函数并配 Vitest 单测。
 - 批量队列逻辑与 UI 分离，便于测试。
 - 所有文案进 `locales/langs/zh.json` 与 `en.json`，使用 `$t()`。
-- 列表页遵循 `design/UI-GUIDELINES.md`：`FaTable`、`FaDialog`、16px 间距、12px 圆角。
+- 列表页遵循 `docs/DESIGN-SPEC.md`：`FaTable`、`FaDialog`、16px 间距、12px 圆角。
 
 ## 11. 测试
 
