@@ -38,6 +38,19 @@
 
 </div>
 
+## 🤖 让 AI 在这个项目里干活
+
+把这个仓库交给 AI 时，先让它读根目录的 [`SKILL.md`](./SKILL.md)：
+
+- 工程地图与前后端约定；
+- 本地启动、测试、构建命令；
+- 测试用例设计、`e2e_` 测试数据和清理规范；
+- 时间/消息/调度契约；
+- 生产部署、备份和不可逆操作边界；
+- 当前已统一的账号/角色编码契约。
+
+测试覆盖与执行记录见 [`docs/COVERAGE-PLAN.md`](./docs/COVERAGE-PLAN.md)。AI 不应只凭“页面能打开”判断功能通过，写操作必须真实执行并清理测试数据。
+
 ## 🖥️ 界面一览
 
 **Web 端**
@@ -185,6 +198,8 @@ ENABLED_MODULES = ["generator", "task", "storage"]
 - **单实例部署**：实时功能（内部聊天 WebSocket、定时任务调度器）基于单实例内存连接与本地调度实现，请以**单实例方式**部署。如需水平扩展，请自行引入 Redis Pub/Sub 或消息队列。
 - **密钥安全**：所有第三方密钥（AI、云存储等）请配置在 `backend/env/.env.*` 环境变量中，**切勿提交到仓库或写入数据库**。
 - **数据库迁移**：正式环境请使用 Alembic 迁移（`uv run alembic upgrade head`）管理表结构变更，`create_all` 仅用于首次初始化的兜底。
+
+> 内网生产部署与运维（自签证书、端口转发、上传与回滚）请见 [DEPLOYMENT.md](./DEPLOYMENT.md)；Docker 细节见 [docker/README.md](./docker/README.md)。
 
 ## 📷 更多截图
 

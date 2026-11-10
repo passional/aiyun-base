@@ -1,7 +1,7 @@
 import io
 import os
-import uuid
 import re
+import uuid
 import zipfile
 from collections.abc import Callable
 from typing import Any

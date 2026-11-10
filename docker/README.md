@@ -60,7 +60,6 @@ docker/
    | `HTTPS_PORT` | 否 | `443` | HTTPS 宿主机端口（容器内固定监听 443） |
    | `DEPLOY_ENV` | 否 | `prod` | 部署环境（dev/prod） |
    | `BACKEND_IMAGE_TAG` | 否 | `3.0.0` | 后端镜像标签 |
-   | `BUILD_WEB` | 否 | `false` | 部署时构建前端 Web |
 
 2. **后端环境配置**
 
@@ -90,23 +89,20 @@ docker/
 ./deploy.sh
 ```
 
-脚本会自动执行：检查依赖 → 创建目录 → 停止旧容器 → 更新代码 → 构建镜像 → 启动容器 → 验证部署 → 清理旧资源。
+脚本会自动执行：检查依赖 → 创建目录 → 构建镜像 → 启动容器 → 验证部署 → 清理旧资源。
+代码需先上传到服务器（内网部署见 [DEPLOYMENT.md](../DEPLOYMENT.md) 与 `scripts/upload.sh`）。
 
 **命令选项**
 
 | 命令 | 说明 |
 |------|------|
-| `./deploy.sh` | 完整部署（跳过前端构建） |
+| `./deploy.sh` | 完整部署 |
 | `./deploy.sh start` | 启动所有容器 |
 | `./deploy.sh stop` | 停止所有容器 |
 | `./deploy.sh restart` | 重启所有容器 |
 | `./deploy.sh logs` | 查看所有容器日志 |
 | `./deploy.sh verify` | 验证部署状态 |
 | `./deploy.sh clean` | 清理旧镜像和构建缓存 |
-| `./deploy.sh --build-frontend` | 完整部署并构建前端（web / app / docs） |
-| `./deploy.sh --skip-frontend` | 完整部署并跳过前端构建（默认） |
-
-或在 `.env` 中设置 `BUILD_WEB=true` 使部署脚本自动构建前端。
 
 ### 方式二：手动操作
 
@@ -176,7 +172,7 @@ docker compose logs -f [服务名]
 
 ## 前端构建
 
-构建前端有三种方式：
+构建前端有两种方式：
 
 1. **本地构建后手动部署**（推荐）
    ```bash
@@ -185,17 +181,10 @@ docker compose logs -f [服务名]
    cp -r dist ../docker/nginx/web/
    ```
 
-2. **使用部署脚本**
-   ```bash
-   ./deploy.sh --build-frontend
-   ```
-
-3. **自动构建**：在 `.env` 中设置
-   ```env
-   BUILD_WEB=true
-   # BUILD_APP=true
-   # BUILD_DOCS=true
-   ```
+2. **本地构建并随项目上传**：在本地执行 `pnpm run build` 后，用
+   [scripts/upload.sh](../scripts/upload.sh) 把整个项目目录同步到服务器，
+   再在服务器上执行 `./deploy.sh` 构建镜像并启动。详见
+   [DEPLOYMENT.md](../DEPLOYMENT.md)。
 
 ## 生产部署建议
 
@@ -228,5 +217,7 @@ docker compose logs -f [服务名]
 ## 版本更新
 
 ```bash
-./deploy.sh    # 自动拉取最新代码 → 构建新镜像 → 重启容器
+# 在服务器上：先同步最新项目文件，再重新构建并启动
+./scripts/upload.sh
+./deploy.sh
 ```
